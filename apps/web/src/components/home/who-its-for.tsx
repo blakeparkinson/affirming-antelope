@@ -6,8 +6,8 @@ const paths = [
   {
     href: "/for/leaders",
     name: "Leaders",
-    who: "Managers, supervisors and charge nurses",
-    what: "Practice performance, change and burnout conversations with a simulated employee.",
+    who: "Supervisors, athletic coaches, nurses and more",
+    what: "Practice performance, motivation and burnout conversations with a simulated employee or athlete.",
   },
   {
     href: "/for/clinicians",
