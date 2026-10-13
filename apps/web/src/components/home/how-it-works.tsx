@@ -131,10 +131,10 @@ export function HowItWorks() {
             id="how-heading"
             className="pb-1 font-display text-3xl font-bold leading-[1.05] tracking-tight md:text-[2.6rem]"
           >
-            How a practice session goes
+            What it is
           </h2>
-          <p className="mt-3 max-w-[44ch] text-lg font-semibold text-[color:var(--on-primary-body)]">
-            A drill before work, a role-play when you have ten minutes, then the real conversation.
+          <p className="mt-3 max-w-[56ch] text-lg font-semibold text-[color:var(--on-primary-body)]">
+            Short drills and role-plays for the four core MI skills, OARS: open questions, affirmations, reflections and summaries. A drill before work, a role-play when you have ten minutes, then the real conversation.
           </p>
         </Reveal>
 
