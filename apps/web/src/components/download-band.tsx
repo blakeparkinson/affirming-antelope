@@ -83,7 +83,7 @@ export function DownloadBand({
             {pilot && <p className="mt-4 text-sm font-bold text-muted">{PRICING_LINE}</p>}
             {!trainer && !pilot && (
               <p className="mt-6 border-t-2 border-soft pt-5 font-semibold text-muted">
-                Running a cohort?{" "}
+                Leading a training?{" "}
                 <Link
                   href="/for/trainers"
                   className="font-extrabold text-ink underline decoration-primary decoration-2 underline-offset-4 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
