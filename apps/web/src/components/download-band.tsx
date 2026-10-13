@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { MI_FOR_CLINICIANS } from "@antelope/core";
-import { PRICING_LINE } from "@/lib/site";
+import { pilotLink, PRICING_LINE } from "@/lib/site";
 import { CtaNote, GetTheApp, PilotCta, TrainerCta } from "./get-the-app";
 import { Reveal } from "./reveal";
 import { Mascot } from "./mascot";
@@ -84,12 +84,13 @@ export function DownloadBand({
             {!trainer && !pilot && (
               <p className="mt-6 border-t-2 border-soft pt-5 font-semibold text-muted">
                 Leading a training?{" "}
-                <Link
-                  href="/for/trainers"
+                <a
+                  {...pilotLink(`${location}_training`)}
                   className="font-extrabold text-ink underline decoration-primary decoration-2 underline-offset-4 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                 >
-                  See how trainer review works
-                </Link>
+                  Book a 30-minute call
+                  <span className="sr-only"> (opens in a new tab)</span>
+                </a>
               </p>
             )}
             {!trainer && alsoClinicians && (

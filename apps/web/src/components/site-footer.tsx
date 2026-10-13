@@ -20,6 +20,7 @@ const columns = [
       { href: "/guides", label: "MI guides" },
       { href: "/scenarios", label: "Role-play scenarios" },
       { href: "/#how-it-works", label: "How it works" },
+      { href: "/faq", label: "FAQ" },
     ],
   },
   {

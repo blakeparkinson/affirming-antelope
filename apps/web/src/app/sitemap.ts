@@ -36,6 +36,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "monthly" as const,
       priority: s.setting === "workplace" ? 0.7 : 0.6,
     })),
+    { url: `${SITE_URL}/faq`, lastModified: built, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/about`, lastModified: built, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}${AMANDA.page}`, lastModified: built, changeFrequency: "monthly", priority: 0.5 },
     ...guides.map((g) => ({

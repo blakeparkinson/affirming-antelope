@@ -36,7 +36,7 @@ export function Hero() {
           <div className="mt-7 flex flex-wrap items-center gap-x-6 gap-y-4">
             <GetTheApp location="hero" size="lg" />
             <a
-              href="#pilot"
+              href="/for/trainers"
               className="text-base font-extrabold text-ink underline decoration-primary decoration-2 underline-offset-4 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
             >
               Leading a training?

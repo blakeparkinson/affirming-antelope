@@ -1,11 +1,12 @@
 import Image from "next/image";
 import Link from "next/link";
-import { pilotLink } from "@/lib/site";
 import { GetTheApp } from "./get-the-app";
 
 const links = [
-  { href: "/for/leaders", label: "Leaders" },
-  { href: "/for/trainers", label: "Trainers" },
+  { href: "/about", label: "About" },
+  { href: "/#who-its-for", label: "Who it's for" },
+  { href: "/#how-it-works", label: "How it works" },
+  { href: "/faq", label: "FAQ" },
   { href: "/guides", label: "Guides" },
 ];
 
@@ -40,13 +41,12 @@ export function SiteNav() {
               </li>
             ))}
           </ul>
-          <Link href="/guides" className={`${linkClass} hidden md:inline lg:hidden`}>
-            Guides
+          <Link href="/about" className={`${linkClass} hidden sm:inline lg:hidden`}>
+            About
           </Link>
-          <a {...pilotLink("nav")} className={`${linkClass} whitespace-nowrap`}>
-            Book a call
-            <span className="sr-only"> about a pilot (opens in a new tab)</span>
-          </a>
+          <Link href="/faq" className={`${linkClass} hidden md:inline lg:hidden`}>
+            FAQ
+          </Link>
           <GetTheApp location="nav" size="sm">
             <span className="sm:hidden">Start free</span>
             <span className="hidden sm:inline">Start practicing free</span>

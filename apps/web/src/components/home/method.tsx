@@ -41,7 +41,7 @@ export function Method() {
             id="method-heading"
             className="pb-1 font-display text-3xl font-bold leading-[1.05] tracking-tight text-ink md:text-[2.6rem]"
           >
-            The method behind it
+            Why we built it
           </h2>
           <p className="mt-4 max-w-[46ch] text-lg font-semibold leading-relaxed text-ink/80">
             Designed from the MI for Leaders program{" "}
