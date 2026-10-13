@@ -64,7 +64,7 @@ export default function AboutPage() {
             </h1>
             <p className="mt-5 max-w-[56ch] text-lg font-semibold leading-snug text-muted md:text-xl">
               Affirming Antelope is motivational interviewing (MI) practice for healthcare leaders. You rehearse a hard
-              one-on-one with an AI employee, then get feedback on the moves you made. Clinicians have their own pathway
+              one-on-one with a simulated employee, then get feedback on the moves you made. Clinicians have their own pathway
               for patient visits.
             </p>
           </div>
@@ -134,7 +134,7 @@ export default function AboutPage() {
               <p>
                 Every role-play starts from a scenario spec. The spec says who the person is, what they care about,
                 what they are holding back, what shuts them down, and what opens them up. An AI plays that person and
-                stays in character, so Darnell gets sharper when you lecture and slows down when you reflect what you
+                stays in character, so Josh gets sharper when you lecture and slows down when you reflect what you
                 hear.
               </p>
               <p>

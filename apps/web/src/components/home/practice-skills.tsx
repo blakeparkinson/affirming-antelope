@@ -1,7 +1,7 @@
 import { MI_FOR_LEADERS } from "@antelope/core";
 import { Reveal } from "../reveal";
 
-/** OARS in plain words, each with one line a manager might say to Darnell (PM-017). */
+/** OARS in plain words, each with one line a manager might say to Josh (PM-017). */
 const skills = [
   {
     letter: "O",

@@ -24,7 +24,7 @@ import { fieldClass, hintClass, labelClass } from "./fields";
 
 type Mode = "skill" | "drill" | "roleplay" | "learn";
 
-/** Tab copy follows the cohort's pathway: the role-play is with an AI patient or an AI employee. */
+/** Tab copy follows the cohort's pathway: the role-play is with an AI patient or a simulated employee. */
 function modesFor(catalog: { pathwayTitle: string; setting: "workplace" | "clinical" }): { id: Mode; label: string; hint: string }[] {
   return [
     { id: "skill", label: "Drills on a skill", hint: "Any N short practices on one skill. Learners pick which." },

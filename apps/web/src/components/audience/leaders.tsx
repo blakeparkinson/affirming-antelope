@@ -71,7 +71,7 @@ function KevinScene() {
 const path = [
   { weeks: "Weeks 1 and 2", body: "Short lessons and drills on OARS and the spirit of MI." },
   { weeks: `Week ${leaders.firstRoleplayWeek}`, body: "Your first role-play: a check-in with Lucia, who has gone quiet." },
-  { weeks: "Weeks 4 to 9", body: "Darnell's late reports, Angela doing everything herself, and Kevin's kiosks. Week 9 has you code your own transcript." },
+  { weeks: "Weeks 4 to 9", body: "Josh's late reports, Angela doing everything herself, and Kevin's kiosks. Week 9 has you code your own transcript." },
   { weeks: "Week 10", body: "Holding a clear standard while leaving the how to them." },
   { weeks: "Weeks 11 and 12", body: "Tom, the night charge nurse who found out from a memo." },
 ];

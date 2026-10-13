@@ -13,7 +13,7 @@ export const HOME_FAQ: { q: string; a: string }[] = [
   },
   {
     q: "How is this different from asking ChatGPT to role-play?",
-    a: `You get a ${MI_FOR_LEADERS.units.length}-week path, with a role-play each week from week 3. Each employee is written from a scenario spec, so Darnell gets more defensive when you lecture and more open when you reflect. Feedback names the MI moves you made. If you're in a cohort, your trainer can read the sessions you send.`,
+    a: `You get a ${MI_FOR_LEADERS.units.length}-week path, with a role-play each week from week 3. Each employee is written from a scenario spec, so Josh gets more defensive when you lecture and more open when you reflect. Feedback names the MI moves you made. If you're in a cohort, your trainer can read the sessions you send.`,
   },
   {
     q: "Can I say it out loud?",

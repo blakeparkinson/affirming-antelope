@@ -31,7 +31,7 @@ the same client hook (`useVoiceTurn`), without changing screens.
 - `422 { error: "no_speech" }` when nothing intelligible was said (client: "Didn't catch
   that. Hold and try again.").
 - The scenario's persona name and context may be passed to the model as a prompt/hint
-  to improve proper nouns ("Darnell", "A1c", "statin").
+  to improve proper nouns ("Josh", "A1c", "statin").
 
 ### `POST /api/voice/speak`
 - Auth as above. Body JSON `{ scenarioId: string, text: string }` (≤ 600 chars).
