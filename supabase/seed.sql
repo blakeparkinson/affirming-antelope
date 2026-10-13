@@ -177,7 +177,7 @@ insert into public.practice_sessions (
     "keyMoments": [
       {
         "turnId": "t12",
-        "observation": "Darnell had just said he doesn't want to be the one holding things up. The suggestion to block off time moved to solving before he'd said what he wanted to do.",
+        "observation": "Josh had just said he doesn't want to be the one holding things up. The suggestion to block off time moved to solving before he'd said what he wanted to do.",
         "possibleResponses": [
           "You don't want to be that guy. What would you want finance to say about the reports a few months from now?",
           "That matters to you. What would make it feel worth going the extra mile again?",

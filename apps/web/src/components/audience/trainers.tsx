@@ -52,7 +52,7 @@ function TrainerWeek() {
 
 const notes = [
   { label: "Their note", body: "Learners say where they got stuck when they send a session, so you know where to look." },
-  { label: "The chart", body: "Where Darnell moved toward change and where he dug in, with the key moments ringed." },
+  { label: "The chart", body: "Where Josh moved toward change and where he dug in, with the key moments ringed." },
   {
     label: "Your reply",
     body: "Write it or record a voice note, give a level in words from Emerging to Strong, and ask for another try if you want one.",

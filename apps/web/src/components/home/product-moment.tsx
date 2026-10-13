@@ -12,7 +12,7 @@ const BARS = [0.45, 0.8, 1, 0.65, 0.9, 0.5, 0.75];
 
 /**
  * The hero's product moment: one exchange from the PM-017 role-play ("The reports are
- * late again"), built in HTML so it stays crisp. Darnell's opener is his real opening
+ * late again"), built in HTML so it stays crisp. Josh's opener is his real opening
  * line; the learner answers out loud; the coach names the move. Plays once on load
  * (CSS only), and is fully visible with reduced motion or before CSS animations run.
  */
@@ -20,10 +20,10 @@ export function ProductMoment() {
   return (
     <figure className="relative mx-auto w-full max-w-[29rem]">
       <figcaption className="sr-only">
-        Example role-play. Darnell, a revenue cycle analyst, says: So I&apos;m guessing this
+        Example role-play. Josh, a revenue cycle analyst, says: So I&apos;m guessing this
         is about the reports. You answer out loud: Sounds like you&apos;ve been bracing for
         this one. The coach notes: That&apos;s a complex reflection. You named the feeling
-        under his words, so he has nothing to defend. Darnell replies: Yeah. It&apos;s been
+        under his words, so he has nothing to defend. Josh replies: Yeah. It&apos;s been
         harder than I let on.
       </figcaption>
 
@@ -39,14 +39,14 @@ export function ProductMoment() {
             DB
           </span>
           <div className="min-w-0 flex-1 leading-tight">
-            <p className="font-display text-[15px] font-bold text-ink">Darnell Brooks</p>
+            <p className="font-display text-[15px] font-bold text-ink">Josh Brooks</p>
             <p className="truncate text-[13px] font-bold text-muted">Revenue cycle analyst · Role-play</p>
           </div>
           <SpeakerHigh size={22} weight="bold" className="text-primary" />
         </div>
 
         <div className="space-y-3 px-4 pt-4 pb-3 text-[15px] font-semibold leading-snug sm:px-5">
-          {/* 1. Darnell's real opening line */}
+          {/* 1. Josh's real opening line */}
           <div className="pm-step flex items-end gap-2" style={at(200)}>
             <span className="grid size-7 shrink-0 place-items-center rounded-full bg-soft-deep text-[10px] font-extrabold text-primary-shadow">
               DB
@@ -113,7 +113,7 @@ export function ProductMoment() {
             </div>
           </div>
 
-          {/* 4. Darnell opens up */}
+          {/* 4. Josh opens up */}
           <div className="relative">
             <div
               className="pm-transient absolute top-0 left-9 items-center gap-1 rounded-[1.1rem] rounded-bl-md border-2 border-line bg-white px-3.5 py-3"

@@ -91,7 +91,7 @@ export function Method() {
             <figcaption>
               <span className="text-xs font-extrabold text-primary-shadow">From the scenario spec</span>
               <span className="mt-1 block font-display text-xl font-bold text-ink">
-                Darnell Brooks, revenue cycle analyst
+                Josh Brooks, revenue cycle analyst
               </span>
               <span className="mt-1 block font-semibold leading-snug text-muted">
                 Four years in. His month-end reports have been late three months running.

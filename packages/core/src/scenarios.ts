@@ -69,7 +69,7 @@ export const SCENARIOS: ScenarioSpec[] = [
     context: "Performance management",
     issue: "Missed deadlines",
     persona: {
-      name: "Darnell Brooks",
+      name: "Josh Brooks",
       role: "Revenue cycle analyst",
       tenure: "4 years with the organization",
       avatarSeed: "darnell-brooks-analyst",
@@ -82,8 +82,8 @@ export const SCENARIOS: ScenarioSpec[] = [
       },
     },
     learnerBrief:
-      "You manage Darnell, a revenue cycle analyst who used to be one of your strongest people. His month-end reports have been late three months in a row, and the finance team has started asking you about it. He's been less engaged in team meetings too. You've scheduled a one-on-one.",
-    learnerGoal: "Understand Darnell's perspective and draw out any reasons he has for getting back on track, without forcing a plan.",
+      "You manage Josh, a revenue cycle analyst who used to be one of your strongest people. His month-end reports have been late three months in a row, and the finance team has started asking you about it. He's been less engaged in team meetings too. You've scheduled a one-on-one.",
+    learnerGoal: "Understand Josh's perspective and draw out any reasons he has for getting back on track, without forcing a plan.",
     openingLine: "So I'm guessing this is about the reports.",
     employeeMotivation: "low",
     primaryChallenge: "sustain-talk",
@@ -93,7 +93,7 @@ export const SCENARIOS: ScenarioSpec[] = [
     difficulty: "intermediate",
     desiredTrajectory: ["sustain", "ambivalent", "change"],
     hiddenBackstory:
-      "Darnell was passed over for the senior analyst role six months ago. It went to an outside hire, Kyle, who now gets the interesting projects while Darnell is left with month-end reports. Nobody explained the decision to him. He's stopped going the extra mile because it didn't seem to matter. He also suspects the reporting template is broken: it requires manual reconciliation that takes two days, and he's flagged it twice without a response. Underneath the flatness, he's proud of his work and hates being seen as the bottleneck; the finance team used to rely on him and he misses that. He's quietly been updating his resume but doesn't really want to leave, since he likes the team and his commute. What would help him open up: a manager who acknowledges that something changed for him, asks about it with curiosity, and doesn't defend the promotion decision. If the learner reflects his frustration accurately, he'll eventually mention being passed over. If they reflect his pride or his dislike of being the bottleneck, he'll start offering change talk (\"I don't want to be that guy,\" \"I used to be the one they counted on\"). He will not commit to a detailed plan in this conversation, but may say he's willing to think about it or to talk about the template.",
+      "Josh was passed over for the senior analyst role six months ago. It went to an outside hire, Kyle, who now gets the interesting projects while Josh is left with month-end reports. Nobody explained the decision to him. He's stopped going the extra mile because it didn't seem to matter. He also suspects the reporting template is broken: it requires manual reconciliation that takes two days, and he's flagged it twice without a response. Underneath the flatness, he's proud of his work and hates being seen as the bottleneck; the finance team used to rely on him and he misses that. He's quietly been updating his resume but doesn't really want to leave, since he likes the team and his commute. What would help him open up: a manager who acknowledges that something changed for him, asks about it with curiosity, and doesn't defend the promotion decision. If the learner reflects his frustration accurately, he'll eventually mention being passed over. If they reflect his pride or his dislike of being the bottleneck, he'll start offering change talk (\"I don't want to be that guy,\" \"I used to be the one they counted on\"). He will not commit to a detailed plan in this conversation, but may say he's willing to think about it or to talk about the template.",
     changeTriggers: [
       "Reflecting the frustration under his flat answers",
       "Acknowledging that something seems different for him lately, without judging",

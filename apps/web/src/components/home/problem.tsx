@@ -3,7 +3,7 @@ import { Reveal } from "../reveal";
 
 /**
  * Lines from the PM-017 spec (packages/core/src/scenarios.ts): the sustain triggers
- * a manager reaches for, and how Darnell answers them.
+ * a manager reaches for, and how Josh answers them.
  */
 const turns = [
   {
@@ -38,7 +38,7 @@ export function Problem() {
             Three ways a one-on-one goes sideways
           </h2>
           <p className="mt-4 text-lg font-semibold leading-relaxed text-ink/80">
-            You mean to help, so you explain and push a little. Darnell hears
+            You mean to help, so you explain and push a little. Josh hears
             pressure and defends himself. MI calls your half of that the
             righting reflex, and you catch it sooner after you&apos;ve rehearsed
             the other move a few times.
@@ -70,7 +70,7 @@ export function Problem() {
                   className="hidden text-faint md:block"
                 />
                 <p className="justify-self-start rounded-[1.1rem] rounded-bl-md border-2 border-line bg-white px-3.5 py-2.5 font-semibold leading-snug text-ink shadow-[0_3px_0_var(--shadow)] md:justify-self-stretch">
-                  <span className="sr-only">Darnell: </span>
+                  <span className="sr-only">Josh: </span>
                   {turn.them}
                 </p>
                 <p className="text-[15px] font-extrabold text-[color:var(--move-inconsistent-ink)]">{turn.result}</p>

@@ -23,7 +23,7 @@ export const metadata: Metadata = {
   },
   applicationName: "Affirming Antelope",
   description:
-    "Free motivational interviewing practice for healthcare managers and team leads. Rehearse performance, change and burnout conversations with an AI employee.",
+    "Free motivational interviewing practice for healthcare managers and team leads. Rehearse performance, change and burnout conversations with a simulated employee.",
   openGraph: {
     type: "website",
     siteName: "Affirming Antelope",

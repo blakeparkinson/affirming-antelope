@@ -97,7 +97,7 @@ export const DEMO_LEARNER: DemoLearnerState & { trainerAssignment: DemoTrainerAs
     assignedBy: { name: "Dr. Rosa Lin", role: "MI trainer" },
     dueDate: "2026-10-09",
     dueLabel: "Due Friday",
-    note: "Listen for the moment Darnell's reasons start to shift. Bring one example to our group session.",
+    note: "Listen for the moment Josh's reasons start to shift. Bring one example to our group session.",
     items: [
       { kind: "drill", title: "Spot the change talk", refId: "drill-evoking-01", done: false },
       { kind: "drill", title: "Reflect it back", refId: "drill-evoking-03", done: false },

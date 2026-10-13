@@ -16,7 +16,7 @@ import { pageMetadata } from "@/lib/seo/metadata";
 import { pilotLink, SITE_URL } from "@/lib/site";
 
 const HOME_DESCRIPTION =
-  "Free motivational interviewing practice for healthcare managers and team leads. Rehearse performance, change and burnout conversations with an AI employee.";
+  "Free motivational interviewing practice for healthcare managers and team leads. Rehearse performance, change and burnout conversations with a simulated employee.";
 
 export const metadata: Metadata = pageMetadata({
   title: "Motivational Interviewing Practice for Healthcare Leaders",

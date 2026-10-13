@@ -132,7 +132,7 @@ function primaryAction(review: Review, sub: Submission | undefined): { label: st
 }
 
 /**
- * "role-play with Darnell" / "role-play with Ms. Alvarez": what a trainer's note is about,
+ * "role-play with Josh" / "role-play with Ms. Alvarez": what a trainer's note is about,
  * named by the person in it (their scenario id means nothing to the learner).
  */
 function sessionWhat(sub: Submission): string {
