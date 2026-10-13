@@ -1,5 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
+import { pilotLink } from "@/lib/site";
 import { GetTheApp } from "./get-the-app";
 
 const links = [
@@ -47,6 +48,10 @@ export function SiteNav() {
           <Link href="/faq" className={`${linkClass} hidden md:inline lg:hidden`}>
             FAQ
           </Link>
+          <a {...pilotLink("nav")} className={`${linkClass} hidden whitespace-nowrap sm:inline`}>
+            Book a call
+            <span className="sr-only"> about a pilot (opens in a new tab)</span>
+          </a>
           <GetTheApp location="nav" size="sm">
             <span className="sm:hidden">Start free</span>
             <span className="hidden sm:inline">Start practicing free</span>
