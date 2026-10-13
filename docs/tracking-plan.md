@@ -23,6 +23,7 @@ uses the same vocabulary. Snake_case, `object_verb` past tense.
 - **Session replay off.** Autocapture on the website only (clicks on `[data-track]`
   elements and links); off in the app and dashboard, where we send explicit events.
 - Respect Do Not Track / Global Privacy Control: if set, don't initialise.
+- Vercel Web Analytics also runs on the website (`<Analytics />` in the root layout): page views only, cookieless, served first-party from `/_vercel/insights`. PostHog stays the source of truth for events and funnels.
 - Ingest through a first-party proxy: `https://affirmingantelope.com/ingest` (Next
   rewrites to `us.i.posthog.com` / `us-assets.i.posthog.com`).
 
