@@ -6,7 +6,8 @@
 export type AvatarAgeBand = 'young' | 'adult' | 'older';
 /** A band, or an age in years (bands: under 25 young, 60 and up older). */
 export type AvatarAge = AvatarAgeBand | number;
-export type AvatarSetting = 'workplace' | 'clinical';
+/** A scenario's frame (@antelope/core `Frame`): 'sports' dresses an athlete, 'clinical' a patient. */
+export type AvatarSetting = 'workplace' | 'clinical' | 'sports';
 /** Steers hair and facial hair only; unset leaves the seed's own mix. */
 export type AvatarPresentation = 'feminine' | 'masculine';
 
@@ -136,19 +137,30 @@ export interface AvatarIdentity {
 
 /**
  * Props to spread into `<Avatar>` for a scenario persona:
- * `<Avatar {...personaAvatar(sc.persona, sc.setting)} size={56} />`.
+ * `<Avatar {...personaAvatar(sc.persona, sc.setting)} size={56} />`. For a whole scenario,
+ * prefer `scenarioAvatar(sc)`, which follows its frame.
  * Workplace personas come back with no age or presentation, so the demo cast keeps its faces.
+ * Athletes and patients get an age and presentation read from their role and voice notes.
  */
 export function personaAvatar(persona: PersonaLike & { avatarSeed: string }, setting?: AvatarSetting): AvatarIdentity {
   const patient = /\bpatient\b/i.test(`${persona.role} ${persona.tenure ?? ''}`);
   const resolved = setting ?? settingFromSeed(persona.avatarSeed) ?? (patient ? 'clinical' : 'workplace');
-  if (resolved !== 'clinical') return { seed: persona.avatarSeed, setting: resolved };
+  if (resolved === 'workplace') return { seed: persona.avatarSeed, setting: resolved };
   return {
     seed: persona.avatarSeed,
     age: personaAge(persona),
     setting: resolved,
     presentation: presentationFromText(`${persona.role}. ${persona.tenure ?? ''}. ${persona.voiceNotes ?? ''}`),
   };
+}
+
+/** `personaAvatar` for a scenario: its own frame (a coach's athlete) when set, else its setting. */
+export function scenarioAvatar(sc: {
+  persona: PersonaLike & { avatarSeed: string };
+  setting: 'workplace' | 'clinical';
+  frame?: 'sports';
+}): AvatarIdentity {
+  return personaAvatar(sc.persona, sc.frame ?? sc.setting);
 }
 
 /**

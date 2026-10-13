@@ -85,6 +85,8 @@ const PATIENT_COLLARS: Record<AvatarAgeBand, readonly Collar[]> = {
   adult: ['crew', 'crew', 'collar', 'sweater', 'hoodie', 'cardigan'],
   older: ['cardigan', 'cardigan', 'cardigan', 'sweater', 'sweater', 'collar'],
 };
+// Athletes dress for practice: a hoodie or a tee, never scrubs, a badge, or a button-down.
+const ATHLETE_COLLARS: readonly Collar[] = ['hoodie', 'hoodie', 'crew', 'crew'];
 const OLDER_STYLES: readonly HairStyle[] = ['receding', 'bald', 'set', 'set', 'bob', 'bun', 'crop', 'part'];
 const STYLES_FOR: Record<AvatarPresentation, Record<'older' | 'other', readonly HairStyle[]>> = {
   feminine: { older: ['set', 'set', 'bob', 'bun', 'part'], other: ['part', 'long', 'bun', 'curls', 'bob'] },
@@ -116,6 +118,7 @@ export function traitsFor(seed: string, opts: AvatarOptions = {}): AvatarTraits 
   };
   const years = typeof opts.age === 'number' ? opts.age : undefined;
   if (opts.setting === 'clinical') t.collar = p(`pcollar:${age}`, PATIENT_COLLARS[age]);
+  if (opts.setting === 'sports') t.collar = p('acollar', ATHLETE_COLLARS);
   if (age === 'older') {
     t.hair = (years ?? 0) >= 75 ? p('ohair', WHITES) : p('ohair', GREYS);
     t.hairStyle = p('ostyle', OLDER_STYLES);
@@ -283,8 +286,8 @@ export interface AvatarProps {
    */
   age?: AvatarAge;
   /**
-   * 'clinical' dresses the person as a patient (never scrubs or a badge).
-   * Defaults to 'clinical' for seeds with a "-patient" token, else 'workplace'.
+   * 'clinical' dresses the person as a patient (never scrubs or a badge); 'sports' as an
+   * athlete in a hoodie or tee. Defaults to 'clinical' for seeds with a "-patient" token, else 'workplace'.
    */
   setting?: AvatarSetting;
   /** Steers hair and facial hair to match the person's pronouns; unset keeps the seed's mix. */

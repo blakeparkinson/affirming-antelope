@@ -19,6 +19,7 @@ import {
   type Difficulty,
   type LearnerMove,
   type MoveTallies,
+  type Frame,
   type Setting,
   type SkillId,
   type Stance,
@@ -137,9 +138,12 @@ export function skillName(id?: string | null): string {
   }
 }
 
-/** The label for the other person in a conversation: "Patient" for clinical, "Employee" for workplace. */
-export function counterpartOf(setting: Setting | undefined): string {
-  return counterpartLabel(setting ?? "workplace");
+/**
+ * The label for the other person in a conversation: "Patient" for clinical, "Employee" for
+ * workplace, "Athlete" for sports. Pass scenarioFrame(scenario) for a role-play.
+ */
+export function counterpartOf(frame: Frame | undefined): string {
+  return counterpartLabel(frame ?? "workplace");
 }
 
 export interface PickerCatalog {

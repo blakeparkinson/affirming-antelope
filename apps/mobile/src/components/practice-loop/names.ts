@@ -1,4 +1,4 @@
-import { SETTING_LABELS, type Setting } from '@antelope/core';
+import { FRAME_LABELS, type Frame } from '@antelope/core';
 
 const HONORIFIC = /^(mr|mrs|ms|mx|miss|dr|prof)\.?$/i;
 
@@ -13,8 +13,8 @@ export function callName(fullName: string): string {
   return parts[0] ?? fullName;
 }
 
-/** "One-on-one" / "Visit": the conversation noun, sentence case. */
-export function conversationLabel(setting: Setting): string {
-  const w = SETTING_LABELS[setting].conversation;
+/** "One-on-one" / "Visit" / "Check-in": the conversation noun, sentence case. Pass scenarioFrame(scenario). */
+export function conversationLabel(frame: Frame): string {
+  const w = FRAME_LABELS[frame].conversation;
   return w.charAt(0).toUpperCase() + w.slice(1);
 }

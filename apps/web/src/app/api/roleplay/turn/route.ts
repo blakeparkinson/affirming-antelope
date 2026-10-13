@@ -1,4 +1,4 @@
-import { getScenario } from "@antelope/core";
+import { getScenario, scenarioFrame } from "@antelope/core";
 import { ApiError, errorResponse, optionsResponse, readJson, streamResponse, requireAi } from "@/lib/ai/http";
 import { authenticate, chargeQuota } from "@/lib/ai/auth";
 import { mockEmployeeReply, mockStream } from "@/lib/ai/mock";
@@ -24,7 +24,7 @@ export async function POST(req: Request) {
     const turns = parseTurns(obj.turns, { lastMustBeLearner: true });
     const quota = await chargeQuota(caller, "turn");
 
-    if (mode === "mock") return streamResponse(req, mockStream(mockEmployeeReply(turns, spec.setting), req.signal), quota);
+    if (mode === "mock") return streamResponse(req, mockStream(mockEmployeeReply(turns, scenarioFrame(spec)), req.signal), quota);
     return streamResponse(req, await streamEmployeeReply(spec, turns, req.signal), quota);
   } catch (err) {
     return errorResponse(req, err);

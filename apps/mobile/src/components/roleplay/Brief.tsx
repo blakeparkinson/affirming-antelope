@@ -4,7 +4,7 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import { callName } from '@/components/practice-loop/names';
 import { Dock, SessionHeader, sessionStyles } from '@/components/practice-loop/SessionChrome';
 import { HeroTarget, useSession } from '@/components/practice-loop/SessionSurface';
-import { ArrowRightIcon, Avatar, Button, ChatCircleDotsIcon, Chip, FlagPennantIcon, Raised, TargetIcon, Text, UserIcon, color, personaAvatar, space } from '@/design';
+import { ArrowRightIcon, Avatar, Button, ChatCircleDotsIcon, Chip, FlagPennantIcon, Raised, TargetIcon, Text, UserIcon, color, scenarioAvatar, space } from '@/design';
 import { Enter } from '@/motion';
 import { primeSpeech } from './voice/speechPlayer';
 import { ModeChoice, type ReplyMode } from './voice/VoiceBits';
@@ -60,7 +60,7 @@ export function Brief({
         <View style={sessionStyles.column}>
           <Enter from="scale" style={styles.person}>
             <View ref={avatar} collapsable={false}>
-              <Avatar {...personaAvatar(p, scenario.setting)} size={96} ring={color.white} accessibilityLabel={p.name} />
+              <Avatar {...scenarioAvatar(scenario)} size={96} ring={color.white} accessibilityLabel={p.name} />
             </View>
             <View style={styles.personCopy}>
               <Text variant="title" accessibilityRole="header">

@@ -1,15 +1,15 @@
 // DRAFT — pending trainer review
 // Coach: teaching only. Speaks as the antelope mascot after a role-play,
 // using the Observer's codes as evidence. It is a practice partner, not the
-// authority: the human trainer is. Wording follows the scenario's setting;
-// the workplace output is unchanged.
+// authority: the human trainer is. Wording follows the scenario's frame (its
+// setting unless it sets its own); the workplace output is unchanged.
 
-import { SETTING_LABELS, type ScenarioSpec, type SelfReflection, type Setting, type Turn, type TurnAnnotation } from "../types";
+import { scenarioFrame, scenarioLabels, type Frame, type ScenarioSpec, type SelfReflection, type Turn, type TurnAnnotation } from "../types";
 import { computeTallies, computeTrajectory, formatTranscript, type JsonObjectSchema } from "./observer";
 
-/** Setting-specific lines. Everything else is shared, with SETTING_LABELS nouns. */
+/** Frame-specific lines. Everything else is shared, with FRAME_LABELS nouns. */
 const COACH_COPY: Record<
-  Setting,
+  Frame,
   { audience: string; counterpartTitle: string; storageNote: string; responsesExtra: string; tryNextExtra: string; voiceExtra: string }
 > = {
   workplace: {
@@ -29,11 +29,21 @@ const COACH_COPY: Record<
     voiceExtra: `
 - Coach the conversation, not the medicine. Don't give medical advice or judge clinical content (diagnoses, doses, guidelines). If the learner shared medical information, comment only on how they shared it, for example whether they asked permission first or asked what the patient made of it.`,
   },
+  sports: {
+    audience: "coaches rehearse Motivational Interviewing conversations with athletes",
+    counterpartTitle: "Athlete",
+    storageNote: ` In the transcript, turns marked (learner) are the learner's and turns marked (employee) are the athlete's; "employee" is only a storage id. Never call the athlete an employee or the learner a manager.`,
+    responsesExtra: ` Write them as things a coach could say to a player after practice or on the bench, in plain words a student athlete would use. Keep them about the player's experience and choices, not a skills fix.`,
+    tryNextExtra: " Pick something that fits a short talk before or after practice.",
+    voiceExtra: `
+- Coach the conversation, not the sport. Don't judge tactics or team rules. If the learner offered a technique or a drill, comment only on how they offered it, for example whether they asked the athlete's view first.
+- The athlete may be a minor. The learner's job as their coach is to listen and, when something sounds bigger than sport, connect the player with the right people. Never suggest the learner dig for details about home or family.`,
+  },
 };
 
 export function coachSystemPrompt(spec: ScenarioSpec): string {
-  const who = SETTING_LABELS[spec.setting].counterpart;
-  const copy = COACH_COPY[spec.setting];
+  const who = scenarioLabels(spec).counterpart;
+  const copy = COACH_COPY[scenarioFrame(spec)];
   const nextStepRule = spec.harderId
     ? `"harder": the ${who} moved through most of the intended path and the learner's listening was steady. A harder variant exists.`
     : `"harder": not available for this scenario; do not choose it.`;
@@ -98,11 +108,11 @@ export function coachUserPrompt(input: {
   turns: Turn[];
   annotations: TurnAnnotation[];
   selfReflection: SelfReflection;
-  /** Defaults to workplace for older callers. */
-  setting?: Setting;
+  /** The scenario's frame (scenarioFrame(spec)). Defaults to workplace for older callers. */
+  frame?: Frame;
 }): string {
-  const { turns, annotations, selfReflection, setting = "workplace" } = input;
-  const Who = COACH_COPY[setting].counterpartTitle;
+  const { turns, annotations, selfReflection, frame = "workplace" } = input;
+  const Who = COACH_COPY[frame].counterpartTitle;
   const tallies = computeTallies(annotations);
   const trajectory = computeTrajectory(annotations, turns);
   const codes = annotations
@@ -122,7 +132,7 @@ In their words: ${reflectionText}
 </learner_self_reflection>
 
 <transcript>
-${formatTranscript(turns, setting)}
+${formatTranscript(turns, frame)}
 </transcript>
 
 <observer_codes>

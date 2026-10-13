@@ -1,4 +1,4 @@
-import { getDrill, getScenario, type Setting } from '@antelope/core';
+import { getDrill, getScenario, scenarioFrame, type Frame } from '@antelope/core';
 import { useEffect, useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
@@ -11,6 +11,13 @@ import { firstNameOf, personSeed, useAccount, type Cohort, type Submission } fro
 import type { PracticeSession } from '@/state/store';
 
 export type ReviewGate = 'sign-in' | 'join';
+
+/** The note's example, in the words of the conversation the learner just had. */
+const NOTE_PLACEHOLDER: Record<Frame, string> = {
+  clinical: 'e.g. “I got stuck after she mentioned the cost.”',
+  workplace: 'e.g. “I got stuck after he mentioned the template.”',
+  sports: 'e.g. “I got stuck after he blamed his teammates.”',
+};
 
 /**
  * Opt-in trainer review for this one session. Says exactly what's shared and what
@@ -57,7 +64,8 @@ export function ReviewSheet({
   // the cohort's trainer, else a neutral phrase (a guest or an unjoined learner has no trainer to name)
   const trainerName = target?.trainerName ?? 'your trainer';
   const first = firstNameOf(target?.trainerName) ?? 'your trainer';
-  const setting: Setting = (session?.kind === 'drill' ? getDrill(session.refId)?.setting : session ? getScenario(session.refId)?.setting : undefined) ?? 'workplace';
+  const scenario = session && session.kind !== 'drill' ? getScenario(session.refId) : undefined;
+  const frame: Frame = (session?.kind === 'drill' ? getDrill(session.refId)?.setting : scenario ? scenarioFrame(scenario) : undefined) ?? 'workplace';
 
   const send = () => {
     if (!session || !target) return;
@@ -137,7 +145,7 @@ export function ReviewSheet({
         <TextInput
           value={note}
           onChangeText={setNote}
-          placeholder={setting === 'clinical' ? 'e.g. “I got stuck after she mentioned the cost.”' : 'e.g. “I got stuck after he mentioned the template.”'}
+          placeholder={NOTE_PLACEHOLDER[frame]}
           placeholderTextColor={color.faint}
           multiline
           maxLength={2000}

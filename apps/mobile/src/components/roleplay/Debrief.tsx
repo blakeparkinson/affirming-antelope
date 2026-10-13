@@ -26,7 +26,7 @@ import {
   color,
   radius,
   space,
-  personaAvatar,
+  scenarioAvatar,
 } from '@/design';
 import { Enter, useReduceMotion } from '@/motion';
 import { Cascade } from './Cascade';
@@ -237,7 +237,7 @@ export function Debrief({
           </Enter>
 
           <Section index={2} title="How the conversation moved" onLayout={track('chart')}>
-            <ReplayChart exchanges={exchanges} name={p.name} avatar={personaAvatar(p, scenario.setting)} play={plays('chart')} settled={settled} />
+            <ReplayChart exchanges={exchanges} name={p.name} avatar={scenarioAvatar(scenario)} play={plays('chart')} settled={settled} />
           </Section>
 
           <Section index={3} title="Your moves" onLayout={track('moves')}>

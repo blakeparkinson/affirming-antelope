@@ -288,6 +288,7 @@ export const SCENARIOS: ScenarioSpec[] = [
   {
     id: "SP-001",
     setting: "workplace",
+    frame: "sports",
     title: "Great in practice, gone in games",
     context: "Coaching an athlete",
     issue: "Performance anxiety in games",
@@ -342,6 +343,7 @@ export const SCENARIOS: ScenarioSpec[] = [
   {
     id: "SP-002",
     setting: "workplace",
+    frame: "sports",
     title: "Talented, but dragging the team down",
     context: "Coaching an athlete",
     issue: "Negative attitude affecting the team",

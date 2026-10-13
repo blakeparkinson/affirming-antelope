@@ -22,7 +22,7 @@ import {
   color,
   haptic,
   layout,
-  personaAvatar,
+  scenarioAvatar,
   radius,
   space,
   type as typeScale,
@@ -160,7 +160,7 @@ export default function Practice() {
               <Animated.View key={setting} entering={mounted.current ? tick.entering : undefined} style={styles.cast}>
                 {pool.slice(0, 3).map((s, i) => (
                   <View key={s.id} style={[styles.castItem, { marginLeft: i ? -14 : 0, zIndex: 3 - i }]}>
-                    <Avatar {...personaAvatar(s.persona, s.setting)} size={34} />
+                    <Avatar {...scenarioAvatar(s)} size={34} />
                   </View>
                 ))}
               </Animated.View>

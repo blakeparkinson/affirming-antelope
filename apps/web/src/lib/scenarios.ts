@@ -1,5 +1,6 @@
 import {
   getScenario,
+  scenarioFrame,
   SCENARIOS,
   SKILLS,
   type Difficulty,
@@ -7,6 +8,7 @@ import {
   type Setting,
   type SkillId,
 } from "@antelope/core";
+import { AUDIENCES } from "@/lib/audiences";
 import { getAllGuides, type Guide } from "@/lib/guides";
 
 /**
@@ -48,7 +50,7 @@ export const scenarioGroups: { setting: Setting; heading: string; blurb: string;
   {
     setting: "workplace",
     heading: "Conversations with your team",
-    blurb: "One-on-ones a manager or charge nurse has been putting off. You play the leader.",
+    blurb: "One-on-ones a manager, charge nurse, or coach has been putting off. You play the leader.",
     audiencePath: "/for/leaders",
   },
   {
@@ -99,6 +101,14 @@ export const SCENARIO_SEO: Record<string, { h1: string; title: string }> = {
     h1: "Practice talking to a nurse who is angry about a staffing change",
     title: "Role-play: a nurse angry about a staffing change",
   },
+  "SP-001": {
+    h1: "Practice talking to an athlete whose nerves take over in games",
+    title: "Role-play: an athlete whose nerves take over in games",
+  },
+  "SP-002": {
+    h1: "Practice talking to a talented athlete whose attitude is hurting the team",
+    title: "Role-play: a talented athlete hurting team morale",
+  },
   "CL-101": {
     h1: "Practice talking to a new patient who arrives with a list of concerns",
     title: "Role-play: a new patient with a list of concerns",
@@ -120,6 +130,16 @@ export const SCENARIO_SEO: Record<string, { h1: string; title: string }> = {
     title: "Role-play: a patient who smokes after a long wait",
   },
 };
+
+/**
+ * schema.org audienceType for a scenario page. The pathway's audience, unless the
+ * scenario has its own frame (a sports scenario is for coaches, though it sits in
+ * the leaders pathway).
+ */
+export function scenarioAudienceType(s: Pick<PublicScenario, "setting" | "frame">): string {
+  if (scenarioFrame(s) === "sports") return "Coaches in school and college sports";
+  return AUDIENCES[s.setting === "clinical" ? "clinicians" : "leaders"].audienceType;
+}
 
 export function seoFor(s: Pick<PublicScenario, "id" | "title" | "issue">) {
   return SCENARIO_SEO[s.id] ?? { h1: `Practice a conversation about ${s.issue.toLowerCase()}`, title: `Role-play: ${s.title}` };

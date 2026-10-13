@@ -1,4 +1,4 @@
-import type { ScenarioSpec, Turn } from '@antelope/core';
+import { scenarioFrame, type ScenarioSpec, type Turn } from '@antelope/core';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
@@ -22,7 +22,7 @@ import {
   layout,
   radius,
   space,
-  personaAvatar,
+  scenarioAvatar,
   type AvatarIdentity,
 } from '@/design';
 import { track } from '@/lib/analytics';
@@ -83,7 +83,7 @@ export function Conversation({
   const layout = useListLayout();
   const fades = useFades();
   const p = scenario.persona;
-  const avatar = personaAvatar(p, scenario.setting);
+  const avatar = scenarioAvatar(scenario);
   const first = callName(p.name);
   const { pending, error, request, cut, clearError } = useEmployeeReply(scenario.id);
   const talk = mode === 'talk';
@@ -250,7 +250,7 @@ export function Conversation({
           >
             <View style={sessionStyles.column}>
               <Text variant="caption" color={color.muted} align="center" style={styles.stamp}>
-                {conversationLabel(scenario.setting)} with {first}
+                {conversationLabel(scenarioFrame(scenario))} with {first}
               </Text>
               {rows.map((r, i) => (
                 <Message

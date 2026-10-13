@@ -10,8 +10,9 @@ import {
   type DrillFeedback,
   type LearnerMove,
   type NextStep,
+  scenarioFrame,
+  type Frame,
   type ScenarioSpec,
-  type Setting,
   type SelfReflection,
   type Turn,
   type TurnAnnotation,
@@ -134,17 +135,50 @@ const CLINICAL_REPLIES = {
   ],
 };
 
-export function mockEmployeeReply(turns: Turn[], setting: Setting = "workplace"): string {
+// Athlete-style replies for sports scenarios (a coach and a student athlete).
+const SPORTS_REPLIES = {
+  entrench: [
+    "Okay, but you're not the one out there. It's easy to say from the sideline.",
+    "Honestly? I feel like I'm getting lectured. I know what I'm supposed to do.",
+    "Right. So this is just going to be a list of what I'm doing wrong.",
+    "I get it, Coach. Can we just go to practice?",
+  ],
+  guarded: [
+    "I mean... it's fine. I'm handling it.",
+    "Yeah, I guess. There's just a lot going on right now.",
+    "I don't know what you want me to say, Coach.",
+    "It's not a big deal. Everybody has off games.",
+  ],
+  opening: [
+    "It's been harder than I let on, to be honest. I didn't really want to bring it up.",
+    "Yeah... part of me knows it's not working. I just don't know what else to do.",
+    "I think I've been so worried about messing up that I stopped enjoying it.",
+  ],
+  softened: [
+    "Honestly, I want it to feel good again. I just don't know where to start.",
+    "Maybe if I tried one small thing before the next game, I could see if it helps.",
+    "I think I could try something different. I'd want to see how it goes first, though.",
+  ],
+};
+
+const REPLIES: Record<Frame, typeof SPORTS_REPLIES> = {
+  workplace: { entrench: ENTRENCH, guarded: GUARDED, opening: OPENING, softened: SOFTENED },
+  clinical: CLINICAL_REPLIES,
+  sports: SPORTS_REPLIES,
+};
+
+/** `frame` is the scenario's frame (scenarioFrame(spec)). */
+export function mockEmployeeReply(turns: Turn[], frame: Frame = "workplace"): string {
   const { rapport, lastMove } = rapportAfter(turns);
   const n = turns.filter((t) => t.speaker === "learner").length;
   const pick = (arr: string[]) => arr[(n - 1 + arr.length) % arr.length];
-  const clinical = setting === "clinical";
+  const replies = REPLIES[frame];
   if (lastMove === "confront" || lastMove === "advice-without-permission" || rapport < -1) {
-    return pick(clinical ? CLINICAL_REPLIES.entrench : ENTRENCH);
+    return pick(replies.entrench);
   }
-  if (rapport < 2) return pick(clinical ? CLINICAL_REPLIES.guarded : GUARDED);
-  if (rapport < 4.5) return pick(clinical ? CLINICAL_REPLIES.opening : OPENING);
-  return pick(clinical ? CLINICAL_REPLIES.softened : SOFTENED);
+  if (rapport < 2) return pick(replies.guarded);
+  if (rapport < 4.5) return pick(replies.opening);
+  return pick(replies.softened);
 }
 
 /** Streams text in small chunks with small delays, like a real token stream. */
@@ -175,7 +209,7 @@ export async function mockDebrief(
 ): Promise<Debrief> {
   await sleep(1200);
   const name = spec.persona.name.split(" ")[0];
-  const clinical = spec.setting === "clinical";
+  const frame = scenarioFrame(spec);
 
   const raw: TurnAnnotation[] = [];
   let rapport = 0;
@@ -233,17 +267,23 @@ export async function mockDebrief(
     keyMoments.push({
       turnId: weakest.turnId,
       observation: `"${quote(weakest.turnId)}" moved toward ${weakest.move === "closed-question" ? "a yes/no answer" : "fixing or persuading"}, and ${name} pulled back a little.`,
-      possibleResponses: clinical
-        ? [
-            `It sounds like there's a lot going on in your life, and part of you isn't sure this is the right time to talk about it.`,
-            `What's been getting in the way, from where you sit?`,
-            `You want to feel well, and something about how this is working right now makes that hard.`,
-          ]
-        : [
-            `It sounds like there's a lot on your plate, and part of you isn't sure this is the right time to talk about it.`,
-            `What's been getting in the way, from where you sit?`,
-            `You want to do good work here, and something about how things are set up is making that hard.`,
-          ],
+      possibleResponses: {
+        clinical: [
+          `It sounds like there's a lot going on in your life, and part of you isn't sure this is the right time to talk about it.`,
+          `What's been getting in the way, from where you sit?`,
+          `You want to feel well, and something about how this is working right now makes that hard.`,
+        ],
+        workplace: [
+          `It sounds like there's a lot on your plate, and part of you isn't sure this is the right time to talk about it.`,
+          `What's been getting in the way, from where you sit?`,
+          `You want to do good work here, and something about how things are set up is making that hard.`,
+        ],
+        sports: [
+          `It sounds like a lot is riding on this for you, and part of you isn't sure this is the right time to talk about it.`,
+          `What's been getting in the way, from where you sit?`,
+          `You care about this team, and something about how this season is going is making that hard.`,
+        ],
+      }[frame],
       why: "A reflection or open question keeps the person doing the thinking, which is where their own reasons for change come from.",
     });
   }
@@ -252,7 +292,7 @@ export async function mockDebrief(
     keyMoments.push({
       turnId: best.turnId,
       observation: `"${quote(best.turnId)}" worked. Here is how you could build on it next time.`,
-      possibleResponses: clinical
+      possibleResponses: frame === "clinical"
         ? [
             `So it's been a real struggle, and you still care how this turns out. What would "better" look like for you?`,
             `You've been managing a lot of this on your own. What part of it matters most to you?`,
