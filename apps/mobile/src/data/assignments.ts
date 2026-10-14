@@ -32,7 +32,7 @@ export interface AssignmentView {
 
 const KIND = {
   drill: 'Short practice',
-  roleplay: 'AI role-play',
+  roleplay: 'Role-play',
   learn: 'Lesson',
 } as const;
 
@@ -104,7 +104,7 @@ function summary(items: AssignmentItem[]): string {
   for (const it of items) n[itemKind(it)] += it.quantity;
   const parts: string[] = [];
   if (n.drill) parts.push(`${n.drill} short practice${n.drill > 1 ? 's' : ''}`);
-  if (n.roleplay) parts.push(`${n.roleplay} AI role-play${n.roleplay > 1 ? 's' : ''}`);
+  if (n.roleplay) parts.push(`${n.roleplay} role-play${n.roleplay > 1 ? 's' : ''}`);
   if (n.learn) parts.push(`${n.learn} lesson${n.learn > 1 ? 's' : ''}`);
   return parts.join(' + ');
 }

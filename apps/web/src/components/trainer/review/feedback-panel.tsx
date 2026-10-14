@@ -121,7 +121,7 @@ export function FeedbackPanel({
     }
     if (kind === "roleplay") {
       const s = catalog.scenarios.find((x) => x.id === ref);
-      return s ? { label: "AI role-play", title: s.title, sub: `${s.persona} · ${DIFFICULTY[s.difficulty]} · ${skillName(s.skill)}` } : null;
+      return s ? { label: "Role-play", title: s.title, sub: `${s.persona} · ${DIFFICULTY[s.difficulty]} · ${skillName(s.skill)}` } : null;
     }
     const l = catalog.lessons.find((x) => x.id === ref);
     return l ? { label: "Lesson", title: l.title, sub: `Week ${l.week} · ${l.unitTitle}` } : null;
@@ -360,7 +360,7 @@ export function FeedbackPanel({
                       ))}
                     </optgroup>
                   ) : null}
-                  <optgroup label="AI role-plays">
+                  <optgroup label="Role-plays">
                     {catalog.scenarios.map((s) => (
                       <option key={s.id} value={`roleplay:${s.id}`}>
                         {s.id === scenarioId ? "This scenario again: " : ""}
