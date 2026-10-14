@@ -19,7 +19,7 @@ export function practiceTitle(kind: RefKind, ref: string | null | undefined): st
 }
 
 export function practiceKindLabel(kind: RefKind): string {
-  return kind === 'roleplay' ? 'AI role-play' : kind === 'learn' ? 'Lesson' : 'Short practice';
+  return kind === 'roleplay' ? 'Role-play' : kind === 'learn' ? 'Lesson' : 'Short practice';
 }
 
 /** "PM-017 role-play" — how a trainer's note refers to a session. */

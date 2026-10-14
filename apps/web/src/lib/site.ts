@@ -6,9 +6,9 @@
 export const SITE_URL = "https://affirmingantelope.com";
 export const APP_URL = "https://app.affirmingantelope.com";
 export const SITE_NAME = "Affirming Antelope";
-export const SITE_TAGLINE = "Motivational Interviewing practice for healthcare leaders";
+export const SITE_TAGLINE = "Motivational interviewing practice for leaders and clinicians";
 export const SITE_DESCRIPTION =
-  "Free Motivational Interviewing practice for healthcare leaders: five-minute drills and live AI role-plays with realistic employees for performance, change, and burnout conversations, plus opt-in trainer review. Clinicians have their own pathway. Works in your browser.";
+  "Free motivational interviewing practice for supervisors, athletic coaches, nurses and more: five-minute drills and role-plays with simulated employees and athletes for performance, motivation, and burnout conversations, plus opt-in trainer review. Clinicians have their own pathway. Works in your browser.";
 
 export type Audience = "clinicians" | "leaders" | "trainers";
 export type CtaTarget = "app" | "trainer" | "pilot";

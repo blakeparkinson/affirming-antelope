@@ -253,7 +253,7 @@ export function itemTitle(i: ItemDraft): string {
     }
     case "roleplay": {
       const s = i.refId ? getScenario(i.refId) : undefined;
-      return s ? `${s.title}` : "AI role-play";
+      return s ? `${s.title}` : "Role-play";
     }
     case "learn": {
       const l = i.refId ? getLesson(i.refId) : undefined;
@@ -288,7 +288,7 @@ export function itemActivityKind(kind: ItemKind): ActivityKind {
   return kind === "any-drill" ? "drill" : kind === "any-roleplay" ? "roleplay" : kind;
 }
 
-/** "2 short practices + 1 AI role-play + 1 lesson" */
+/** "2 short practices + 1 role-play + 1 lesson" */
 export function summarizeItems(items: ItemDraft[]): string {
   let drills = 0;
   let roleplays = 0;
@@ -301,7 +301,7 @@ export function summarizeItems(items: ItemDraft[]): string {
   }
   const parts: string[] = [];
   if (drills) parts.push(`${drills} short ${drills === 1 ? "practice" : "practices"}`);
-  if (roleplays) parts.push(`${roleplays} AI ${roleplays === 1 ? "role-play" : "role-plays"}`);
+  if (roleplays) parts.push(`${roleplays} ${roleplays === 1 ? "role-play" : "role-plays"}`);
   if (lessons) parts.push(`${lessons} ${lessons === 1 ? "lesson" : "lessons"}`);
   return parts.join(" + ");
 }

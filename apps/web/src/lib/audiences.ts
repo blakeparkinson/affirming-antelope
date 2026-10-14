@@ -167,7 +167,7 @@ export const AUDIENCES: Record<Audience, AudiencePage> = {
     name: "Clinicians",
     linkLabel: "MI for clinicians",
     metaTitle: "Motivational interviewing practice for clinicians",
-    metaDescription: `Free motivational interviewing practice for physicians, nurses, therapists, and health coaches. Five-minute drills and AI role-plays with realistic patients.`,
+    metaDescription: `Free motivational interviewing practice for physicians, nurses, therapists, and health coaches. Five-minute drills and role-plays with realistic simulated patients.`,
     keywords: [
       "motivational interviewing practice for clinicians",
       "motivational interviewing for nurses",

@@ -11,8 +11,8 @@ export const MI_FOR_LEADERS: Pathway = {
   id: "mi-for-leaders",
   title: "MI for Leaders",
   setting: "workplace",
-  tagline: "Performance, change, and burnout conversations with your team.",
-  audience: "Managers and team leads in healthcare",
+  tagline: "Performance, motivation, and burnout conversations with the people you lead.",
+  audience: "Supervisors, athletic coaches, nurses, and more",
   units: [
     {
       week: 1,

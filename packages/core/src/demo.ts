@@ -92,7 +92,7 @@ export const DEMO_LEARNER: DemoLearnerState & { trainerAssignment: DemoTrainerAs
   trainerAssignment: {
     id: "assign-week5-evoking",
     title: "Week 5 Evoking",
-    summary: "2 short practices + 1 AI role-play",
+    summary: "2 short practices + 1 role-play",
     unitId: "u05-evoking-1",
     assignedBy: { name: "Dr. Rosa Lin", role: "MI trainer" },
     dueDate: "2026-10-09",
