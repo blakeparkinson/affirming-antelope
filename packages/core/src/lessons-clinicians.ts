@@ -11,7 +11,7 @@ export const CLINICIAN_LESSONS: Lesson[] = [
   {
     id: "lesson-cl-u1-what-mi-is",
     unitId: "cl-u1-foundations",
-    title: "What MI is, and what it isn't",
+    title: "What MI is, and why it works",
     cards: [
       {
         heading: "A conversation about change",
@@ -27,9 +27,12 @@ export const CLINICIAN_LESSONS: Lesson[] = [
         body: "Clinicians are trained to fix things. When you see a risk, the urge to correct it is strong, and it comes from caring. In change conversations it often backfires: the patient ends up defending the side you're arguing against.",
       },
       {
-        heading: "Guiding, not directing or following",
-        body: "Directing tells patients what to do. Following just goes along. Guiding sits in between: you bring clinical expertise, and they bring expertise on their own life, values, and what's realistic.",
-        example: "You know the medicine. They know their mornings, their budget, and their family.",
+        heading: "Why it works",
+        body: "MI has been studied in hundreds of trials, for drinking, smoking, medication adherence, diet, and more. The pattern holds: when patients voice their own reasons for change, they're more likely to follow through than when the clinician supplies them.",
+      },
+      {
+        heading: "What it does for you as a clinician",
+        body: "MI gives you a way through the conversations that stall: \"I feel fine,\" \"I've tried everything,\" the third visit about the same A1C. Patients feel heard instead of lectured, there's less arguing, and the plan is theirs, so it's more likely to stick. It also takes some weight off you: you don't have to win the argument.",
       },
       {
         heading: "MI isn't a trick",
@@ -43,7 +46,7 @@ export const CLINICIAN_LESSONS: Lesson[] = [
   },
   {
     id: "lesson-cl-u1-oars",
-    unitId: "cl-u1-foundations",
+    unitId: "cl-u3-engaging",
     title: "OARS: four core skills",
     cards: [
       {
@@ -108,6 +111,36 @@ export const CLINICIAN_LESSONS: Lesson[] = [
         heading: "The choice is theirs",
         body: "Patients decide what goes into their bodies and their lives. Saying so out loud often lowers defensiveness, even when you have a strong recommendation.",
         example: "\"I do recommend it. And it's your decision.\"",
+      },
+    ],
+  },
+  {
+    id: "lesson-cl-u2-styles",
+    unitId: "cl-u2-spirit",
+    title: "Guiding, directing, and following",
+    cards: [
+      {
+        heading: "Three ways to help",
+        body: "Every clinician moves between three styles. Directing: you tell, they do. Following: you listen and go along. Guiding: you walk alongside, bring your expertise, and help them find their own way. All three have a place.",
+      },
+      {
+        heading: "Directing",
+        body: "Directing fits an emergency or a clear clinical instruction. Used for every conversation about behavior change, it tends to get a polite nod and no change.",
+        example: "\"Take this twice a day with food.\"",
+      },
+      {
+        heading: "Following",
+        body: "Following fits when a patient mostly needs to be heard, like after hard news. Used alone, it can leave the health problem untouched.",
+        example: "\"That's a lot to take in.\"",
+      },
+      {
+        heading: "Guiding is the MI style",
+        body: "Guiding sits in between. You bring medical knowledge and a direction in mind. They know their own life, values, and reasons. You hold both.",
+        example: "Like a good hiking guide: you know the terrain, and they decide where they want to go.",
+      },
+      {
+        heading: "Your role when you wear the MI hat",
+        body: "When you put on the MI hat, your job changes. You're not the one who fixes it or convinces them. You're curious, you listen more than you talk, you trust that they have reasons and ideas, and you stay steady when they push back. Your expertise still matters; you offer it with permission instead of leading with it.",
       },
     ],
   },
@@ -254,10 +287,6 @@ export const CLINICIAN_LESSONS: Lesson[] = [
         body: "When you hear change talk, reflect it, ask for more, or affirm it. Patients tend to say more of what gets attention.",
         example: "They say: \"I don't want to be like my dad.\" You reflect: \"Being there for your kids in a different way really matters to you.\"",
       },
-      {
-        heading: "Importance and confidence rulers",
-        body: "Ask \"On a scale of 0 to 10, how important is this to you?\" Then ask why they're not lower: \"Why a 4 and not a 1?\" Their answer is change talk. Asking \"Why only a 4?\" gets the opposite. Confidence works the same way: \"What would help move it from a 6 to a 7?\"",
-      },
     ],
   },
 
@@ -266,7 +295,7 @@ export const CLINICIAN_LESSONS: Lesson[] = [
   // -------------------------------------------------------------------------
   {
     id: "lesson-cl-u6-sustain-discord",
-    unitId: "cl-u6-sustain-discord",
+    unitId: "cl-u5-evoking",
     title: "Sustain talk, discord, and the righting reflex",
     cards: [
       {
@@ -295,6 +324,51 @@ export const CLINICIAN_LESSONS: Lesson[] = [
   // -------------------------------------------------------------------------
   // Unit 7: Giving information (shorter)
   // -------------------------------------------------------------------------
+  {
+    id: "lesson-cl-u6-eliciting",
+    unitId: "cl-u6-sustain-discord",
+    title: "Eliciting change talk",
+    cards: [
+      {
+        heading: "Don't wait for it, invite it",
+        body: "Last week you learned to hear change talk and respond to it. This week you draw it out on purpose, with questions whose honest answer is a reason to change.",
+      },
+      {
+        heading: "Evocative questions",
+        body: "Ask about desire, ability, reasons, and need directly.",
+        example: "\"What would be better for you if you cut back?\" \"If you decided to, how might you start?\" \"What worries you about your sugars?\"",
+      },
+      {
+        heading: "Importance and confidence rulers",
+        body: "Ask \"On a scale of 0 to 10, how important is this to you?\" Then ask why they're not lower: \"Why a 4 and not a 1?\" Their answer is change talk. Asking \"Why only a 4?\" gets the opposite. Confidence works the same way: \"What would help move it from a 6 to a 7?\"",
+      },
+      {
+        heading: "Look back, look forward",
+        body: "Ask about a time before the problem, or a future where things have changed.",
+        example: "\"What were things like before the smoking picked up?\" \"If you were feeling better a year from now, what would be different?\"",
+      },
+      {
+        heading: "Ask for more",
+        body: "Once change talk shows up, keep it going: ask for an example, affirm it, reflect it, or summarize it.",
+        example: "\"You said you want to keep up with your grandson. Tell me more about that.\"",
+      },
+    ],
+  },
+  {
+    id: "lesson-cl-u8-together",
+    unitId: "cl-u8-planning",
+    title: "Putting the four processes together",
+    cards: [
+      {
+        heading: "Not a straight line",
+        body: "Engaging, focusing, evoking, and planning build on each other, but real visits loop back. If planning stalls, check whether engagement or focus has slipped.",
+      },
+      {
+        heading: "Use everything",
+        body: "In a full visit you'll engage, find a focus, evoke, and plan, often in fifteen minutes. Use the full role-plays this week to practice moving between them.",
+      },
+    ],
+  },
   {
     id: "lesson-cl-u7-giving-information",
     unitId: "cl-u7-informing",
@@ -327,8 +401,8 @@ export const CLINICIAN_LESSONS: Lesson[] = [
   // -------------------------------------------------------------------------
   {
     id: "lesson-cl-u8-planning",
-    unitId: "cl-u8-planning",
-    title: "Planning and putting it together",
+    unitId: "cl-u7-informing",
+    title: "Planning when they're ready",
     cards: [
       {
         heading: "Listen for readiness",
@@ -338,10 +412,6 @@ export const CLINICIAN_LESSONS: Lesson[] = [
       {
         heading: "Their plan, in their words",
         body: "Ask a key question (\"So what do you think you'll do?\"), then help them make it specific: what, when, and what might get in the way. Keep their wording.",
-      },
-      {
-        heading: "Not a straight line",
-        body: "Engaging, focusing, evoking, and planning build on each other, but real visits loop back. If planning stalls, check whether engagement or focus has slipped.",
       },
       {
         heading: "Close with a summary",

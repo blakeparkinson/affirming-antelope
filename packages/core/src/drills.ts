@@ -787,6 +787,84 @@ export const DRILLS: Drill[] = [
     ],
   },
   // MI for Clinicians drills live in drills-clinicians.ts.
+  // -------------------------------------------------------------------------
+  // Overview and eliciting (8-week restructure)
+  // -------------------------------------------------------------------------
+  {
+    id: "drill-righting-reflex-01",
+    setting: "workplace",
+    skill: "engaging",
+    level: 1,
+    context: "A nurse manager, with a nurse who has been late to shift handoff three times this month",
+    speaker: "Nurse",
+    prompt: "I know, I know. Traffic has been brutal and daycare drop-off keeps running late.",
+    instruction: "Which response comes from the righting reflex, and which comes from curiosity? Pick the curious one.",
+    choices: [
+      {
+        text: "Have you tried leaving fifteen minutes earlier?",
+        isTarget: false,
+        explanation: "A helpful idea, but it jumps to fixing before you understand. That's the righting reflex.",
+      },
+      {
+        text: "Handoff is when patient safety is most at risk. You need to be on time.",
+        isTarget: false,
+        explanation: "True, and it may need saying, but leading with it invites defensiveness.",
+      },
+      {
+        text: "Mornings have been a real juggle lately. What's that been like for you?",
+        isTarget: true,
+        explanation: "You reflect what they said and get curious. Now they can tell you what's really going on.",
+      },
+    ],
+    exampleResponses: [
+      "Mornings have been a real juggle lately. What's that been like for you?",
+    ],
+  },
+  {
+    id: "drill-evoking-ruler-01",
+    setting: "workplace",
+    skill: "evoking",
+    level: 1,
+    context: "A supervisor, using the importance ruler with an analyst who keeps missing report deadlines",
+    speaker: "Analyst",
+    prompt: "Getting them in on time? I don't know. Maybe a 5.",
+    instruction: "They rated importance a 5 out of 10. Which follow-up is most likely to draw out change talk?",
+    choices: [
+      {
+        text: "Why a 5 and not a 2?",
+        isTarget: true,
+        explanation: "To answer, they have to say why it matters to them at all. Their answer is their own reasons for change.",
+      },
+      {
+        text: "Why only a 5? It should be a 10.",
+        isTarget: false,
+        explanation: "This invites them to defend the low number, which draws out sustain talk.",
+      },
+      {
+        text: "What would make it a 10?",
+        isTarget: false,
+        explanation: "Not bad, but it skips the reasons they already have. Start with why it isn't lower.",
+      },
+    ],
+    exampleResponses: [
+      "Why a 5 and not a 2?",
+    ],
+  },
+  {
+    id: "drill-evoking-ruler-02",
+    setting: "workplace",
+    skill: "evoking",
+    level: 2,
+    context: "A high school coach, with a point guard who says he wants to be a better teammate but doubts he can",
+    speaker: "Athlete",
+    prompt: "Confidence I can actually do it? Like a 3. I just get heated when people mess up.",
+    instruction: "Respond with a question that draws out his confidence, building on the 3.",
+    exampleResponses: [
+      "What makes it a 3 and not a 0?",
+      "A 3 means there's something there. What would it take to move it to a 4?",
+      "When have you kept your cool with a teammate, even once?",
+    ],
+  },
   ...CLINICIAN_DRILLS,
 ];
 

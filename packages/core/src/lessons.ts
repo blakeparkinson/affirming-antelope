@@ -13,7 +13,7 @@ export const LESSONS: Lesson[] = [
   {
     id: "lesson-u01-what-mi-is",
     unitId: "u01-foundations",
-    title: "What MI is, and what it isn't",
+    title: "What MI is, and why it works",
     cards: [
       {
         heading: "A conversation about change",
@@ -29,9 +29,13 @@ export const LESSONS: Lesson[] = [
         body: "Most leaders feel a strong pull to fix, correct, or advise. It comes from caring. In change conversations it usually backfires, because it puts them on the other side of the argument.",
       },
       {
-        heading: "Guiding, not directing or following",
-        body: "Directing tells people what to do. Following just goes along. Guiding sits in between: you bring direction and expertise, and they bring knowledge of their own life and work.",
-        example: "Like a good hiking guide, you know the terrain. They decide where they want to go.",
+        heading: "Why it works",
+        body: "MI has been studied in hundreds of trials across healthcare, and the pattern holds: when people voice their own reasons for change, they're more likely to follow through than when someone else supplies the reasons.",
+      },
+      {
+        heading: "What it does for you as a leader",
+        body: "MI gives you a way into the conversations you'd rather avoid: performance, burnout, change, motivation. People feel heard instead of managed, they get less defensive, and the plan that comes out is theirs, so it's more likely to stick.",
+        example: "Instead of repeating the same expectation every month, you help them find their own reason to meet it.",
       },
       {
         heading: "MI isn't a trick",
@@ -45,7 +49,7 @@ export const LESSONS: Lesson[] = [
   },
   {
     id: "lesson-u01-oars",
-    unitId: "u01-foundations",
+    unitId: "u03-engaging",
     title: "OARS: four core skills",
     cards: [
       {
@@ -70,6 +74,44 @@ export const LESSONS: Lesson[] = [
       {
         heading: "Reflect more than you ask",
         body: "A useful habit: aim for about two reflections for every question. Questions gather facts. Reflections show you understood, and they often get you more than another question would.",
+      },
+    ],
+  },
+
+  // -------------------------------------------------------------------------
+  // Unit 2: Guiding, directing, following, and your role
+  // -------------------------------------------------------------------------
+  {
+    id: "lesson-u02-styles",
+    unitId: "u02-spirit",
+    title: "Guiding, directing, and following",
+    cards: [
+      {
+        heading: "Three ways to help",
+        body: "Every leader moves between three styles. Directing: you tell, they do. Following: you listen and go along. Guiding: you walk alongside, bring what you know, and help them find their own way. All three have a place.",
+      },
+      {
+        heading: "Directing",
+        body: "Directing fits when there's one right answer or real urgency: a safety rule, a hard deadline. Used for every conversation about change, it tends to get compliance at best and pushback at worst.",
+        example: "\"The full wipe-down is required between every patient.\"",
+      },
+      {
+        heading: "Following",
+        body: "Following fits when someone mostly needs to be heard. Used alone, it can leave a problem untouched and the person without help.",
+        example: "\"That sounds like a really hard week.\"",
+      },
+      {
+        heading: "Guiding is the MI style",
+        body: "Guiding sits in between. You have expertise and a direction in mind. They know their own work, life, and reasons. You hold both.",
+        example: "Like a good hiking guide: you know the terrain, and they decide where they want to go.",
+      },
+      {
+        heading: "Your role when you wear the MI hat",
+        body: "When you put on the MI hat, your job changes. You're not the fixer or the judge. You're curious, you listen more than you talk, you trust that they have reasons and ideas, and you stay steady when they push back. You still hold expectations; you just stop carrying the whole argument.",
+      },
+      {
+        heading: "Notice which hat you're wearing",
+        body: "Before a hard conversation, ask yourself: do I need to direct here, or guide? If it's about change, start by guiding. You can still direct on what's non-negotiable.",
       },
     ],
   },
@@ -226,10 +268,6 @@ export const LESSONS: Lesson[] = [
         body: "When you hear change talk, reflect it, ask for more, or affirm it. People tend to say more of what gets attention.",
         example: "They say: \"I don't want to be that guy.\" You reflect: \"Being someone the team can count on matters to you.\"",
       },
-      {
-        heading: "Ask evocative questions",
-        body: "Some questions naturally invite change talk: \"What would be better if this changed?\" \"How important is this to you, from 0 to 10?\" \"Why that number and not a lower one?\"",
-      },
     ],
   },
 
@@ -238,7 +276,7 @@ export const LESSONS: Lesson[] = [
   // -------------------------------------------------------------------------
   {
     id: "lesson-u06-sustain-talk",
-    unitId: "u06-evoking-2",
+    unitId: "u05-evoking-1",
     title: "Responding to sustain talk",
     cards: [
       {
@@ -249,6 +287,41 @@ export const LESSONS: Lesson[] = [
       {
         heading: "Emphasize their choice",
         body: "Saying plainly that the decision is theirs often softens resistance more than any argument could.",
+      },
+    ],
+  },
+  {
+    id: "lesson-u06-eliciting",
+    unitId: "u06-evoking-2",
+    title: "Eliciting change talk",
+    cards: [
+      {
+        heading: "Don't wait for it, invite it",
+        body: "Last week you learned to hear change talk and respond to it. This week you draw it out on purpose, with questions whose honest answer is a reason to change.",
+      },
+      {
+        heading: "Evocative questions",
+        body: "Ask about desire, ability, reasons, and need directly.",
+        example: "\"What would be better if this changed?\" \"If you decided to, how might you do it?\" \"What worries you about how things are now?\"",
+      },
+      {
+        heading: "Importance and confidence rulers",
+        body: "Ask, \"On a scale of 0 to 10, how important is this to you?\" Then ask why they're not lower: \"Why a 5 and not a 2?\" Their answer is change talk. \"Why only a 5?\" gets the opposite. Confidence works the same way: \"What would it take to move from a 4 to a 5?\"",
+      },
+      {
+        heading: "Look back, look forward",
+        body: "Ask about a time things were better, or a future where they've changed.",
+        example: "\"What was month-end like when it was going well?\" \"If this were working a year from now, what would be different?\"",
+      },
+      {
+        heading: "Explore the extremes",
+        body: "Ask about the worst that could happen if nothing changes, or the best that could happen if it does.",
+        example: "\"What's the best thing that could come of sorting this out?\"",
+      },
+      {
+        heading: "When you hear it, ask for more",
+        body: "Once change talk shows up, keep it going: ask for an example, affirm it, reflect it, or summarize it. People tend to say more of what gets attention.",
+        example: "\"You said you miss being the one people count on. Tell me more about that.\"",
       },
     ],
   },
