@@ -40,8 +40,8 @@ export function ReminderOffer({ ready = true }: { ready?: boolean }) {
   const [timeIndex, setTimeIndex] = useState(TIME_INDEX);
   const opened = useRef(false);
   const busy = useRef(false);
-  // a streak milestone crossed by this practice has the screen first; the sheet rises after it
-  const moment = useMoments((s) => !!(s.queued || s.showing));
+  // a streak milestone or level-up from this practice has the screen first; the sheet rises after it
+  const moment = useMoments((s) => !!(s.pending.length || s.showing));
 
   useEffect(() => {
     if (!offer || !ready || moment || opened.current) return;

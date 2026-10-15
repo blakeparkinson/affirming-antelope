@@ -1,7 +1,7 @@
-import { MAX_FREEZES, SKILLS } from '@antelope/core';
+import { MAX_FREEZES, SKILLS, type SkillId } from '@antelope/core';
 import { TrackSwitchSheet } from '@/components/track/TrackSwitchSheet';
 import { trackName } from '@/data/pathways';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { SectionHeader } from '@/components/common/SectionHeader';
@@ -51,6 +51,16 @@ export default function Me() {
   const [switchOpen, setSwitchOpen] = useState(false);
   // the active track's skills first, in the order its course reaches them
   const taught = pathwaySkills(pathway);
+  // a skill that levelled up since Me was last in view glows once (the moment queue marks it)
+  const [glowing, setGlowing] = useState<readonly SkillId[]>([]);
+  useFocusEffect(
+    useCallback(() => {
+      const { levelled, clearLevelled } = useMoments.getState();
+      if (!levelled.length) return;
+      setGlowing(levelled);
+      clearLevelled();
+    }, []),
+  );
   const ladder = SKILLS.filter((sk) => taught.includes(sk.id)).sort((a, b) => taught.indexOf(a.id) - taught.indexOf(b.id));
   const [refreshing, setRefreshing] = useState(false);
   const onRefresh = useCallback(async () => {
@@ -160,7 +170,7 @@ export default function Me() {
         </Text>
         <Raised contentStyle={styles.list}>
           {ladder.map((sk, i) => (
-            <SkillLadder key={sk.id} skill={sk} progress={s.skills[sk.id]} last={i === ladder.length - 1} />
+            <SkillLadder key={sk.id} skill={sk} progress={s.skills[sk.id]} last={i === ladder.length - 1} glow={glowing.includes(sk.id)} />
           ))}
         </Raised>
       </Enter>
@@ -252,11 +262,12 @@ export default function Me() {
                 <LinkRow
                   title="Play a streak milestone"
                   onPress={() => {
-                    useMoments.getState().queue({ milestone: 7, from: 6 });
+                    useMoments.getState().queue({ kind: 'milestone', milestone: 7, from: 6 });
                     useMoments.getState().release();
                   }}
                 />
               ) : null}
+              {__DEV__ ? <LinkRow title="Play a level-up" onPress={() => router.push('/dev/levelup')} /> : null}
               {__DEV__ ? <LinkRow title="Preview weekly recap" onPress={previewRecap} /> : null}
               {__DEV__ ? (
                 <LinkRow

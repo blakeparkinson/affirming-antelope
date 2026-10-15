@@ -61,7 +61,8 @@
     "build:web": "expo export --platform web --output-dir dist-web && node scripts/finish-web.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "expo lint",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "test": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON --import ../../packages/core/test/resolve-ts.mjs --test 'test/*.test.ts'"
   },
   "private": true
 }
