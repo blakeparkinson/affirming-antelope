@@ -27,6 +27,7 @@ import { assignmentView, demoAssignmentView } from '@/data/assignments';
 import { getPathway } from '@/data/pathways';
 import { dailyRepShown, startDailyRep, useDailyRep } from '@/data/dailyRep';
 import { keepSharpFor, skillFadedShown, startRefresh } from '@/data/keepSharp';
+import { maybeShowRecap } from '@/data/recap';
 import { firstNameOf, unseenReviews, useAccount } from '@/state/account';
 import { syncNow } from '@/sync/engine';
 import { Mascot, type MascotHandle } from '@/components/mascot';
@@ -103,8 +104,11 @@ export default function Home() {
       }
       // a milestone moment that didn't get its turn after the practice (closed early) plays here
       const t = setTimeout(() => useMoments.getState().release(), SEEN_DELAY + 300);
+      // the first look of a new week: last week's recap, once (on any device)
+      const recap = setTimeout(() => maybeShowRecap(day), SEEN_DELAY);
       return () => {
         clearTimeout(t);
+        clearTimeout(recap);
         setFreezeNote(null);
         setFreezePips(null);
       };

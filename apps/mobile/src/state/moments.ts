@@ -7,6 +7,14 @@ export interface MilestoneMoment {
   from: number;
 }
 
+/** The weekly recap on screen (RecapHost). */
+export interface RecapMoment {
+  /** Monday of the week recapped. */
+  weekStart: string;
+  /** Me › Demo's preview: no analytics, and the seen mark isn't touched. */
+  preview?: boolean;
+}
+
 interface Moments {
   /** Crossed by a practice; held until the completion screen's ticks have landed. */
   queued: MilestoneMoment | null;
@@ -16,6 +24,11 @@ interface Moments {
   /** Play the queued moment, if any (the ticks landed, or Home came back into view). */
   release: () => void;
   dismiss: () => void;
+  /** The weekly recap, while it's open. A milestone waits until it closes. */
+  recap: RecapMoment | null;
+  showRecap: (r: RecapMoment) => void;
+  /** `release`: play a waiting milestone now (a dismissal back to Home; not when a drill just opened). */
+  closeRecap: (release: boolean) => void;
 }
 
 /**
@@ -29,7 +42,13 @@ export const useMoments = create<Moments>()((set, get) => ({
   queue: (m) => set({ queued: m }),
   release: () => {
     const { queued, showing } = get();
-    if (queued && !showing) set({ queued: null, showing: queued });
+    if (queued && !showing && !get().recap) set({ queued: null, showing: queued });
   },
   dismiss: () => set({ showing: null }),
+  recap: null,
+  showRecap: (r) => set({ recap: r }),
+  closeRecap: (release) => {
+    set({ recap: null });
+    if (release) get().release();
+  },
 }));

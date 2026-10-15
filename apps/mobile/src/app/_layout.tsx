@@ -7,6 +7,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { BrandSplash } from '@/components/brand/BrandSplash';
 import { MilestoneHost } from '@/components/celebrate/StreakMilestone';
+import { RecapHost } from '@/components/recap/WeeklyRecap';
 import { useBrandFonts } from '@/design/fonts';
 import { screenView, startAnalytics } from '@/lib/analytics';
 import { onReminderOpened, startReminders, useReminderTaps } from '@/lib/reminders';
@@ -101,6 +102,7 @@ export default function RootLayout() {
         </Stack>
       </Animated.View>
       <MilestoneHost />
+      <RecapHost />
       {!splashGone && <BrandSplash reduce={reduce} onDone={onSplashDone} />}
     </GestureHandlerRootView>
   );

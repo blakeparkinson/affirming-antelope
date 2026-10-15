@@ -51,7 +51,7 @@ export type PracticeSource =
 /** Where reminders were turned on or declined: the completion-screen offer, or Me › Reminders. */
 export type ReminderSource = "offer" | "me";
 /** Where the daily rep was started: Home's card, or a tapped reminder. */
-export type DailyRepEntry = "home" | "reminder";
+export type DailyRepEntry = "home" | "reminder" | "recap";
 export type SignInReason = "welcome" | "cohort" | "review" | "me" | "quota";
 export type AppEntry = "direct" | "website_cta" | "guide" | "deep_link";
 export type NextStepFrom = "drill" | "debrief" | "lesson";
@@ -131,6 +131,10 @@ export interface AnalyticsEvents {
   reminder_declined: { source: ReminderSource; reason: "not_now" | "permission_denied" };
   reminder_opened: { kind: ReminderKind };
   reminder_settings_changed: { on: boolean; hour: number; minute: number };
+  /** Home showed last week's recap (once a week, on the first device to open). `empty`: no practice that week, the fresh-start version. */
+  weekly_recap_shown: { week_start: string; empty: boolean; days_practiced: number; reps: number; has_roleplay: boolean; has_line: boolean };
+  /** The recap's "Start this week" (opens the daily rep), or a dismissal. */
+  weekly_recap_cta: { week_start: string; action: "start" | "dismiss"; empty: boolean };
   /** Home showed the daily rep card. `done`: today's rep was already practiced (the card offers one more). */
   daily_rep_shown: { drill_id: string; skill: SkillId; done: boolean; pathway_id: PathwayId };
   /** The learner started the daily rep. `one_more`: a further drill after today's rep was done. */

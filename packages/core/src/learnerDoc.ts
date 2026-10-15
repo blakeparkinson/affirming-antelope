@@ -1,5 +1,6 @@
 import { addDays, isDayKey, mergeFreezes, mergeStreaks, mergeWeeks, noFreezeHistory, weekStartOf, type StreakFreezes } from "./habit";
 import { asMilestones, mergeMilestones, type MilestoneSeen } from "./milestones";
+import { mergeRecapSeen } from "./recap";
 import { laterPracticedAt } from "./sharpness";
 import { DEMO_LEARNER, freshLearnerState, type DemoLearnerState, type DemoSkillProgress } from "./demo";
 import { DEFAULT_PATHWAY_ID, getPathway } from "./pathway";
@@ -55,6 +56,11 @@ export interface SyncedDoc {
   weekDays: boolean[];
   weeklyGoal: { target: number; done: number; hitCount: number };
   scenariosCompleted: number;
+  /**
+   * Monday (YYYY-MM-DD) of the week the weekly recap was last shown in, on any device, so a
+   * second device doesn't show it again. null until the first one (see `recap.ts`).
+   */
+  recapSeenWeek: string | null;
 }
 
 export const SYNCED_KEYS = [
@@ -71,6 +77,7 @@ export const SYNCED_KEYS = [
   "weekDays",
   "weeklyGoal",
   "scenariosCompleted",
+  "recapSeenWeek",
 ] as const satisfies readonly (keyof SyncedDoc)[];
 
 export const LEGACY_CHOSEN_AT = "2000-01-01T00:00:00.000Z";
@@ -110,6 +117,7 @@ export function freshSyncedDoc(pathwayId: PathwayId = DEFAULT_PATHWAY_ID, chosen
     weekDays: Array.from({ length: 7 }, () => false),
     weeklyGoal: { target: d.weeklyGoal.target, done: d.weeklyGoal.done, hitCount: 0 },
     scenariosCompleted: 0,
+    recapSeenWeek: null,
   };
 }
 
@@ -180,6 +188,8 @@ export function upgradeDoc(raw: unknown): Partial<SyncedDoc> {
   // Likewise milestones: an older app's document has none, so the fallback's stand.
   const milestones = asMilestones(r.milestones);
   if (milestones) out.milestones = milestones;
+  // And the recap mark: an older app's document has none, so the fallback's stands.
+  if (isDayKey(r.recapSeenWeek)) out.recapSeenWeek = r.recapSeenWeek;
   if (r.progress && typeof r.progress === "object") {
     const progress: SyncedDoc["progress"] = {};
     for (const [id, v] of Object.entries(r.progress as Record<string, unknown>)) {
@@ -320,6 +330,7 @@ export function mergeSynced(local: SyncedDoc, remoteRaw: unknown): SyncedDoc {
     milestones: mergeMilestones(local.milestones ?? [], remote.milestones ?? []),
     ...week,
     scenariosCompleted: Math.max(local.scenariosCompleted, remote.scenariosCompleted),
+    recapSeenWeek: mergeRecapSeen(local.recapSeenWeek, remote.recapSeenWeek),
   };
 }
 

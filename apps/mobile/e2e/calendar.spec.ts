@@ -80,3 +80,33 @@ test('back on a later day, Home spends the freeze and says so', async ({ page })
   await expect(page.getByLabel('3-day streak')).toBeVisible();
   await expect(page.getByLabel(/^Weekly goal: 0 of 3/)).toBeVisible();
 });
+
+test('the first look of a new week shows last week in review, once', async ({ page }) => {
+  await page.clock.fastForward('03:00');
+  const recap = page.getByRole('dialog').or(page.locator('[aria-modal="true"]'));
+  await expect(page.getByText('Your week in review')).toBeVisible();
+  await expect(page.getByLabel('3 days practiced')).toBeVisible();
+  await expect(page.getByLabel('3 reps')).toBeVisible();
+  await page.getByRole('button', { name: 'Not now' }).tap();
+  await expect(page.getByText('Your week in review')).toHaveCount(0);
+  // back later the same week: not again
+  await page.clock.setSystemTime(new Date(2026, 9, 20, 8, 0));
+  await backgroundAndReturn(page);
+  await expect(page.getByText(/a streak freeze covered yesterday/i)).toBeVisible();
+  await expect(page.getByText('Your week in review')).toHaveCount(0);
+  await expect(recap).toHaveCount(0);
+});
+
+test('after a week off, the recap is a fresh start with no stats', async ({ page }) => {
+  // last practice the week before last; nothing last week
+  await seed(page, {
+    streak: { days: 1, lastPracticeDay: '2026-10-08' },
+    weekStart: '2026-10-05',
+    weekDays: [false, false, false, true, false, false, false],
+    weeklyGoal: { target: 3, done: 1, hitCount: 1 },
+  });
+  await page.clock.fastForward('03:00');
+  await expect(page.getByText('A fresh start')).toBeVisible();
+  await expect(page.getByText(/days? practiced/)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /start this week/i })).toBeVisible();
+});

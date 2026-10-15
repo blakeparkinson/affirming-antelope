@@ -49,6 +49,8 @@ export function demoSeed(today: string): Seeded {
     weekDays,
     weeklyGoal: { ...d.weeklyGoal, hitCount: 3 },
     scenariosCompleted: 4,
+    // seen this week: Me › Demo › "Preview weekly recap" plays it
+    recapSeenWeek: weekStartOf(today),
     assignment: structuredClone(d.trainerAssignment),
     demo: true,
   };
