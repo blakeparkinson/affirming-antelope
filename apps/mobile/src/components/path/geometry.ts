@@ -129,6 +129,8 @@ export function layoutTrail(width: number, count: number, top: number): TrailLay
 export interface Band {
   y: number;
   d: string;
+  /** The crest line alone (no fill), for the light rim along the top of the ridge. */
+  crest: string;
   fill: string;
   /** Scenery standing on (or floating above) this ridge, in band space (crest line at y = 0). */
   props: Prop[];
@@ -143,7 +145,7 @@ export interface Band {
  */
 export type Motif = 'savanna' | 'wetland';
 
-export type PropKind = 'acacia' | 'reeds' | 'pool' | 'birds' | 'tuft';
+export type PropKind = 'acacia' | 'reeds' | 'pool' | 'birds' | 'tuft' | 'bush' | 'rock' | 'mound' | 'herd';
 export interface Prop {
   kind: PropKind;
   x: number;
@@ -227,6 +229,7 @@ export function layoutBands(width: number, finishY: number, palette: BandPalette
       const xm = (x0 + x1) / 2;
       d += ` Q${xm.toFixed(1)} ${hill(xm).toFixed(1)} ${x1.toFixed(1)} ${hill(x1).toFixed(1)}`;
     }
+    const crest = d;
     d += ` L${width} ${BAND_DEPTH} L0 ${BAND_DEPTH} Z`;
 
     // fills: horizon first, meadow last, cool/earth alternating back from the meadow
@@ -246,27 +249,47 @@ export function layoutBands(width: number, finishY: number, palette: BandPalette
     const props: Prop[] = [];
     if (destination) props.push(...destinationProps(motif, on));
     else if (i > 0) props.push(...ridgeProps(motif, i, width, on));
-    bands.push({ y, d, fill, props, destination });
+    // a small herd grazing on the horizon, far off to the left of the first week
+    else props.push(on(0.11, 'herd', 0.9, -1));
+    bands.push({ y, d, crest, fill, props, destination });
   }
   return bands;
 }
 
 type Place = (fx: number, kind: PropKind, s: number, dy?: number, flip?: boolean) => Prop;
 
-/** Scenery along the way: at the edges, clear of the trail, one or two things per ridge at most. */
+/**
+ * Scenery along the way: kept to the edges, clear of the trail and the week captions.
+ * Each ridge gets one thing on each side at most, chosen by its index so neighbours
+ * differ, plus a faint tuft or two of ground texture just below the crest.
+ */
 function ridgeProps(motif: Motif, i: number, width: number, on: Place): Prop[] {
   const out: Prop[] = [];
+  const left = i % 2 === 1;
   if (motif === 'savanna') {
-    if (i % 3 === 1) out.push(on(0.07, 'acacia', 0.75, -2));
+    // left edge: acacia, termite mound, bush in turn
+    if (i % 3 === 1) out.push(on(0.07, 'acacia', 0.75, -2), on(0.15, 'bush', 0.55, 2));
+    else if (i % 3 === 2) out.push(on(0.08, 'mound', 0.8, 3));
+    else out.push(on(0.06, 'bush', 0.8, 2));
+    // right edge: acacia, rocks, a bush
     if (i % 4 === 2) out.push(on(0.94, 'acacia', 0.65, -2));
+    else if (i % 4 === 3) out.push(on(0.92, 'rock', 0.85, 4));
+    else if (i % 4 === 0) out.push(on(0.95, 'bush', 0.65, 2, true));
   } else {
     if (i % 3 === 1) out.push(on(0.06, 'reeds', 0.8, 1));
+    else if (i % 3 === 2) out.push(on(0.08, 'rock', 0.75, 4));
     if (i % 4 === 2) {
       out.push(on(0.9, 'pool', 0.85, 34));
       out.push(on(0.97, 'reeds', 0.6, 1, true));
     }
     if (i % 4 === 0) out.push(on(0.95, 'reeds', 0.55, 1, true));
+    if (i % 4 === 3) out.push(on(0.93, 'rock', 0.6, 4, true));
   }
+  out.push(on(left ? 0.04 : 0.97, 'tuft', 0.8, 26), on(left ? 0.9 : 0.12, 'tuft', 0.65, 58));
+  // low in the ridge at the left edge, under the captions' column, so the middle of a band isn't bare
+  if (motif === 'savanna') out.push(i % 2 === 0 ? on(0.06, 'rock', 0.6, 168) : on(0.05, 'bush', 0.6, 176));
+  else out.push(i % 2 === 0 ? on(0.08, 'pool', 0.5, 170) : on(0.05, 'reeds', 0.6, 176));
+  out.push(on(0.15, 'tuft', 0.6, 196));
   if (i % 5 === 3) out.push({ kind: 'birds', x: 0.62 * width, y: -70, s: 1 });
   return out;
 }
