@@ -74,6 +74,11 @@ track). Set on sign-in / when they change (`pathway_id` also when a track is pic
 | `practice_completed` | `kind`, `ref_id`, `skill?`, `minutes`, `activity_id?`, `in_course`, `pathway_id` |
 | `streak_extended` | `streak_days` |
 | `weekly_goal_hit` | `target` |
+| `reminder_prompt_shown` | `ask` (1 after the first practice, 2 after the third) |
+| `reminder_opt_in` | `source` (`offer`, `me`), `hour`, `minute` |
+| `reminder_declined` | `source` (`offer`, `me`), `reason` (`not_now`, `permission_denied`) |
+| `reminder_opened` | `kind` (`daily`, `streak`, `last_call`, `lapse`) |
+| `reminder_settings_changed` | `on`, `hour`, `minute` |
 | `cohort_joined` | `cohort_id` |
 | `pathway_chosen` | `pathway_id` (`mi-for-leaders`, `mi-for-clinicians`), `source` (`onboarding`, `me`, `cohort`) |
 | `submission_created` | `kind`, `ref_id` |

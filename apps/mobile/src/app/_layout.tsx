@@ -8,6 +8,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { BrandSplash } from '@/components/brand/BrandSplash';
 import { useBrandFonts } from '@/design/fonts';
 import { screenView, startAnalytics } from '@/lib/analytics';
+import { onReminderOpened, startReminders } from '@/lib/reminders';
 import { color } from '@/design/tokens';
 import { spring } from '@/motion/springs';
 import { useReduceMotion } from '@/motion/useMotionPrefs';
@@ -21,6 +22,9 @@ startAnalytics(); // first: reads the website's ph_did/ph_sid from the URL befor
 SplashScreen.preventAutoHideAsync().catch(() => {});
 // accounts + sync: guest mode and offline keep working whether or not this ever reaches a server
 startSync();
+// practice reminders: re-planned on every practice, setting change, sign-out and foreground
+startReminders();
+onReminderOpened();
 
 const SESSION = {
   presentation: 'transparentModal',

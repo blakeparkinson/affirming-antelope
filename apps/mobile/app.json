@@ -44,7 +44,8 @@
           "microphonePermission": "Hold the mic to talk in a role-play. Your words are turned into text for the conversation; the audio isn't kept."
         }
       ],
-      "expo-localization"
+      "expo-localization",
+      "expo-notifications"
     ],
     "experiments": {
       "typedRoutes": true,

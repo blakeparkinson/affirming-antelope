@@ -9,6 +9,7 @@ import {
   type DrillFeedback,
   type PathwayId,
   type PathwayProgress,
+  type ReminderPrefs,
   SYNCED_KEYS as CORE_SYNCED_KEYS,
   type SelfReflection,
   type SkillId,
@@ -91,6 +92,10 @@ export interface Settings {
   roleplayMode?: 'talk' | 'type';
   /** Role-play Talk mode: captions only, no spoken replies. */
   voiceMuted?: boolean;
+  /** Practice reminders (device-local notifications). Unset until the learner turns them on. */
+  reminders?: ReminderPrefs;
+  /** How many reminder offers the learner has answered (see `shouldOfferReminders`). */
+  reminderAsks?: number;
 }
 
 /** One pathway's place in its course (shared with the server merge in @antelope/core). */
