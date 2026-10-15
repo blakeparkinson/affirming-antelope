@@ -18,6 +18,7 @@ export {
   ChatCircleDotsIcon,
   CloudRainIcon,
   CloudSunIcon,
+  SnowflakeIcon,
   HandHeartIcon,
   LightbulbIcon,
   ListBulletsIcon,

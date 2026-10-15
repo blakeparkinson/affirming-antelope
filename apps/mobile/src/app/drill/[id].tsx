@@ -50,7 +50,8 @@ function DrillSession() {
   const recordSession = useLearner((s) => s.recordSession);
   const recorded = useRef(false);
   const [day] = useState(() => {
-    return streakAfterPractice(useLearner.getState().streak, today()).days;
+    const s = useLearner.getState();
+    return streakAfterPractice(s.streak, today(), s.freezes).streak.days;
   });
   const mins = Number(minutes) || 5;
   const drill = getDrill(drillId);

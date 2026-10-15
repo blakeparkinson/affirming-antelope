@@ -1,4 +1,4 @@
-import { addDays, dayKey, daysBetween, type DayKey, type Streak } from "./habit";
+import { addDays, dayKey, daysBetween, liveStreakDays, type DayKey, type Streak, type StreakFreezes } from "./habit";
 
 /**
  * Practice reminders, planned on the device (no server). The app cancels everything
@@ -9,9 +9,10 @@ import { addDays, dayKey, daysBetween, type DayKey, type Streak } from "./habit"
  *
  * Per day, counted from the last practice (L):
  *   L itself        nothing (they practiced)
- *   L+1, L+2        the daily reminder at the learner's time. On L+1 with a streak of
- *                   2 or more it's the streak nudge instead, plus a last call at 20:30
- *                   when their time is 18:30 or earlier.
+ *   L+1, L+2        the daily reminder at the learner's time. On the day the streak
+ *                   would end (L+1, or later when streak freezes cover the days before),
+ *                   with a streak of 2 or more, it's the streak nudge instead, plus a
+ *                   last call at 20:30 when their time is 18:30 or earlier.
  *   L+3             one "we miss you"
  *   after that      nothing until they practice again (pinging someone who left gets
  *                   notifications turned off)
@@ -108,11 +109,14 @@ function validTime(p: ReminderPrefs): boolean {
 export function planReminders({
   prefs,
   streak,
+  freezes,
   now = new Date(),
   horizonDays = 7,
 }: {
   prefs: ReminderPrefs | undefined;
   streak: Streak;
+  /** The freeze ledger: a day a freeze would cover isn't the day the streak ends. */
+  freezes: StreakFreezes;
   now?: Date;
   horizonDays?: number;
 }): PlannedReminder[] {
@@ -122,6 +126,7 @@ export function planReminders({
   if (!raw) return [];
   // a practice "in the future" (the clock moved back): treat it as today
   const last = raw > today ? today : raw;
+  const run = { ...streak, lastPracticeDay: last };
 
   const out: PlannedReminder[] = [];
   const add = (kind: ReminderKind, day: DayKey, when: Date, line: Line) => {
@@ -135,12 +140,12 @@ export function planReminders({
     if (gap <= 0) continue;
     if (gap > LAPSE_GAP) break;
     const own = at(day, prefs.hour, prefs.minute);
-    if (gap === LAPSE_GAP) {
+    // the streak ends tonight: still alive today, gone tomorrow (no freeze left to cover today)
+    const atRisk = streak.days >= 2 && liveStreakDays(run, day, freezes) > 0 && liveStreakDays(run, addDays(day, 1), freezes) === 0;
+    if (gap === LAPSE_GAP && !atRisk) {
       add("lapse", day, own, pick(LAPSE, day, "lapse"));
       continue;
     }
-    // the streak is still alive only the day after the last practice
-    const atRisk = gap === 1 && streak.days >= 2;
     if (!atRisk) {
       if (gap <= DAILY_GAP_MAX) add("daily", day, own, pick(DAILY, day, "daily"));
       continue;

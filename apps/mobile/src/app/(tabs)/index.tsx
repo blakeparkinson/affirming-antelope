@@ -1,5 +1,5 @@
-import { getSkill } from '@antelope/core';
-import { router, useIsFocused } from 'expo-router';
+import { addDays, getSkill } from '@antelope/core';
+import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { RefreshControl, StyleSheet, View } from 'react-native';
 import Animated, {
@@ -31,7 +31,7 @@ import { Mascot } from '@/components/mascot';
 import { ChatsCircleIcon, Hoofprint, LightningIcon, Screen, ShuffleIcon, SparkleIcon, Text, border, color, layout, space } from '@/design';
 import { openDrill, openRoleplay, pickDrill, pickScenario } from '@/data/routes';
 import { Enter, FADE_MS, RollingNumber, useListLayout, useReduceMotion } from '@/motion';
-import { useActivePathway, useCurrentUnit, useCurrentWeek, useProgressRows, useStreakDays, useThisWeek, weekLabel } from '@/state/selectors';
+import { useActivePathway, useCurrentUnit, useCurrentWeek, useFrozenThisWeek, useProgressRows, useStreakDays, useThisWeek, weekLabel } from '@/state/selectors';
 import { today, useLearner } from '@/state/store';
 
 function greeting(d = new Date()) {
@@ -44,6 +44,20 @@ function greeting(d = new Date()) {
 
 function dateLine(d = new Date()) {
   return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+}
+
+/** "A streak freeze covered yesterday, so your 12-day streak is safe. You have 1 left." */
+function freezeNoteText({ days, streakDays, held }: { days: string[]; streakDays: number; held: number }, day = today()) {
+  const name = (d: string) => {
+    if (d === addDays(day, -1)) return 'yesterday';
+    const [y, m, dd] = d.split('-').map(Number);
+    return new Date(y, m - 1, dd, 12).toLocaleDateString(undefined, { weekday: 'long' });
+  };
+  const names = days.map(name);
+  const which = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
+  const covered = days.length === 1 ? `A streak freeze covered ${which}` : `Streak freezes covered ${which}`;
+  const left = held === 0 ? 'Hit your weekly goal to earn another.' : `You have ${held} left.`;
+  return `${covered}, so your ${streakDays}-day streak is safe. ${left}`;
 }
 
 export default function Home() {
@@ -69,6 +83,17 @@ export default function Home() {
   }, []);
   const streak = useStreakDays();
   const { weeklyGoal: goal, weekDays } = useThisWeek();
+  const frozenDays = useFrozenThisWeek();
+  const settleStreak = useLearner((s) => s.settleStreak);
+  // Freezes spend themselves when Home opens. A new one gets a note for this visit only.
+  const [freezeNote, setFreezeNote] = useState<string | null>(null);
+  useFocusEffect(
+    useCallback(() => {
+      const used = settleStreak();
+      if (used) setFreezeNote(freezeNoteText(used));
+      return () => setFreezeNote(null);
+    }, [settleStreak]),
+  );
   const assignment = useLearner((s) => s.assignment);
   const skills = useLearner((s) => s.skills);
   const currentWeek = useCurrentWeek();
@@ -92,7 +117,7 @@ export default function Home() {
   // it's back in view, so each change animates once, where it can be seen.
   // signed in: real assignments, with progress topped up by practice on this phone that hasn't synced yet
   const seen = useSeen(
-    { streak, goal, weekDays, assignment, skills, rows: liveRows, currentWeek, pathwayId: pathway.id, assignments, cohorts, practiceLog, unseen, signedIn },
+    { streak, goal, weekDays, frozenDays, assignment, skills, rows: liveRows, currentWeek, pathwayId: pathway.id, assignments, cohorts, practiceLog, unseen, signedIn },
     focused,
   );
   const views = seen.signedIn
@@ -192,7 +217,7 @@ export default function Home() {
 
       <Animated.View layout={listLayout}>
         <Enter index={2} style={styles.block}>
-          <ThisWeek streak={seen.streak} goal={seen.goal} weekDays={seen.weekDays} />
+          <ThisWeek streak={seen.streak} goal={seen.goal} weekDays={seen.weekDays} frozenDays={seen.frozenDays} freezeNote={freezeNote} />
         </Enter>
       </Animated.View>
 

@@ -1,4 +1,4 @@
-import { SKILLS } from '@antelope/core';
+import { MAX_FREEZES, SKILLS } from '@antelope/core';
 import { TrackSwitchSheet } from '@/components/track/TrackSwitchSheet';
 import { trackName } from '@/data/pathways';
 import { router } from 'expo-router';
@@ -23,6 +23,7 @@ import {
   PressableSurface,
   Raised,
   Screen,
+  SnowflakeIcon,
   StethoscopeIcon,
   UsersThreeIcon,
   UserIcon,
@@ -33,7 +34,7 @@ import {
   space,
 } from '@/design';
 import { Enter, RollingNumber, usePressScale } from '@/motion';
-import { pathwaySkills, useActivePathway, useCurrentWeek, weekLabel as weekOf } from '@/state/selectors';
+import { pathwaySkills, useActivePathway, useFreezesHeld, useCurrentWeek, weekLabel as weekOf } from '@/state/selectors';
 import { liveStreak, useLearner } from '@/state/store';
 
 export default function Me() {
@@ -43,6 +44,7 @@ export default function Me() {
   const pending = useAccount((a) => a.submissions.filter((x) => x.status === 'submitted').length);
   const pathway = useActivePathway();
   const currentWeek = useCurrentWeek();
+  const freezes = useFreezesHeld();
   const weekLabel = `${pathway.title} · ${weekOf(pathway, currentWeek)}`;
   const [switchOpen, setSwitchOpen] = useState(false);
   // the active track's skills first, in the order its course reaches them
@@ -98,6 +100,28 @@ export default function Me() {
         <Stat label="day streak" value={liveStreak(s)} icon={<Hoofprint size={22} tint={color.gold} rotate={-12} />} />
         <Stat label="scenarios done" value={s.scenariosCompleted} icon={<ChatsCircleIcon size={22} weight="fill" color={color.primary} />} />
         <Stat label="weekly goals hit" value={s.weeklyGoal.hitCount} icon={<FlagPennantIcon size={22} weight="fill" color={color.gold} />} />
+      </Enter>
+
+      <Enter index={1}>
+        <Raised style={styles.freezes}>
+          <View style={styles.freezesFace} accessible accessibilityLabel={`Streak freezes: ${freezes} of ${MAX_FREEZES}. ${FREEZE_HINT}`}>
+            <View style={styles.freezeSlots}>
+              {Array.from({ length: MAX_FREEZES }, (_, i) => (
+                <View key={i} style={[styles.freezeSlot, i < freezes && styles.freezeSlotHeld]}>
+                  <SnowflakeIcon size={20} weight="bold" color={i < freezes ? color.primary : color.faint} />
+                </View>
+              ))}
+            </View>
+            <View style={styles.flex}>
+              <Text variant="bodyStrong">
+                {freezes} of {MAX_FREEZES} streak freezes
+              </Text>
+              <Text variant="caption" color={color.muted}>
+                {FREEZE_HINT}
+              </Text>
+            </View>
+          </View>
+        </Raised>
       </Enter>
 
       <Enter index={2}>
@@ -258,6 +282,8 @@ function OfflineToggle() {
   );
 }
 
+const FREEZE_HINT = 'A freeze covers a missed day so your streak survives. Hit your weekly goal to earn one.';
+
 function Stat({ label, value, icon }: { label: string; value: number; icon: ReactNode }) {
   return (
     <Raised style={styles.stat} contentStyle={styles.statFace}>
@@ -310,6 +336,20 @@ const styles = StyleSheet.create({
   trackIcon: { width: 44, height: 44, borderRadius: radius.badge, backgroundColor: color.soft, alignItems: 'center', justifyContent: 'center' },
   course: { marginTop: space[2] },
   stats: { flexDirection: 'row', gap: space[3], marginTop: space[6] },
+  freezes: { marginTop: space[3] },
+  freezesFace: { flexDirection: 'row', alignItems: 'center', gap: space[3], padding: space[4] },
+  freezeSlots: { flexDirection: 'row', gap: space[2] },
+  freezeSlot: {
+    width: 36,
+    height: 36,
+    borderRadius: radius.badge,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: color.white,
+    borderWidth: 2,
+    borderColor: color.line,
+  },
+  freezeSlotHeld: { backgroundColor: color.soft, borderColor: color.primaryTint },
   stat: { flex: 1 },
   statFace: { padding: space[3], paddingVertical: space[4], gap: 2, alignItems: 'flex-start' },
   explain: { marginTop: -space[1], marginBottom: space[3] },

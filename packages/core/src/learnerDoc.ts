@@ -1,4 +1,4 @@
-import { isDayKey, mergeStreaks, mergeWeeks, weekStartOf } from "./habit";
+import { addDays, isDayKey, mergeFreezes, mergeStreaks, mergeWeeks, noFreezeHistory, weekStartOf, type StreakFreezes } from "./habit";
 import { DEMO_LEARNER, freshLearnerState, type DemoLearnerState, type DemoSkillProgress } from "./demo";
 import { DEFAULT_PATHWAY_ID, getPathway } from "./pathway";
 import type { PathwayId, SkillId } from "./types";
@@ -43,6 +43,8 @@ export interface SyncedDoc {
   skills: Record<SkillId, DemoSkillProgress>;
   /** Read it with `liveStreakDays`: `days` is the run ending on `lastPracticeDay`, which may be over. */
   streak: { days: number; lastPracticeDay: string | null };
+  /** Streak freezes earned and used. The count held comes from `freezesHeld`. */
+  freezes: StreakFreezes;
   /** Monday (YYYY-MM-DD) of the week `weekDays` and `weeklyGoal.done` count. Read them with `weekAsOf`. */
   weekStart: string | null;
   /** Monday-start: which days of `weekStart`'s week had practice. */
@@ -59,6 +61,7 @@ export const SYNCED_KEYS = [
   "progress",
   "skills",
   "streak",
+  "freezes",
   "weekStart",
   "weekDays",
   "weeklyGoal",
@@ -96,6 +99,7 @@ export function freshSyncedDoc(pathwayId: PathwayId = DEFAULT_PATHWAY_ID, chosen
     progress: { [pathwayId]: progressFrom({ ...d, currentWeek: Math.max(1, d.currentWeek) }) },
     skills: d.skills,
     streak: { days: d.streakDays, lastPracticeDay: null },
+    freezes: noFreezeHistory(),
     weekStart: null,
     weekDays: Array.from({ length: 7 }, () => false),
     weeklyGoal: { target: d.weeklyGoal.target, done: d.weeklyGoal.done, hitCount: 0 },
@@ -135,6 +139,15 @@ const asProgress = (v: unknown): PathwayProgress | undefined => {
   };
 };
 
+const dayKeys = (v: unknown): string[] => (Array.isArray(v) ? v.filter(isDayKey) : []);
+
+/** A stored ledger, keeping only well-formed days. */
+function asFreezes(v: unknown): StreakFreezes | undefined {
+  if (!v || typeof v !== "object") return undefined;
+  const f = v as Record<string, unknown>;
+  return { earnedDays: dayKeys(f.earnedDays), usedDays: dayKeys(f.usedDays) };
+}
+
 /**
  * Any stored document (v2 or v3, local or from the server) → the v3 synced fields it
  * carries. Missing fields stay missing (the caller fills them from a fallback). An
@@ -155,6 +168,9 @@ export function upgradeDoc(raw: unknown): Partial<SyncedDoc> {
     const last = (r.streak as { lastPracticeDay?: unknown } | undefined)?.lastPracticeDay;
     out.weekStart = isDayKey(last) ? weekStartOf(last) : null;
   }
+  // Documents from before freezes have no ledger; the fallback's fills in (an empty one holds the starting freeze).
+  const freezes = asFreezes(r.freezes);
+  if (freezes) out.freezes = freezes;
   if (r.progress && typeof r.progress === "object") {
     const progress: SyncedDoc["progress"] = {};
     for (const [id, v] of Object.entries(r.progress as Record<string, unknown>)) {
@@ -260,9 +276,25 @@ export function normalizeSynced<T extends SyncedDoc>(remote: unknown, fallback: 
   return s;
 }
 
+/**
+ * A device that hadn't seen the other's practice yet can freeze a day that was practised
+ * (the tablet opens before the phone's practice syncs). That freeze was never needed: drop it.
+ */
+function withoutPracticedDays(f: StreakFreezes, practiced: (string | null)[]): StreakFreezes {
+  const days = new Set(practiced.filter(isDayKey));
+  return f.usedDays.some((d) => days.has(d)) ? { ...f, usedDays: f.usedDays.filter((d) => !days.has(d)) } : f;
+}
+
 /** Merge `remoteRaw` (the account's copy, any shape) into `local`. The account wins identity ties. */
 export function mergeSynced(local: SyncedDoc, remoteRaw: unknown): SyncedDoc {
   const remote = normalizeSynced(remoteRaw, local);
+  // the account's goal target wins
+  const week = mergeWeeks(remote, local);
+  const freezes = withoutPracticedDays(mergeFreezes(local.freezes ?? noFreezeHistory(), remote.freezes ?? noFreezeHistory()), [
+    local.streak.lastPracticeDay,
+    remote.streak.lastPracticeDay,
+    ...(week.weekStart ? week.weekDays.map((on, i) => (on ? addDays(week.weekStart!, i) : null)) : []),
+  ]);
   return {
     // identity: the account's copy wins (it's what the learner set up)
     firstName: remote.firstName || local.firstName,
@@ -270,9 +302,9 @@ export function mergeSynced(local: SyncedDoc, remoteRaw: unknown): SyncedDoc {
     ...laterChoice(local, remote),
     progress: mergeAllProgress(local.progress, remote.progress),
     skills: mergeSkills(local.skills, remote.skills),
-    streak: mergeStreaks(local.streak, remote.streak),
-    // the account's goal target wins
-    ...mergeWeeks(remote, local),
+    streak: mergeStreaks(local.streak, remote.streak, freezes.usedDays),
+    freezes,
+    ...week,
     scenariosCompleted: Math.max(local.scenariosCompleted, remote.scenariosCompleted),
   };
 }

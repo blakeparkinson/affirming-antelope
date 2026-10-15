@@ -74,6 +74,8 @@ track). Set on sign-in / when they change (`pathway_id` also when a track is pic
 | `practice_completed` | `kind`, `ref_id`, `skill?`, `minutes`, `activity_id?`, `in_course`, `pathway_id` |
 | `streak_extended` | `streak_days` |
 | `weekly_goal_hit` | `target` |
+| `streak_freeze_used` | `freezes_used` (missed days covered by this use), `freezes_held` (after), `streak_days` (the streak it protected), `saved` (false when a later missed day broke the streak anyway). Sent by the device that records the use, when Home opens or on the next practice |
+| `streak_freeze_earned` | `freezes_held` (after), `at_cap` (already holding 2, so the hit earned nothing). Sent with `weekly_goal_hit`, at most once a week |
 | `reminder_prompt_shown` | `ask` (1 after the first practice, 2 after the third) |
 | `reminder_opt_in` | `source` (`offer`, `me`), `hour`, `minute` |
 | `reminder_declined` | `source` (`offer`, `me`), `reason` (`not_now`, `permission_denied`) |
