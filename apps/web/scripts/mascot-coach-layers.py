@@ -326,6 +326,14 @@ def build_pose(name, cfg):
     # eyes: sclera fill on the head, iris + lash as their own images, clip polygons
     eyes_meta = []
     head = layers["head"]
+    # the upper lid is fur, sampled on the forehead above the eyes (as the sprite rig's blink
+    # frames are; a cream one closed as a pale disk), the lower lid is the cream cheek pushing up
+    ex = [(e["box"][0] + e["box"][2]) / 2 for e in cfg["eyes"]]
+    ey = [(e["box"][1] + e["box"][3]) / 2 for e in cfg["eyes"]]
+    mx, my = int(sum(ex) / len(ex)), int(sum(ey) / len(ey))
+    fur = np.median(np.array([A[my - 90, mx + dx] for dx in (-30, 0, 30)]), 0).astype(np.uint8)
+    lid = [int(v) for v in deepen(fur.reshape(1, 1, 4))[0, 0][:3]]
+    cheek = [int(v) for v in deepen(np.array([[[254, 237, 208, 255]]], np.uint8))[0, 0][:3]]
     for e in cfg["eyes"]:
         x0, y0, x1, y1 = e["box"]
         box = np.zeros((H, W), bool)
@@ -357,7 +365,7 @@ def build_pose(name, cfg):
         eyes_meta.append({
             "id": e["id"], "center": center, "clip": poly,
             "bbox": [int(xs.min()), int(ys.min()), int(xs.max()) + 1, int(ys.max()) + 1],
-            "iris": bbox_of(iris), "lid": [int(v) for v in deepen(np.array([[[254, 237, 208, 255]]], np.uint8))[0, 0][:3]],
+            "iris": bbox_of(iris), "lid": lid, "lidLo": cheek,
         })
 
     # export
