@@ -12,10 +12,10 @@ import { dailyDrillOrder, drillsForSetting, findActivityIn, getPathway, pathwayF
  *   /roleplay/[scenarioId]      scenarioId = ScenarioSpec id. ?activityId &minutes &source
  *   /lesson/[id]                id = Lesson id.       ?activityId
  *
- * `source` is where the learner came from: 'today' | 'path' | 'assignment' | 'practice' | 'challenge' | 'review'.
+ * `source` is where the learner came from: 'today' | 'path' | 'assignment' | 'practice' | 'challenge' | 'review' | 'next_step' | 'refresh'.
  * `activityId` is set only for course activities; pass it to recordPractice so the path advances.
  */
-export type PracticeSource = 'today' | 'path' | 'assignment' | 'practice' | 'challenge' | 'review' | 'next_step';
+export type PracticeSource = 'today' | 'path' | 'assignment' | 'practice' | 'challenge' | 'review' | 'next_step' | 'refresh';
 
 /**
  * `replace: true` swaps the current practice screen instead of stacking a new

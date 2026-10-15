@@ -4,11 +4,14 @@ import { getPathway } from "./pathway";
 import { SKILLS } from "./skills";
 import type { Drill, PathwayId, SkillId, SkillLevelNumber } from "./types";
 import type { DemoSkillProgress } from "./demo";
+import { skillSharpness } from "./sharpness";
 
 /**
  * The daily rep: one short drill, picked for the learner, that keeps the streak in one
- * tap. It comes from the weakest unlocked skill (lowest level, then lowest percent; ties
- * go to the earlier skill in the curriculum), at the skill's level when there's a drill
+ * tap. It comes from the least sharp unlocked skill (`sharpness.ts`), so a skill from an
+ * earlier week comes back once it fades. A skill never practised counts as least sharp of
+ * all (it hasn't been started), and skills equally sharp go to the weakest (lowest level,
+ * then lowest percent, then the earlier skill in the curriculum), at the skill's level when there's a drill
  * for it, and skips drills done in the last few days. Among equal candidates the day
  * picks, so the same inputs give the same drill all day.
  *
@@ -24,7 +27,7 @@ export const DAILY_REP_MINUTES = 2;
 
 export interface DailyRepInput {
   /** The learner's skills. Locked or missing skills are never picked. */
-  skills: Partial<Record<SkillId, Pick<DemoSkillProgress, "level" | "percent" | "status">>>;
+  skills: Partial<Record<SkillId, Pick<DemoSkillProgress, "level" | "percent" | "status" | "lastPracticedAt">>>;
   /** Drill ids done today, newest first. */
   completedToday: string[];
   /** Drill ids done in the last few days before today, newest first. */
@@ -32,6 +35,8 @@ export interface DailyRepInput {
   /** The active track: only its setting's drills are picked. */
   pathway: PathwayId;
   day: DayKey;
+  /** When sharpness is read. Default: noon UTC on `day`, so the same day always gives the same pick. */
+  now?: number;
 }
 
 export interface DailyRep {
@@ -65,7 +70,12 @@ function tiers(drills: Drill[], level: number): Drill[][] {
   return levels.map((l) => drills.filter((d) => d.level === l));
 }
 
-export function pickDailyRep({ skills, completedToday, recentDrillIds, pathway, day }: DailyRepInput): DailyRep | null {
+/** Sharpness to two places, so skills a few minutes apart count as equally sharp. Never practised: 0. */
+function sharpRank(p: DailyRepInput["skills"][SkillId], now: number): number {
+  return Math.round((skillSharpness(p, now) ?? 0) * 100);
+}
+
+export function pickDailyRep({ skills, completedToday, recentDrillIds, pathway, day, now }: DailyRepInput): DailyRep | null {
   const pool = poolFor(pathway);
   if (!pool.length) return null;
   // newest first: today's, then the recent days'
@@ -78,7 +88,8 @@ export function pickDailyRep({ skills, completedToday, recentDrillIds, pathway, 
   const choose = (list: Drill[], salt: string) => list[hash(`${day}:${salt}`) % list.length];
 
   const order = SKILLS.map((s) => s.id);
-  const weakestFirst = order
+  const at = now ?? Date.parse(`${day}T12:00:00Z`);
+  const neediestFirst = order
     .filter((id) => {
       const p = skills[id];
       return p && p.status !== "locked" && pool.some((d) => d.skill === id);
@@ -86,16 +97,18 @@ export function pickDailyRep({ skills, completedToday, recentDrillIds, pathway, 
     .sort((a, b) => {
       const pa = skills[a]!;
       const pb = skills[b]!;
-      return pa.level - pb.level || pa.percent - pb.percent || order.indexOf(a) - order.indexOf(b);
+      return (
+        sharpRank(pa, at) - sharpRank(pb, at) || pa.level - pb.level || pa.percent - pb.percent || order.indexOf(a) - order.indexOf(b)
+      );
     });
 
   // nothing started yet: the track's first drill that isn't recent
-  if (!weakestFirst.length) {
+  if (!neediestFirst.length) {
     const first = pool.find(fresh);
     return rep(first ?? leastRecent(pool, recency));
   }
 
-  for (const id of weakestFirst) {
+  for (const id of neediestFirst) {
     const level = skills[id]!.level;
     for (const tier of tiers(pool.filter((d) => d.skill === id), level)) {
       const open = tier.filter(fresh);
@@ -103,9 +116,9 @@ export function pickDailyRep({ skills, completedToday, recentDrillIds, pathway, 
     }
   }
 
-  // every drill for every unlocked skill is recent: the weakest skill's, done longest ago
-  const weakest = weakestFirst[0];
-  return rep(leastRecent(tiers(pool.filter((d) => d.skill === weakest), skills[weakest]!.level).flat(), recency));
+  // every drill for every unlocked skill is recent: the least sharp skill's, done longest ago
+  const neediest = neediestFirst[0];
+  return rep(leastRecent(tiers(pool.filter((d) => d.skill === neediest), skills[neediest]!.level).flat(), recency));
 }
 
 /** The drill done longest ago (first in the list on a tie, so the order still decides). */

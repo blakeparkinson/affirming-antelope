@@ -1,4 +1,4 @@
-import { addDays, DEMO_LEARNER, freshSyncedDoc, weekdayOf, weekStartOf, LEGACY_CHOSEN_AT, progressFrom, type PathwayId, type PathwayProgress } from '@antelope/core';
+import { addDays, DEMO_LEARNER, freshSyncedDoc, weekdayOf, weekStartOf, LEGACY_CHOSEN_AT, progressFrom, type DemoSkillProgress, type PathwayId, type PathwayProgress, type SkillId } from '@antelope/core';
 import type { LearnerState } from './store';
 
 /**
@@ -40,7 +40,7 @@ export function demoSeed(today: string): Seeded {
     activePathwayId: 'mi-for-leaders',
     pathwayChosenAt: LEGACY_CHOSEN_AT,
     progress: { 'mi-for-leaders': progressFrom(d) },
-    skills: structuredClone(d.skills),
+    skills: demoPracticeTimes(structuredClone(d.skills), today),
     streak: { days: d.streakDays, lastPracticeDay: addDays(today, -1) },
     // hit last week's goal: holding both freezes
     freezes: { earnedDays: [addDays(weekStartOf(today), -3)], usedDays: [] },
@@ -52,4 +52,22 @@ export function demoSeed(today: string): Seeded {
     assignment: structuredClone(d.trainerAssignment),
     demo: true,
   };
+}
+
+/** Days since Amanda last practised each skill: Leadership and OARS have faded, so Home shows Keep it sharp. */
+const DEMO_DAYS_SINCE: Partial<Record<SkillId, number>> = {
+  oars: 13,
+  engaging: 2,
+  focusing: 4,
+  evoking: 3,
+  'change-talk': 1,
+  'sustain-talk': 2,
+  leadership: 10,
+};
+
+function demoPracticeTimes(skills: Record<SkillId, DemoSkillProgress>, today: string): Record<SkillId, DemoSkillProgress> {
+  for (const [id, days] of Object.entries(DEMO_DAYS_SINCE) as [SkillId, number][]) {
+    if (skills[id] && skills[id].status !== 'locked') skills[id].lastPracticedAt = new Date(`${addDays(today, -days)}T12:00:00`).toISOString();
+  }
+  return skills;
 }

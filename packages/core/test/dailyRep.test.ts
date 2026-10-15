@@ -97,3 +97,41 @@ describe("pickDailyRep", () => {
     assert.ok(idsFor("oars", "clinical").includes(rep.drillId));
   });
 });
+
+describe("pickDailyRep: spaced review", () => {
+  const NOW = Date.parse(`${DAY}T12:00:00Z`);
+  const ago = (days: number) => new Date(NOW - days * 86_400_000).toISOString();
+  const at = (level: 1 | 2 | 3 | 4 | 5 | 6, percent: number, daysAgo: number) => ({ ...on(level, percent), lastPracticedAt: ago(daysAgo) });
+
+  it("picks the least sharp skill, even when it's the stronger one", () => {
+    // oars (week 1, level 2) faded a month ago; engaging (this week, level 1) was practised yesterday
+    const skills: Skills = { oars: at(2, 50, 30), engaging: at(1, 10, 1) };
+    assert.equal(pickDailyRep(input({ skills }))!.skill, "oars");
+  });
+
+  it("a skill never practised comes before a faded one (it hasn't been started)", () => {
+    const skills: Skills = { oars: at(1, 50, 30), engaging: on(1, 0) };
+    assert.equal(pickDailyRep(input({ skills }))!.skill, "engaging");
+  });
+
+  it("two skills equally faded: the weaker one, then curriculum order", () => {
+    const weaker: Skills = { oars: at(1, 80, 20), engaging: at(1, 20, 20) };
+    assert.equal(pickDailyRep(input({ skills: weaker }))!.skill, "engaging");
+    const same: Skills = { engaging: at(1, 40, 20), oars: at(1, 40, 20) };
+    assert.equal(pickDailyRep(input({ skills: same }))!.skill, "oars");
+    // a few minutes apart still counts as equal
+    const close: Skills = { oars: at(1, 80, 20), engaging: { ...on(1, 20), lastPracticedAt: new Date(NOW - 20 * 86_400_000 + 300_000).toISOString() } };
+    assert.equal(pickDailyRep(input({ skills: close }))!.skill, "engaging");
+  });
+
+  it("gives the same pick all day: sharpness is read at the day, not the clock", () => {
+    const skills: Skills = { oars: at(1, 50, 9), engaging: at(1, 10, 8) };
+    const a = pickDailyRep(input({ skills }))!;
+    assert.deepEqual(pickDailyRep(input({ skills, now: NOW })), a);
+  });
+
+  it("still never picks a locked skill, however long ago it was practised", () => {
+    const skills: Skills = { oars: at(1, 50, 2), evoking: { ...locked, lastPracticedAt: ago(90) } };
+    assert.equal(pickDailyRep(input({ skills }))!.skill, "oars");
+  });
+});

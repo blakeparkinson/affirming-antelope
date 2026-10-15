@@ -44,7 +44,9 @@ export type PracticeSource =
   | "challenge"
   | "guide"
   | "review_recommendation"
-  | "next_step";
+  | "next_step"
+  /** Home's "Keep it sharp" card: a faded skill's refresh. */
+  | "refresh";
 
 /** Where reminders were turned on or declined: the completion-screen offer, or Me › Reminders. */
 export type ReminderSource = "offer" | "me";
@@ -133,6 +135,13 @@ export interface AnalyticsEvents {
   daily_rep_shown: { drill_id: string; skill: SkillId; done: boolean; pathway_id: PathwayId };
   /** The learner started the daily rep. `one_more`: a further drill after today's rep was done. */
   daily_rep_started: { drill_id: string; skill: SkillId; entry: DailyRepEntry; one_more: boolean; pathway_id: PathwayId };
+  /**
+   * Home showed the "Keep it sharp" card for a faded skill (`sharpness.ts`). `sharpness` is 0..1 to
+   * two places, `days` whole days since the skill was last practised, `faded` how many skills are faded.
+   */
+  skill_faded_shown: { skill: SkillId; level: SkillLevelNumber; sharpness: number; days: number; faded: number };
+  /** The learner practised a skill that was faded, which restores it. `sharpness` is the value before. */
+  skill_refreshed: { skill: SkillId; level: SkillLevelNumber; sharpness: number; days: number; kind: PracticeKind };
   cohort_joined: { cohort_id: string };
   /** The learner picked (or switched) their track. */
   pathway_chosen: { pathway_id: PathwayId; source: "onboarding" | "me" | "cohort" };

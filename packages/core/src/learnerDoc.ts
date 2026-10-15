@@ -1,5 +1,6 @@
 import { addDays, isDayKey, mergeFreezes, mergeStreaks, mergeWeeks, noFreezeHistory, weekStartOf, type StreakFreezes } from "./habit";
 import { asMilestones, mergeMilestones, type MilestoneSeen } from "./milestones";
+import { laterPracticedAt } from "./sharpness";
 import { DEMO_LEARNER, freshLearnerState, type DemoLearnerState, type DemoSkillProgress } from "./demo";
 import { DEFAULT_PATHWAY_ID, getPathway } from "./pathway";
 import type { PathwayId, SkillId } from "./types";
@@ -245,6 +246,7 @@ export function fillSkills(
 // becomes v3 (progress per pathway), and an untouched v2 demo seed becomes fresh.
 // ---------------------------------------------------------------------------
 
+/** The higher level wins (levels only climb); the later practice time wins on its own, from either side. */
 function mergeSkills(a: SyncedDoc["skills"], b: Partial<SyncedDoc["skills"]> | undefined): SyncedDoc["skills"] {
   if (!b) return a;
   const out = { ...a };
@@ -252,7 +254,10 @@ function mergeSkills(a: SyncedDoc["skills"], b: Partial<SyncedDoc["skills"]> | u
     const theirs = b[k];
     if (!theirs) continue;
     const mine = out[k];
-    out[k] = !mine || skillRank(theirs) > skillRank(mine) ? theirs : mine;
+    const win = !mine || skillRank(theirs) > skillRank(mine) ? theirs : mine;
+    const at = laterPracticedAt(mine?.lastPracticedAt, theirs.lastPracticedAt);
+    const { lastPracticedAt: _drop, ...rest } = win;
+    out[k] = at ? { ...rest, lastPracticedAt: at } : rest;
   }
   return out;
 }
