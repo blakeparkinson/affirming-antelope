@@ -6,7 +6,8 @@ export const WAVE = {
   width: 674,
   height: 978,
   base: require('../../../assets/mascot/rig/wave-base.png'),
-  arm: { src: require('../../../assets/mascot/rig/wave-arm.png'), frame: { x: 45, y: 417, w: 201, h: 215 }, pivot: { x: 205, y: 615 } },
+  front: { src: require('../../../assets/mascot/rig/wave-front.png'), frame: { x: 24, y: 24, w: 626, h: 665 } },
+  arm: { src: require('../../../assets/mascot/rig/wave-arm.png'), frame: { x: 46, y: 418, w: 188, h: 220 }, pivot: { x: 232, y: 640 } },
   blink: [
     { src: require('../../../assets/mascot/rig/wave-blink-1.png'), frame: { x: 153, y: 317, w: 333, h: 164 } },
     { src: require('../../../assets/mascot/rig/wave-blink-2.png'), frame: { x: 153, y: 317, w: 333, h: 164 } },

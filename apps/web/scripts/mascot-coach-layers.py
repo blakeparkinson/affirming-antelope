@@ -380,10 +380,8 @@ def build_pose(name, cfg):
         w = max(1, round(crop.width * EXPORT_SCALE))
         h = max(1, round(crop.height * EXPORT_SCALE))
         small = crop.resize((w, h), Image.LANCZOS)
-        # palette PNGs are ~3x smaller, but their semi-transparent entries tint cut seams, so limb
-        # segments that overlap at a joint stay truecolor
-        if not any(pid.endswith(k) for k in ("Upper", "Fore", "Hoof")):
-            small = small.quantize(colors=96, method=Image.FASTOCTREE, dither=Image.NONE)
+        # always truecolor RGBA: Rive's iOS decoder drew palette PNGs' transparent margins as solid
+        # paint (a white band over the left of the face), and palette entries tint cut seams
         small.save(pose_dir / f"{pid}.png", optimize=True)
         cfgp = next((p for p in parts if p["id"] == pid or ("segments" in p and pid.startswith(p["id"]))), None)
         meta["parts"][pid] = {
@@ -495,6 +493,10 @@ def bbox_of(m, pad=0):
 def main():
     rig = {"wave": build_pose("wave", WAVE), "celebrate": build_pose("celebrate", CELEBRATE)}
     (OUT / "rig.json").write_text(json.dumps(rig, indent=1))
+    # residue cleanup + the one-piece raised arm (see mascot_cleanup.py)
+    from mascot_cleanup import run as cleanup
+
+    cleanup(OUT.parents[2])
     total = sum(f.stat().st_size for f in OUT.rglob("*.png") if "check" not in f.name)
     print("wrote", OUT / "rig.json", f"layers {total // 1024} KB")
 

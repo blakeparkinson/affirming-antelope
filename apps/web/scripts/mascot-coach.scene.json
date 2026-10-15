@@ -722,7 +722,7 @@
     "color": "#04091F",
     "thickness": 6
    },
-   "z": 11
+   "z": 9
   },
   {
    "id": "wLidUpL",
@@ -739,7 +739,7 @@
     "color": "#04091F",
     "thickness": 8
    },
-   "z": 12
+   "z": 10
   },
   {
    "id": "wShutL",
@@ -809,7 +809,7 @@
     "cap": "round",
     "join": "round"
    },
-   "z": 13
+   "z": 11
   },
   {
    "id": "wEyeClipR",
@@ -1012,7 +1012,7 @@
     "color": "#04091F",
     "thickness": 6
    },
-   "z": 16
+   "z": 14
   },
   {
    "id": "wLidUpR",
@@ -1029,7 +1029,7 @@
     "color": "#04091F",
     "thickness": 8
    },
-   "z": 17
+   "z": 15
   },
   {
    "id": "wShutR",
@@ -1099,7 +1099,7 @@
     "cap": "round",
     "join": "round"
    },
-   "z": 18
+   "z": 16
   },
   {
    "id": "cEyeClipL",
@@ -1302,7 +1302,7 @@
     "color": "#04091F",
     "thickness": 6
    },
-   "z": 29
+   "z": 27
   },
   {
    "id": "cLidUpL",
@@ -1319,7 +1319,7 @@
     "color": "#04091F",
     "thickness": 8
    },
-   "z": 30
+   "z": 28
   },
   {
    "id": "cShutL",
@@ -1389,7 +1389,7 @@
     "cap": "round",
     "join": "round"
    },
-   "z": 31
+   "z": 29
   },
   {
    "id": "cEyeClipR",
@@ -1592,7 +1592,7 @@
     "color": "#04091F",
     "thickness": 6
    },
-   "z": 34
+   "z": 32
   },
   {
    "id": "cLidUpR",
@@ -1609,7 +1609,7 @@
     "color": "#04091F",
     "thickness": 8
    },
-   "z": 35
+   "z": 33
   },
   {
    "id": "cShutR",
@@ -1679,7 +1679,7 @@
     "cap": "round",
     "join": "round"
    },
-   "z": 36
+   "z": 34
   }
  ],
  "images": [
@@ -1711,31 +1711,13 @@
    "z": 2
   },
   {
-   "id": "w_armLFore",
-   "pngPath": "public/mascot-layers/coach/wave/armLFore.png",
-   "parent": "wElbowAct",
-   "x": -27.5,
-   "y": -38.5,
+   "id": "w_armL",
+   "pngPath": "public/mascot-layers/coach/wave/armL.png",
+   "parent": "wArmLIdle",
+   "x": -92,
+   "y": -112,
    "scale": 1.6129,
    "z": 3
-  },
-  {
-   "id": "w_armLHoof",
-   "pngPath": "public/mascot-layers/coach/wave/armLHoof.png",
-   "parent": "wWristAct",
-   "x": -16.5,
-   "y": -9,
-   "scale": 1.6129,
-   "z": 4
-  },
-  {
-   "id": "w_armLUpper",
-   "pngPath": "public/mascot-layers/coach/wave/armLUpper.png",
-   "parent": "wArmLIdle",
-   "x": -40.5,
-   "y": -61,
-   "scale": 1.6129,
-   "z": 5
   },
   {
    "id": "w_earL",
@@ -1744,7 +1726,7 @@
    "x": -28.5,
    "y": -57.5,
    "scale": 1.6129,
-   "z": 6
+   "z": 4
   },
   {
    "id": "w_earR",
@@ -1753,7 +1735,7 @@
    "x": 30.5,
    "y": -48,
    "scale": 1.6129,
-   "z": 7
+   "z": 5
   },
   {
    "id": "w_head",
@@ -1762,7 +1744,7 @@
    "x": 0.5,
    "y": -280.5,
    "scale": 1.6129,
-   "z": 8
+   "z": 6
   },
   {
    "id": "w_eyeLIris",
@@ -1771,7 +1753,7 @@
    "x": 1.1,
    "y": 1.8,
    "scale": 1.6129,
-   "z": 9
+   "z": 7
   },
   {
    "id": "w_eyeLLash",
@@ -1780,7 +1762,7 @@
    "x": 0.1,
    "y": -20.7,
    "scale": 1.6129,
-   "z": 10
+   "z": 8
   },
   {
    "id": "w_eyeRIris",
@@ -1789,7 +1771,7 @@
    "x": -1.5,
    "y": 0.8,
    "scale": 1.6129,
-   "z": 14
+   "z": 12
   },
   {
    "id": "w_eyeRLash",
@@ -1798,7 +1780,7 @@
    "x": 1,
    "y": -17.2,
    "scale": 1.6129,
-   "z": 15
+   "z": 13
   },
   {
    "id": "w_neck",
@@ -1807,7 +1789,7 @@
    "x": 24.5,
    "y": 47,
    "scale": 1.6129,
-   "z": 19
+   "z": 17
   },
   {
    "id": "c_tail",
@@ -1816,7 +1798,7 @@
    "x": 40,
    "y": -32.5,
    "scale": 1.6129,
-   "z": 20
+   "z": 18
   },
   {
    "id": "c_body",
@@ -1825,7 +1807,7 @@
    "x": -7.5,
    "y": -137.5,
    "scale": 1.6129,
-   "z": 21
+   "z": 19
   },
   {
    "id": "c_armR",
@@ -1834,7 +1816,7 @@
    "x": 107.5,
    "y": -87,
    "scale": 1.6129,
-   "z": 22
+   "z": 20
   },
   {
    "id": "c_armL",
@@ -1843,7 +1825,7 @@
    "x": -84.5,
    "y": -86,
    "scale": 1.6129,
-   "z": 23
+   "z": 21
   },
   {
    "id": "c_earL",
@@ -1852,7 +1834,7 @@
    "x": -11,
    "y": -58.5,
    "scale": 1.6129,
-   "z": 24
+   "z": 22
   },
   {
    "id": "c_earR",
@@ -1861,7 +1843,7 @@
    "x": 43,
    "y": -49.5,
    "scale": 1.6129,
-   "z": 25
+   "z": 23
   },
   {
    "id": "c_head",
@@ -1870,7 +1852,7 @@
    "x": 8.5,
    "y": -247.5,
    "scale": 1.6129,
-   "z": 26
+   "z": 24
   },
   {
    "id": "c_eyeLIris",
@@ -1879,7 +1861,7 @@
    "x": -0.4,
    "y": 2.3,
    "scale": 1.6129,
-   "z": 27
+   "z": 25
   },
   {
    "id": "c_eyeLLash",
@@ -1888,7 +1870,7 @@
    "x": -0.4,
    "y": -20.7,
    "scale": 1.6129,
-   "z": 28
+   "z": 26
   },
   {
    "id": "c_eyeRIris",
@@ -1897,7 +1879,7 @@
    "x": -1.8,
    "y": 0.3,
    "scale": 1.6129,
-   "z": 32
+   "z": 30
   },
   {
    "id": "c_eyeRLash",
@@ -1906,7 +1888,7 @@
    "x": 0.2,
    "y": -19.7,
    "scale": 1.6129,
-   "z": 33
+   "z": 31
   },
   {
    "id": "c_neck",
@@ -1915,7 +1897,7 @@
    "x": 9,
    "y": 38.5,
    "scale": 1.6129,
-   "z": 37
+   "z": 35
   }
  ],
  "animations": [
@@ -11433,7 +11415,7 @@
       },
       {
        "frame": 10,
-       "value": 3,
+       "value": 1.5,
        "easing": [
         0.45,
         0,
@@ -11442,27 +11424,7 @@
        ]
       },
       {
-       "frame": 21,
-       "value": -9,
-       "easing": [
-        0.15,
-        0.75,
-        0.3,
-        1
-       ]
-      },
-      {
-       "frame": 32,
-       "value": -1,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 43,
+       "frame": 24,
        "value": -9,
        "easing": [
         0.45,
@@ -11472,8 +11434,8 @@
        ]
       },
       {
-       "frame": 54,
-       "value": -1,
+       "frame": 38,
+       "value": 0.5,
        "easing": [
         0.45,
         0,
@@ -11482,8 +11444,18 @@
        ]
       },
       {
-       "frame": 65,
-       "value": -6,
+       "frame": 52,
+       "value": -9,
+       "easing": [
+        0.45,
+        0,
+        0.55,
+        1
+       ]
+      },
+      {
+       "frame": 66,
+       "value": 0.5,
        "easing": [
         0.45,
         0,
@@ -11493,7 +11465,7 @@
       },
       {
        "frame": 80,
-       "value": 1.5,
+       "value": -7,
        "easing": [
         0.45,
         0,
@@ -11504,176 +11476,6 @@
       {
        "frame": 96,
        "value": 0,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      }
-     ]
-    },
-    {
-     "target": "wElbowAct",
-     "property": "rotation",
-     "keyframes": [
-      {
-       "frame": 0,
-       "value": 0
-      },
-      {
-       "frame": 13,
-       "value": 4,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 25,
-       "value": -15,
-       "easing": [
-        0.15,
-        0.75,
-        0.3,
-        1
-       ]
-      },
-      {
-       "frame": 36,
-       "value": 1,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 47,
-       "value": -15,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 58,
-       "value": 1,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 69,
-       "value": -10,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 85,
-       "value": 2,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 104,
-       "value": 0,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      }
-     ]
-    },
-    {
-     "target": "wWristAct",
-     "property": "rotation",
-     "keyframes": [
-      {
-       "frame": 0,
-       "value": 0
-      },
-      {
-       "frame": 16,
-       "value": 3,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 29,
-       "value": -12,
-       "easing": [
-        0.15,
-        0.75,
-        0.3,
-        1
-       ]
-      },
-      {
-       "frame": 40,
-       "value": 4,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 51,
-       "value": -12,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 62,
-       "value": 4,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 73,
-       "value": -8,
-       "easing": [
-        0.45,
-        0,
-        0.55,
-        1
-       ]
-      },
-      {
-       "frame": 89,
-       "value": 2.5,
        "easing": [
         0.45,
         0,

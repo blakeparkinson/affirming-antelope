@@ -229,6 +229,23 @@
      382.0
     ],
     "pivot": null
+   },
+   "armL": {
+    "file": "mascot-layers/coach/wave/armL.png",
+    "bbox": [
+     48,
+     420,
+     232,
+     636
+    ],
+    "center": [
+     140.0,
+     528.0
+    ],
+    "pivot": [
+     232,
+     640
+    ]
    }
   },
   "eyes": [
