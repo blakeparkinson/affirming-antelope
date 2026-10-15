@@ -20,11 +20,11 @@ import { PracticeTiles } from '@/components/home/PracticeTiles';
 import { useSeen } from '@/components/home/motion';
 import { ProgressList } from '@/components/home/ProgressList';
 import { ThisWeek } from '@/components/home/ThisWeek';
-import { TodayHero } from '@/components/home/TodayHero';
+import { DailyRepCard } from '@/components/home/DailyRepCard';
 import { FeedbackCard, GuestCohortPrompt, GuestJoinCard, JoinCohortCard, NothingAssigned } from '@/components/home/TrainerCards';
 import { assignmentView, demoAssignmentView } from '@/data/assignments';
 import { getPathway } from '@/data/pathways';
-import { todaysPractice } from '@/data/today';
+import { dailyRepShown, startDailyRep, useDailyRep } from '@/data/dailyRep';
 import { firstNameOf, unseenReviews, useAccount } from '@/state/account';
 import { syncNow } from '@/sync/engine';
 import { Mascot } from '@/components/mascot';
@@ -103,7 +103,10 @@ export default function Home() {
   const unit = useCurrentUnit();
   const reduce = useReduceMotion();
   const listLayout = useListLayout();
-  const practice = useMemo(() => todaysPractice(pathway.id, practiceLog, demo), [pathway.id, practiceLog, demo]);
+  const rep = useDailyRep();
+  useEffect(() => {
+    if (focused && rep) dailyRepShown(rep);
+  }, [focused, rep]);
 
   // The coach waves on the first visit of the day only.
   const [greet] = useState(() => useLearner.getState().lastGreetedDay !== today());
@@ -195,10 +198,7 @@ export default function Home() {
       </Enter>
 
       <Enter index={1} style={styles.heroWrap}>
-        <TodayHero
-          practice={practice}
-          onStart={() => openDrill(practice.refId, { minutes: practice.minutes, source: 'today' })}
-        />
+        {rep ? <DailyRepCard rep={rep} onStart={(id) => startDailyRep(rep, id, 'home')} /> : null}
       </Enter>
 
       {/* a trainer's feedback is the most personal thing on Home: right under today's practice */}

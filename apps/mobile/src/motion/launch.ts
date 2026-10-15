@@ -4,7 +4,7 @@ import type { TextStyle, View } from 'react-native';
 /**
  * Launch registry for continuity transitions into practice screens.
  *
- * A source (Home's "Today's practice" card, a Practice skill tile) measures
+ * A source (Home's daily rep card, a Practice skill tile) measures
  * itself, registers a `Launch`, then navigates. The destination's
  * `SessionSurface` takes it once on mount and expands from that rect. Pieces
  * of the source (its title, its START button) fly to named targets in the

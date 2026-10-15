@@ -144,6 +144,14 @@ export interface LearnerState {
   lastGreetedDay: string | null;
   /** The latest frozen day Home has told the learner about (device-only). */
   freezeNoticeSeen: string | null;
+  /** Today's daily rep, pinned when first picked so it holds while skill progress moves (device-only). */
+  dailyRep: DailyRepPin | null;
+}
+
+export interface DailyRepPin {
+  day: string;
+  pathwayId: PathwayId;
+  drillId: string;
 }
 
 export interface LearnerActions {
@@ -163,6 +171,7 @@ export interface LearnerActions {
   choosePathway: (id: PathwayId, source: PathwayChoiceSource) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   markGreeted: () => void;
+  pinDailyRep: (pin: DailyRepPin) => void;
   /**
    * Spend freezes on the days missed since the last practice (Home runs it on focus;
    * practising does it too). Returns the frozen days Home hasn't announced yet, and marks
@@ -223,12 +232,13 @@ export function setRecordOwner(userId: string | undefined) {
   currentOwner = userId;
 }
 
-const LOCAL_DEFAULTS = (): Pick<LearnerState, 'practiceLog' | 'sessions' | 'settings' | 'lastGreetedDay' | 'freezeNoticeSeen'> => ({
+const LOCAL_DEFAULTS = (): Pick<LearnerState, 'practiceLog' | 'sessions' | 'settings' | 'lastGreetedDay' | 'freezeNoticeSeen' | 'dailyRep'> => ({
   practiceLog: [],
   sessions: [],
   settings: { motion: 'system', haptics: true },
   lastGreetedDay: null,
   freezeNoticeSeen: null,
+  dailyRep: null,
 });
 
 /** A new install: a fresh learner who picks a track in the welcome (MI for Leaders, the default, until then or if they skip it). */
@@ -379,6 +389,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
 
       setSetting: (key, value) => set((s) => ({ settings: { ...s.settings, [key]: value } })),
       markGreeted: () => set({ lastGreetedDay: today() }),
+      pinDailyRep: (pin) => set({ dailyRep: pin }),
       settleStreak: () => {
         const s = get();
         const day = today();
@@ -415,7 +426,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
         }),
       setDemo: (on) =>
         set((s) => {
-          const keep = { settings: s.settings, lastGreetedDay: null, practiceLog: [], sessions: [] };
+          const keep = { settings: s.settings, lastGreetedDay: null, practiceLog: [], sessions: [], dailyRep: null };
           if (on) return { ...demoSeed(today()), ...keep };
           return { ...freshSeed(s.activePathwayId, s.pathwayChosenAt ?? new Date().toISOString()), ...keep };
         }),
@@ -425,6 +436,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
           ...(s.demo ? demoSeed(today()) : freshSeed(s.activePathwayId, s.pathwayChosenAt)),
           settings: s.settings,
           lastGreetedDay: null,
+          dailyRep: null,
         })),
       previewPathwayComplete: () =>
         set((s) => {
@@ -475,6 +487,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
             settings: s.settings ?? LOCAL_DEFAULTS().settings,
             lastGreetedDay: untouched ? null : (s.lastGreetedDay ?? null),
             freezeNoticeSeen: null,
+            dailyRep: null,
           };
           return next as LearnerState & LearnerActions;
         }

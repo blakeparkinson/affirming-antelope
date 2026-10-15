@@ -61,7 +61,7 @@ track). Set on sign-in / when they change (`pathway_id` also when a track is pic
 | `sign_in_started` | `reason` (`welcome`, `cohort`, `review`, `me`, `quota`: a guest at today's free AI limit) |
 | `sign_in_completed` | `is_new_user`, `migrated_guest_data` (conversion: always the same uid; existing account: merge-anonymous moved rows) |
 | `signed_out` | — |
-| `practice_started` | `kind` (`drill`, `roleplay`, `lesson`), `ref_id`, `skill?`, `level?`, `source` (`today`, `assignment`, `path`, `practice_tab`, `challenge`, `guide`, `review_recommendation`, `next_step`), `pathway_id`, `mode` (`text`, `voice`: role-play Talk mode; drills and lessons are `text`). Role-play sends it when the conversation starts (the brief's START), since that's where Talk or Type is picked |
+| `practice_started` | `kind` (`drill`, `roleplay`, `lesson`), `ref_id`, `skill?`, `level?`, `source` (`today`: the daily rep, `assignment`, `path`, `practice_tab`, `challenge`, `guide`, `review_recommendation`, `next_step`), `pathway_id`, `mode` (`text`, `voice`: role-play Talk mode; drills and lessons are `text`). Role-play sends it when the conversation starts (the brief's START), since that's where Talk or Type is picked |
 | `drill_answered` | `drill_id`, `skill`, `level`, `format` (`choice`, `text`), `hit_target` |
 | `drill_feedback_received` | `drill_id`, `latency_ms`, `move`, `hit_target` |
 | `roleplay_turn_sent` | `scenario_id`, `turn_index` |
@@ -81,6 +81,8 @@ track). Set on sign-in / when they change (`pathway_id` also when a track is pic
 | `reminder_declined` | `source` (`offer`, `me`), `reason` (`not_now`, `permission_denied`) |
 | `reminder_opened` | `kind` (`daily`, `streak`, `last_call`, `lapse`) |
 | `reminder_settings_changed` | `on`, `hour`, `minute` |
+| `daily_rep_shown` | `drill_id`, `skill`, `done` (today's rep already practiced, so the card offers one more), `pathway_id`. Once per drill and state a day, however often Home opens |
+| `daily_rep_started` | `drill_id`, `skill`, `entry` (`home`, `reminder`: a tapped reminder opened it), `one_more` (a further drill after today's rep), `pathway_id`. The drill then sends `practice_started` with `source` `today` |
 | `cohort_joined` | `cohort_id` |
 | `pathway_chosen` | `pathway_id` (`mi-for-leaders`, `mi-for-clinicians`), `source` (`onboarding`, `me`, `cohort`) |
 | `submission_created` | `kind`, `ref_id` |
@@ -114,3 +116,5 @@ track). Set on sign-in / when they change (`pathway_id` also when a track is pic
 5. **Trainer activation:** `trainer_signed_in` → `trainer_access_requested` → `trainer_access_approved` (or `trainer_access_claimed`) → `cohort_created` → `assignment_created` →
    `review_saved`; time from `submission_created` to `review_saved`.
 6. **Content:** guide pageviews → `guide_drill_clicked` → `practice_completed` with `source = guide`.
+7. **Daily rep:** `daily_rep_shown` (`done = false`) → `daily_rep_started` → `practice_completed`, broken down by
+   `entry`; `reminder_opened` → `daily_rep_started` with `entry = reminder`; `one_more` share.
