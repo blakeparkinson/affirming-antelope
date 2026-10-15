@@ -3,6 +3,7 @@
 import { DataBindMode, Fit, RiveView, useRiveFile, type RiveViewRef } from '@rive-app/react-native';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { riveCall } from '@/lib/riveCall';
 import { LANDMARK_STATE_MACHINE, type LandmarkId } from './landmarks.generated';
 import { LandmarkStill, type LandmarkProps } from './LandmarkStill';
 
@@ -27,7 +28,7 @@ export function RiveLandmark(props: LandmarkProps) {
   const onHybridRef = useCallback((r: RiveViewRef | null) => {
     view.current = r;
     if (!r) return;
-    r.awaitViewReady()
+    riveCall(() => r.awaitViewReady())
       .then((ok) => setReady(ok))
       .catch(() => setFailed(true));
   }, []);
@@ -35,8 +36,8 @@ export function RiveLandmark(props: LandmarkProps) {
   useEffect(() => {
     const v = view.current;
     if (!v || !ready) return;
-    if (paused) v.pause().catch(() => {});
-    else v.play().catch(() => {});
+    if (paused) riveCall(() => v.pause()).catch(() => {});
+    else riveCall(() => v.play()).catch(() => {});
   }, [paused, ready]);
 
   if (error || failed) return <LandmarkStill {...props} />;
