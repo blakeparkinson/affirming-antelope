@@ -5,6 +5,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSequ
 import { scheduleOnRN } from 'react-native-worklets';
 import { PopIn } from '@/components/celebrate/PopIn';
 import { Mascot, type MascotHandle } from '@/components/mascot';
+import { ReminderOffer } from '@/components/reminders/ReminderOffer';
 import { CheckIcon, Chip, Hoofprint, ProgressRing, Raised, SealCheckIcon, Text, color, haptic, space } from '@/design';
 import { Burst, Enter, FADE_MS, RollingNumber, spring, useReduceMotion, type BurstHandle } from '@/motion';
 import { useStreakDays, useThisWeek } from '@/state/selectors';
@@ -274,7 +275,7 @@ export function PracticeTicks({
   );
 }
 
-/** Full-screen completion: the antelope celebrates, the ticks land, then the actions. */
+/** Full-screen completion: the antelope celebrates, the ticks land, then the actions (and, early on, the reminder offer). */
 export function CompletionMoment({ title, subtitle, before, children }: { title: string; subtitle: string; before: PracticeSnapshot; children?: ReactNode }) {
   const focused = useIsFocused();
   const mascot = useRef<MascotHandle>(null);
@@ -304,6 +305,7 @@ export function CompletionMoment({ title, subtitle, before, children }: { title:
         </Enter>
       </View>
       {children ? <Enter index={6}>{children}</Enter> : null}
+      <ReminderOffer />
     </View>
   );
 }

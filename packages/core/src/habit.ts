@@ -62,7 +62,7 @@ export function weekStartOf(day: DayKey): DayKey {
 }
 
 /** Whole calendar days from `a` to `b` (b - a). */
-function daysBetween(a: DayKey, b: DayKey): number {
+export function daysBetween(a: DayKey, b: DayKey): number {
   return Math.round((parseDay(b).getTime() - parseDay(a).getTime()) / 86_400_000);
 }
 
