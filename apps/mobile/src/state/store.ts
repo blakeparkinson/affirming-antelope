@@ -17,15 +17,19 @@ import {
   type SkillLevelNumber,
   type Turn,
   addDays,
+  daysSincePracticed,
+  FADED_BELOW,
   freezesAfterGoalHit,
   freezeReveal,
   freezesHeld,
+  laterPracticedAt,
   liveStreakDays,
   markMilestone,
   milestoneToCelebrate,
   type MilestoneSeen,
   MAX_FREEZES,
   noFreezeHistory,
+  skillSharpness,
   streakAfterPractice,
   type StreakFreezes,
   weekAfterPractice,
@@ -254,7 +258,7 @@ function seed(): LearnerState {
   return { ...freshSeed(DEFAULT_PATHWAY_ID, null), ...LOCAL_DEFAULTS() };
 }
 
-function bumpSkill(p: DemoSkillProgress | undefined, minutes: number): DemoSkillProgress {
+function bumpSkill(p: DemoSkillProgress | undefined, minutes: number, at: string): DemoSkillProgress {
   // practising a skill starts it, even before its week on the path
   const from: DemoSkillProgress = !p || p.status === 'locked' ? { level: 1, percent: 0, status: 'in-progress' } : p;
   let percent = from.percent + Math.max(6, Math.round(minutes * 2.5));
@@ -263,7 +267,21 @@ function bumpSkill(p: DemoSkillProgress | undefined, minutes: number): DemoSkill
     level = (level + 1) as SkillLevelNumber;
     percent -= 100;
   }
-  return { level, percent: Math.min(percent, 100), status: 'in-progress' };
+  // practising restores the skill's sharpness (spaced review); a backdated record never winds it back
+  const lastPracticedAt = laterPracticedAt(p?.lastPracticedAt, at);
+  return { level, percent: Math.min(percent, 100), status: 'in-progress', ...(lastPracticedAt ? { lastPracticedAt } : {}) };
+}
+
+/** Each skill's latest practice in the log, for skills that have no `lastPracticedAt` yet (store v7). */
+function backfillPracticedAt(skills: LearnerState['skills'], log: readonly Pick<PracticeRecord, 'skill' | 'at'>[]): LearnerState['skills'] {
+  const out = { ...skills };
+  for (const r of log) {
+    const p = r.skill && out[r.skill];
+    if (!p || p.status === 'locked') continue;
+    const lastPracticedAt = laterPracticedAt(p.lastPracticedAt, r.at);
+    if (lastPracticedAt && lastPracticedAt !== p.lastPracticedAt) out[r.skill!] = { ...p, lastPracticedAt };
+  }
+  return out;
 }
 
 /** A skill the course has reached unlocks (level 1), so the ladder shows it as started. */
@@ -308,6 +326,8 @@ export const useLearner = create<LearnerState & LearnerActions>()(
         const freezes = goalHit ? freezesAfterGoalHit(practised.freezes, day) : practised.freezes;
         const streakBefore = liveStreak(before, day);
         const milestone = milestoneToCelebrate(streakBefore, practised.streak, before.milestones ?? [], freezes.usedDays);
+        const skillBefore = input.skill ? before.skills[input.skill] : undefined;
+        const sharpBefore = skillSharpness(skillBefore, record.at);
         set((s) => {
           const { weekStart, weekDays, weeklyGoal } = weekAfterPractice(s, day);
           const assignment = s.assignment && {
@@ -323,7 +343,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
             weekDays,
             weeklyGoal,
             scenariosCompleted: s.scenariosCompleted + (input.kind === 'roleplay' ? 1 : 0),
-            skills: input.skill ? { ...s.skills, [input.skill]: bumpSkill(s.skills[input.skill], input.minutes) } : s.skills,
+            skills: input.skill ? { ...s.skills, [input.skill]: bumpSkill(s.skills[input.skill], input.minutes, record.at) } : s.skills,
             assignment,
           };
         });
@@ -339,6 +359,15 @@ export const useLearner = create<LearnerState & LearnerActions>()(
           pathway_id: before.activePathwayId,
         });
         const after = get();
+        if (input.skill && skillBefore && sharpBefore !== null && sharpBefore < FADED_BELOW) {
+          track('skill_refreshed', {
+            skill: input.skill,
+            level: skillBefore.level,
+            sharpness: Math.round(sharpBefore * 100) / 100,
+            days: daysSincePracticed(skillBefore, record.at) ?? 0,
+            kind: input.kind === 'learn' ? 'lesson' : input.kind,
+          });
+        }
         if (practised.used.length) {
           track('streak_freeze_used', {
             freezes_used: practised.used.length,
@@ -484,7 +513,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
     {
       name: LEARNER_KEY,
       storage: createJSONStorage(() => AsyncStorage),
-      version: 6,
+      version: 7,
       migrate: (persisted, from) => {
         const s = (persisted ?? {}) as Record<string, unknown> & Partial<LearnerState> & { reviews?: unknown };
         // v2 (accounts): every record gets a uuid client id; sessions replace the local-only review queue.
@@ -506,7 +535,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
             // practice (streak, levels, the course) stays.
             firstName: '',
             role: '',
-            skills: { ...fresh.skills, ...(up.skills ?? {}) },
+            skills: backfillPracticedAt({ ...fresh.skills, ...(up.skills ?? {}) }, s.practiceLog ?? []),
             assignment: null,
             demo: false,
             practiceLog: s.practiceLog ?? [],
@@ -531,6 +560,9 @@ export const useLearner = create<LearnerState & LearnerActions>()(
         // v6 (streak milestones): none celebrated yet. Only a practice that crosses one plays it,
         // so a learner already past 14 sees nothing until they reach 30.
         if (from < 6) s.milestones ??= [];
+        // v7 (spaced review): each skill's last practice, from the log this device kept. Skills with
+        // no record here stay unset (never faded) until they're practised or another device's time syncs.
+        if (from < 7 && s.skills) s.skills = backfillPracticedAt(s.skills, s.practiceLog ?? []);
         return s as unknown as LearnerState & LearnerActions;
       },
     },

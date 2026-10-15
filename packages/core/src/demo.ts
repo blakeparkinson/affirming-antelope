@@ -13,6 +13,11 @@ export interface DemoSkillProgress {
   /** Percent of the way through the current level, 0-100. */
   percent: number;
   status: UnitStatus;
+  /**
+   * When the skill was last practised (ISO), for spaced review (`sharpness.ts`). Unset until
+   * the first practice after it was added. Merges keep the later of two devices' values.
+   */
+  lastPracticedAt?: string;
 }
 
 export interface DemoAssignmentItem {

@@ -127,3 +127,48 @@ describe("streak freezes in the synced document", () => {
     assert.deepEqual(up.freezes, { earnedDays: ["2026-10-05"], usedDays: [] });
   });
 });
+
+describe("mergeSynced: lastPracticedAt on two devices", () => {
+  const phone = "2026-10-14T08:00:00.000Z";
+  const tablet = "2026-10-02T19:30:00.000Z";
+
+  it("keeps the newer practice time whichever side has it, even when the other side wins the level", () => {
+    // the tablet is a level ahead but practised the skill longer ago
+    const a = doc({});
+    a.skills = { ...a.skills, oars: { level: 1, percent: 60, status: "in-progress", lastPracticedAt: phone } };
+    const b = doc({});
+    b.skills = { ...b.skills, oars: { level: 2, percent: 10, status: "in-progress", lastPracticedAt: tablet } };
+    for (const [local, remote] of [[a, b], [b, a]]) {
+      const m = mergeSynced(local, remote);
+      assert.deepEqual(m.skills.oars, { level: 2, percent: 10, status: "in-progress", lastPracticedAt: phone });
+    }
+  });
+
+  it("keeps a practice time when only one device has one (an older app's document)", () => {
+    const a = doc({});
+    a.skills = { ...a.skills, engaging: { level: 1, percent: 30, status: "in-progress", lastPracticedAt: phone } };
+    const b = doc({});
+    b.skills = { ...b.skills, engaging: { level: 1, percent: 50, status: "in-progress" } };
+    for (const [local, remote] of [[a, b], [b, a]]) {
+      assert.deepEqual(mergeSynced(local, remote).skills.engaging, { level: 1, percent: 50, status: "in-progress", lastPracticedAt: phone });
+    }
+  });
+
+  it("adds no practice time when neither device has one, and drops a malformed one", () => {
+    const a = doc({});
+    const b = doc({});
+    b.skills = { ...b.skills, oars: { ...b.skills.oars, lastPracticedAt: "not a date" } };
+    assert.equal("lastPracticedAt" in mergeSynced(a, b).skills.oars, false);
+    assert.equal("lastPracticedAt" in mergeSynced(b, a).skills.oars, false);
+  });
+
+  it("the guest merge keeps the newer time too", () => {
+    const guest = doc({});
+    guest.skills = { ...guest.skills, oars: { level: 1, percent: 20, status: "in-progress", lastPracticedAt: phone } };
+    const account = doc({});
+    account.skills = { ...account.skills, oars: { level: 1, percent: 40, status: "in-progress", lastPracticedAt: tablet } };
+    const out = mergeGuestIntoAccount(account, guest) as unknown as SyncedDoc;
+    assert.equal(out.skills.oars.lastPracticedAt, phone);
+    assert.equal(out.skills.oars.percent, 40);
+  });
+});

@@ -21,10 +21,12 @@ import { SEEN_DELAY, useSeen } from '@/components/home/motion';
 import { ProgressList } from '@/components/home/ProgressList';
 import { ThisWeek } from '@/components/home/ThisWeek';
 import { DailyRepCard } from '@/components/home/DailyRepCard';
+import { KeepSharpCard } from '@/components/home/KeepSharpCard';
 import { FeedbackCard, GuestCohortPrompt, GuestJoinCard, JoinCohortCard, NothingAssigned } from '@/components/home/TrainerCards';
 import { assignmentView, demoAssignmentView } from '@/data/assignments';
 import { getPathway } from '@/data/pathways';
 import { dailyRepShown, startDailyRep, useDailyRep } from '@/data/dailyRep';
+import { keepSharpFor, skillFadedShown, startRefresh } from '@/data/keepSharp';
 import { firstNameOf, unseenReviews, useAccount } from '@/state/account';
 import { syncNow } from '@/sync/engine';
 import { Mascot, type MascotHandle } from '@/components/mascot';
@@ -89,8 +91,11 @@ export default function Home() {
   // Freezes spend themselves when Home opens. A new one gets a note and its pip's ice reveal, for this visit only.
   const [freezeNote, setFreezeNote] = useState<string | null>(null);
   const [freezePips, setFreezePips] = useState<boolean[] | null>(null);
+  // the clock spaced review reads (skill sharpness): set each time Home comes into view
+  const [now, setNow] = useState(() => Date.now());
   useFocusEffect(
     useCallback(() => {
+      setNow(Date.now());
       const used = settleStreak();
       if (used) {
         setFreezeNote(freezeNoteText(used, day));
@@ -137,6 +142,11 @@ export default function Home() {
     { streak, goal, weekDays, frozenDays, assignment, skills, rows: liveRows, currentWeek, pathwayId: pathway.id, assignments, cohorts, practiceLog, unseen, signedIn },
     focused,
   );
+  // Keep it sharp: from the held skills, so it leaves (and the row refills) once Home is back in view
+  const keepSharp = useMemo(() => keepSharpFor(seen.skills, now, getPathway(seen.pathwayId).setting), [seen.skills, seen.pathwayId, now]);
+  useEffect(() => {
+    if (focused && keepSharp) skillFadedShown(keepSharp);
+  }, [focused, keepSharp]);
   const views = seen.signedIn
     ? seen.assignments.map((a) => assignmentView(a, seen.cohorts.find((c) => c.id === a.cohortId), seen.practiceLog, profile?.id))
     : seen.assignment
@@ -240,6 +250,14 @@ export default function Home() {
         </Enter>
       </Animated.View>
 
+      {keepSharp ? (
+        <Animated.View layout={listLayout}>
+          <Enter index={2} style={styles.block}>
+            <KeepSharpCard faded={keepSharp} onRefresh={() => startRefresh(keepSharp, rep)} />
+          </Enter>
+        </Animated.View>
+      ) : null}
+
       <Animated.View layout={listLayout}>
         <Enter index={3}>
           <SectionHeader title="From your trainer" />
@@ -273,7 +291,7 @@ export default function Home() {
             action={seen.currentWeek > getPathway(seen.pathwayId).units.length ? 'Pathway complete' : weekLabel(getPathway(seen.pathwayId), seen.currentWeek)}
             onAction={() => router.navigate('/path')}
           />
-          <ProgressList rows={seen.rows} skills={seen.skills} />
+          <ProgressList rows={seen.rows} skills={seen.skills} now={now} />
         </Enter>
       </Animated.View>
 

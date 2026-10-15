@@ -93,6 +93,7 @@ export function practiceSource(raw?: string): PracticeSource {
     case 'challenge':
     case 'guide':
     case 'next_step':
+    case 'refresh':
       return raw;
     default:
       return 'today';
