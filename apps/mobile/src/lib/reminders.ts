@@ -93,7 +93,9 @@ export function onReminderOpened(listener?: (open: ReminderOpen) => void): () =>
  */
 export function useReminderTaps(canRoute: boolean, onTabs: boolean): void {
   const onTabsRef = useRef(onTabs);
-  onTabsRef.current = onTabs;
+  useEffect(() => {
+    onTabsRef.current = onTabs;
+  }, [onTabs]);
   useEffect(() => {
     if (!canRoute) return;
     const route = () => {
