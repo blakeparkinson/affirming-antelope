@@ -1,5 +1,5 @@
 import OpenAI, { toFile } from "openai";
-import { VOICE_MODELS, type ScenarioSpec } from "@antelope/core";
+import { VOICE_MODELS, scenarioFrame, type Frame, type ScenarioSpec } from "@antelope/core";
 import { ApiError, toApiError } from "./http";
 import type { Caller } from "./auth";
 
@@ -204,9 +204,10 @@ export { toFile };
 // Transcription prompt
 // ---------------------------------------------------------------------------
 
-const DOMAIN_TERMS: Record<ScenarioSpec["setting"], string[]> = {
+const DOMAIN_TERMS: Record<Frame, string[]> = {
   workplace: ["one-on-one", "performance review", "deadline", "workload", "reflective listening"],
   clinical: ["A1c", "statin", "blood pressure", "medication", "refill", "reflective listening"],
+  sports: ["practice", "game", "playing time", "teammates", "Coach", "reflective listening"],
 };
 
 /** The persona's full and first name: the proper nouns a learner is most likely to say. */
@@ -217,7 +218,7 @@ function properNouns(spec: ScenarioSpec): string[] {
 
 /** Context for the transcription model: names and topic words, never the hidden backstory. */
 export function transcriptionHints(spec: ScenarioSpec): { prompt: string; keywords: string[] } {
-  const terms = DOMAIN_TERMS[spec.setting];
+  const terms = DOMAIN_TERMS[scenarioFrame(spec)];
   const prompt =
     `A practice conversation with ${spec.persona.name}, ${spec.persona.role}. ` +
     `Context: ${spec.context}. Topic: ${spec.issue}. ` +

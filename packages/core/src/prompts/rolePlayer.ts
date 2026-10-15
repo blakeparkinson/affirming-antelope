@@ -2,9 +2,10 @@
 // Role-Player: realism only. Plays the counterpart (an employee at work, a
 // patient in clinic) inside a fixed educational scenario. Never teaches, never
 // evaluates. Teaching belongs to the Coach and analysis to the Observer.
-// Wording comes from SETTING_LABELS; the workplace output is unchanged.
+// Wording follows the scenario's frame (its setting, unless it sets its own
+// such as sports); the workplace output is unchanged.
 
-import { SETTING_LABELS, type Difficulty, type ScenarioSpec, type Setting, type Stance } from "../types";
+import { scenarioFrame, scenarioLabels, type Difficulty, type Frame, type ScenarioSpec, type Stance } from "../types";
 
 function difficultyGuidance(difficulty: Difficulty, role: string): string {
   switch (difficulty) {
@@ -30,9 +31,9 @@ function stanceDescription(stance: Stance, role: string): string {
   }
 }
 
-/** Setting-specific lines. Everything else is shared, with SETTING_LABELS nouns. */
+/** Frame-specific lines. Everything else is shared, with FRAME_LABELS nouns. */
 const ROLE_PLAYER_COPY: Record<
-  Setting,
+  Frame,
   {
     intro: string;
     tenureLabel: string;
@@ -69,6 +70,22 @@ const ROLE_PLAYER_COPY: Record<
     extraFrameBreaks: `
 - If they ask you, the AI, for real medical advice about their own health or someone in their life (not your character), step out of character for one or two sentences: say this is a practice tool that can't give medical advice and they should check with their own clinician. Then return to the scenario as your character.`,
   },
+  sports: {
+    intro:
+      "You are playing an athlete in a sports coaching conversation practice simulation. The other person is a coach practicing a difficult conversation with you, a player on their team, in school or college athletics. Your only job is to be a believable, consistent person so the practice feels real.",
+    tenureLabel: "Time on the team",
+    selfDescription: "a student athlete talking with your coach",
+    extraResponsePatterns: `
+- Your coach decides who plays. When playing time, starting spots, or your place on the team come up as pressure, you hear a threat even if none was meant. You get careful and say what you think the coach wants to hear.
+- Quick agreement ("Yeah, I'll work on it") is often how you end an uncomfortable talk with a coach. You only mean it once you've put your own reasons into words.`,
+    extraRules: `
+- You are a student athlete and may be a minor. Talk the way someone your age talks to a coach, with no swearing at them and nothing a school would find inappropriate.
+- Your coach is not your therapist or your parent. If something personal from your background comes up, share only what a player would tell a coach they trust, in a few words, then come back to the team or the game.
+- Never invent injuries, eligibility problems, team discipline, or other major events beyond your background. If the coach asks about something your background doesn't cover (a teammate, a drill, your schedule), give a brief, ordinary answer that doesn't change your story.`,
+    frameBreakExample: "an odd question from their coach (for example, confused or brushing it off: \"I mean, you're the coach.\")",
+    extraFrameBreaks: `
+- If they say anything sexual or otherwise out of line between a coach and a student athlete, don't play along. Say as your character that you're not comfortable and want to stop talking.`,
+  },
 };
 
 function bullets(items: string[]): string {
@@ -77,8 +94,8 @@ function bullets(items: string[]): string {
 
 export function rolePlayerSystemPrompt(spec: ScenarioSpec): string {
   const p = spec.persona;
-  const { learnerRole: role, counterpart, conversation } = SETTING_LABELS[spec.setting];
-  const copy = ROLE_PLAYER_COPY[spec.setting];
+  const { learnerRole: role, counterpart, conversation } = scenarioLabels(spec);
+  const copy = ROLE_PLAYER_COPY[scenarioFrame(spec)];
   const trajectory = spec.desiredTrajectory
     .map((s, i) => `${i + 1}. ${s}: ${stanceDescription(s, role)}`)
     .join("\n");

@@ -1,4 +1,4 @@
-import { getScenario } from "@antelope/core";
+import { getScenario, scenariosForSetting } from "@antelope/core";
 import { Scenarios } from "@/components/marketing/scenarios";
 import { Reveal } from "@/components/reveal";
 import { leaders } from "@/lib/audiences";
@@ -112,7 +112,7 @@ export function LeadersSections() {
       <Scenarios
         setting="workplace"
         exclude={["CR-012"]}
-        heading="And the other four"
+        heading={`And the other ${scenariosForSetting("workplace").length - 1}`}
         body="All fictional, each with a backstory you have to draw out. This is how each of them opens."
       />
       <LeadersPath />

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Clock, Keyboard, Microphone } from "@phosphor-icons/react/dist/ssr";
-import { getDrill, getScenario, type Debrief, type DrillFeedback, type SelfReflection, type Turn } from "@antelope/core";
+import { getDrill, getScenario, scenarioFrame, type Debrief, type DrillFeedback, type SelfReflection, type Turn } from "@antelope/core";
 import { createClient } from "@/lib/supabase/server";
 import { isUuid, requireTrainedCohort, requireTrainer } from "@/lib/trainer/dal";
 import { DIFFICULTY, FEELING, ago, counterpartOf, duration, skillName } from "@/lib/trainer/content";
@@ -62,8 +62,8 @@ export default async function SubmissionPage({ params }: PageProps<"/trainer/sub
   const drillFeedback = !debrief && isDrillFeedback(session.debrief) ? session.debrief : null;
   const reflection = (session.self_reflection ?? null) as unknown as SelfReflection | null;
   const exchanges = debrief ? buildExchanges(turns, debrief) : [];
-  // "Patient" or "Employee", from the conversation's own setting.
-  const counterpart = counterpartOf(scenario?.setting ?? drill?.setting);
+  // "Patient", "Employee" or "Athlete": the scenario's frame, else the drill's setting.
+  const counterpart = counterpartOf(scenario ? scenarioFrame(scenario) : drill?.setting);
   const personaName = scenario?.persona.name ?? `The ${counterpart.toLowerCase()}`;
 
   const existing: ExistingReview | null = review

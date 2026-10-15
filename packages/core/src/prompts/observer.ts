@@ -2,10 +2,10 @@
 // Observer: MI-informed analysis only. Codes each turn of a finished
 // role-play. It does not teach or give feedback (that's the Coach) and it
 // does not count (tallies and trajectory are computed in code below).
-// Wording and examples follow the scenario's setting; the workplace output is
-// unchanged.
+// Wording and examples follow the scenario's frame (its setting unless it sets
+// its own); the workplace output is unchanged.
 
-import { SETTING_LABELS, type LearnerMove, type MoveTallies, type ScenarioSpec, type Setting, type Turn, type TurnAnnotation } from "../types";
+import { scenarioFrame, scenarioLabels, type Frame, type LearnerMove, type MoveTallies, type ScenarioSpec, type Turn, type TurnAnnotation } from "../types";
 
 /** Minimal JSON Schema shape accepted as a Claude tool input_schema / structured output schema. */
 export interface JsonObjectSchema {
@@ -35,7 +35,7 @@ export const LEARNER_MOVES: LearnerMove[] = [
 /** Moves counted as MI-inconsistent in tallies. */
 export const MI_INCONSISTENT_MOVES: LearnerMove[] = ["advice-without-permission", "confront"];
 
-/** Setting-specific wording and examples. The workplace copy is the original prompt. */
+/** Frame-specific wording and examples. The workplace copy is the original prompt. */
 interface ObserverCopy {
   adaptedFor: string;
   learnerTitle: string;
@@ -58,7 +58,7 @@ interface ObserverCopy {
   noteExamples: string;
 }
 
-const OBSERVER_COPY: Record<Setting, ObserverCopy> = {
+const OBSERVER_COPY: Record<Frame, ObserverCopy> = {
   workplace: {
     adaptedFor: "adapted for leaders talking with employees at work",
     learnerTitle: "A leader",
@@ -113,11 +113,38 @@ In the transcript, turns marked (learner) are the clinician's and turns marked (
     mildChangeExamples: `"I guess I could," "I don't love getting winded."`,
     noteExamples: `"Reflected the worry under the complaint." "Asked permission before sharing the A1c." "Suggested a fix before hearing her view." "First change talk: doesn't want to end up like his dad." "Flat compliance, not real commitment."`,
   },
+  sports: {
+    adaptedFor: "adapted for coaches talking with athletes in school and college sports",
+    learnerTitle: "A coach",
+    counterpartTitle: "Athlete",
+    storageNote: `
+In the transcript, turns marked (learner) are the coach's and turns marked (employee) are the athlete's. "employee" is only a storage id: use it as the speaker value in your output, but never call the athlete an employee or the coach a manager in your notes.`,
+    closedExamples: `"Is it the nerves?" "Did you watch the film?" "Would before or after practice work?"`,
+    simpleExamples: `"You've been on the bench the last two games." "It's been a hard week."`,
+    affirmationExamples: `"You've made every early lift this season." "You really care about this team."`,
+    givingInformation: `giving-information: Sharing facts, expectations, team rules, or feedback in a neutral way without pressure to change. "Practice starts at 3:30." "The lineup for Saturday goes up Thursday."`,
+    permissionExtra: ` An athlete asking "What should I do?" or "What would you do?" counts as asking.`,
+    adviceExamples: `"Have you tried visualizing before games?" "You should just relax out there." "If you talked to your teammates more, they'd play better for you."`,
+    adviceExtra: ` Telling the athlete to "be more confident" or "be a better teammate" is advice-without-permission, even when it's said kindly.`,
+    confrontExample: `("So you just don't care about the team")`,
+    autonomyExamples: `"It's your call how you handle this." "You know what works for you better than I do."`,
+    codesTag: "athlete_codes",
+    changeExamples: `Desire ("I want to enjoy playing again"), ability ("I can do this, I do it in practice"), reasons ("The younger players watch what I do"), need ("I've got to stop getting in my own head"), commitment ("I'll talk to her before practice"), activation ("I'm ready to try something"), taking steps ("I already asked the trainer about it").`,
+    sustainExamples: `"Everybody gets nervous, it's fine." "They're the ones who keep messing up."`,
+    edgeCases: `Sports-context edge cases:
+- Surface compliance to the coach ("Yeah, Coach." "Okay, I'll focus more.") said flatly or to end the talk is not change talk. Code sustain (or neutral if genuinely ambiguous) and note it as compliance.
+- Conditional statements: "I'd play better if they ran the plays right" is sustain (the barrier is the point). "If I could calm down before games, I could play like I do in practice" is change (ability).
+- Blaming teammates, refs, or the schedule is sustain only if it functions as a reason not to change; otherwise neutral.
+- Agreeing with the learner's reflection ("Yeah, exactly") takes the talk value of the reflection it agrees with.
+- Discord (pushback aimed at the learner: "You always single me out") is a stance, not a talk code. Code talk as sustain if it also argues for the status quo, otherwise neutral.`,
+    mildChangeExamples: `"I guess I could," "I don't love feeling like this before games."`,
+    noteExamples: `"Reflected the pressure under the deflection." "Asked permission before sharing what teammates said." "Suggested a routine before hearing her view." "First change talk: wants to enjoy playing again." "Flat compliance, not real commitment."`,
+  },
 };
 
 export function observerSystemPrompt(spec: ScenarioSpec): string {
-  const c = OBSERVER_COPY[spec.setting];
-  const who = SETTING_LABELS[spec.setting].counterpart;
+  const c = OBSERVER_COPY[scenarioFrame(spec)];
+  const who = scenarioLabels(spec).counterpart;
   const Who = c.counterpartTitle;
   const target = spec.targetBehavior ?? spec.issue;
   return `You are an experienced Motivational Interviewing coder. You code practice conversations using an approach informed by MITI 4.2 (Motivational Interviewing Treatment Integrity), ${c.adaptedFor}. You produce careful, consistent behavior codes. You do not give feedback, teach, or judge; a separate coach does that, and a human trainer is the final authority.
@@ -198,23 +225,27 @@ Examples: ${c.noteExamples}
 Code consistently. When unsure between two codes, choose the one a careful MITI coder would choose and say why in the note.`;
 }
 
-const SPEAKER_LABELS: Record<Setting, Record<Turn["speaker"], string>> = {
+const SPEAKER_LABELS: Record<Frame, Record<Turn["speaker"], string>> = {
   workplace: { learner: "Leader", employee: "Employee" },
   clinical: { learner: "Clinician", employee: "Patient" },
+  sports: { learner: "Coach", employee: "Athlete" },
 };
 
-function speakerLabel(speaker: Turn["speaker"], setting: Setting): string {
-  return SPEAKER_LABELS[setting][speaker];
+function speakerLabel(speaker: Turn["speaker"], frame: Frame): string {
+  return SPEAKER_LABELS[frame][speaker];
 }
 
-/** Defaults to workplace labels for older callers that don't pass a setting. */
-export function formatTranscript(turns: Turn[], setting: Setting = "workplace"): string {
-  return turns.map((t) => `[${t.id}] ${speakerLabel(t.speaker, setting)} (${t.speaker}): ${t.text}`).join("\n");
+/**
+ * `frame` is the scenario's frame (scenarioFrame(spec)); a plain setting works too.
+ * Defaults to workplace labels for older callers that don't pass one.
+ */
+export function formatTranscript(turns: Turn[], frame: Frame = "workplace"): string {
+  return turns.map((t) => `[${t.id}] ${speakerLabel(t.speaker, frame)} (${t.speaker}): ${t.text}`).join("\n");
 }
 
-export function observerUserPrompt(turns: Turn[], setting: Setting = "workplace"): string {
+export function observerUserPrompt(turns: Turn[], frame: Frame = "workplace"): string {
   return `<transcript>
-${formatTranscript(turns, setting)}
+${formatTranscript(turns, frame)}
 </transcript>
 
 Code all ${turns.length} turns in order. Use the exact turn ids in brackets.`;

@@ -11,7 +11,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { ArrowRightIcon, Avatar, BottomSheet, Button, Chip, Text, color, haptic, personaAvatar, radius, space } from '@/design';
+import { ArrowRightIcon, Avatar, BottomSheet, Button, Chip, Text, color, haptic, scenarioAvatar, radius, space } from '@/design';
 import { Enter, spring, useReduceMotion } from '@/motion';
 
 const ROW = 84;
@@ -98,7 +98,7 @@ export function ChallengeSheet({
         <Animated.View style={stripStyle}>
           {strip.map((sc, i) => (
             <View key={i} style={styles.row}>
-              <Avatar {...personaAvatar(sc.persona, sc.setting)} size={56} />
+              <Avatar {...scenarioAvatar(sc)} size={56} />
               <View style={styles.rowCopy}>
                 <Text variant="subheading" numberOfLines={1}>
                   {sc.persona.name}

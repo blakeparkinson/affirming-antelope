@@ -17,6 +17,7 @@ import {
   getAllScenarios,
   getPublicScenario,
   guidesForScenario,
+  scenarioAudienceType,
   scenarioDescription,
   seoFor,
   skillName,
@@ -79,7 +80,7 @@ export default async function ScenarioPage({ params }: PageProps<"/scenarios/[id
             path,
             difficulty: difficultyLabel[s.difficulty],
             teaches: skills.map(skillName),
-            audienceType: audience.audienceType,
+            audienceType: scenarioAudienceType(s),
           }),
           breadcrumbLd([
             { name: "Home", path: "/" },

@@ -66,6 +66,13 @@ export interface PathUnit {
  */
 export type Setting = "workplace" | "clinical";
 
+/**
+ * Who is talking to whom in one scenario. Usually the scenario's setting; a
+ * scenario can set its own `frame` (a coach and an athlete) while its setting
+ * still decides which pathway it belongs to.
+ */
+export type Frame = Setting | "sports";
+
 export type PathwayId = "mi-for-leaders" | "mi-for-clinicians";
 
 export interface Pathway {
@@ -115,7 +122,14 @@ export interface Persona {
 export interface ScenarioSpec {
   id: string; // e.g. "PM-017"
   title: string;
+  /** Pathway membership. Also the labels and prompt wording, unless `frame` is set. */
   setting: Setting;
+  /**
+   * Optional. Overrides the labels and prompt wording (counterpart, learner role,
+   * setting-specific prompt lines) without moving the scenario out of its
+   * setting's pathway. Read it through scenarioFrame / scenarioLabels.
+   */
+  frame?: "sports";
   context: string; // e.g. "Performance management", "Primary care follow-up"
   issue: string; // workplace: "Missed deadlines"; clinical: "Blood pressure medication adherence"
   /**
@@ -157,7 +171,7 @@ export interface Turn {
   /**
    * "employee" is the stored id for the role-played counterpart in every setting
    * (an employee at work, a patient in clinic). Never show it to people: label
-   * it with counterpartLabel(setting).
+   * it with scenarioCounterpartLabel(spec), or counterpartLabel(setting) for drills.
    */
   speaker: "learner" | "employee";
   text: string;
@@ -294,13 +308,42 @@ export interface DrillFeedbackRequest {
 // Setting labels (UI copy and prompts read these; never hard-code "employee")
 // ---------------------------------------------------------------------------
 
-export const SETTING_LABELS: Record<Setting, { counterpart: string; counterparts: string; learnerRole: string; conversation: string }> = {
+export interface FrameLabels {
+  counterpart: string;
+  counterparts: string;
+  learnerRole: string;
+  conversation: string;
+}
+
+/** Setting-level nouns: pathways, drills, empty states. For one scenario, use scenarioLabels. */
+export const SETTING_LABELS: Record<Setting, FrameLabels> = {
   workplace: { counterpart: "employee", counterparts: "employees", learnerRole: "manager", conversation: "one-on-one" },
   clinical: { counterpart: "patient", counterparts: "patients", learnerRole: "clinician", conversation: "visit" },
 };
 
-/** "Employee" / "Patient", sentence case for UI labels. */
-export function counterpartLabel(setting: Setting): string {
-  const w = SETTING_LABELS[setting].counterpart;
+/** Nouns per frame: the settings, plus frames a scenario can opt into. */
+export const FRAME_LABELS: Record<Frame, FrameLabels> = {
+  ...SETTING_LABELS,
+  sports: { counterpart: "athlete", counterparts: "athletes", learnerRole: "coach", conversation: "check-in" },
+};
+
+/** The scenario's frame: its own `frame` when set, else its setting. */
+export function scenarioFrame(spec: Pick<ScenarioSpec, "setting" | "frame">): Frame {
+  return spec.frame ?? spec.setting;
+}
+
+/** Nouns for one scenario ("athlete" and "coach" for a sports scenario in the leaders pathway). */
+export function scenarioLabels(spec: Pick<ScenarioSpec, "setting" | "frame">): FrameLabels {
+  return FRAME_LABELS[scenarioFrame(spec)];
+}
+
+/** "Employee" / "Patient" / "Athlete", sentence case for UI labels. Takes a setting or a frame. */
+export function counterpartLabel(frame: Frame): string {
+  const w = FRAME_LABELS[frame].counterpart;
   return w.charAt(0).toUpperCase() + w.slice(1);
+}
+
+/** The counterpart label for one scenario, following its frame. */
+export function scenarioCounterpartLabel(spec: Pick<ScenarioSpec, "setting" | "frame">): string {
+  return counterpartLabel(scenarioFrame(spec));
 }

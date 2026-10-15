@@ -26,7 +26,7 @@ import { Reflection } from '@/components/roleplay/Reflection';
 import type { VoiceFallback } from '@/components/roleplay/voice/useVoiceTurn';
 import type { ReplyMode } from '@/components/roleplay/voice/VoiceBits';
 import { canRecordHere, markVoiceResting, voiceAvailable } from '@/components/roleplay/voice/voiceSupport';
-import { Avatar, Button, Raised, Text, color, haptic, layout, personaAvatar, space, type AvatarIdentity } from '@/design';
+import { Avatar, Button, Raised, Text, color, haptic, layout, scenarioAvatar, space, type AvatarIdentity } from '@/design';
 import { scenariosForSetting } from '@/data/pathways';
 import { openDrill, openRoleplay, pickDrill } from '@/data/routes';
 import { postJson } from '@/lib/api';
@@ -312,7 +312,7 @@ function RoleplayFlow({ scenario, params }: { scenario: ScenarioSpec; params: Pa
       >
         {body}
       </Phase>
-      {flight?.to ? <AvatarFlight avatar={personaAvatar(scenario.persona, scenario.setting)} from={flight.from} to={flight.to} onLanded={() => setFlight(null)} /> : null}
+      {flight?.to ? <AvatarFlight avatar={scenarioAvatar(scenario)} from={flight.from} to={flight.to} onLanded={() => setFlight(null)} /> : null}
     </View>
   );
 }
