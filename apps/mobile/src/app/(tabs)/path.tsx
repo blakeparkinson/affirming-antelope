@@ -20,7 +20,8 @@ import Animated, {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 import { Mascot, type MascotHandle } from '@/components/mascot';
-import { layoutBands, layoutTrail, NODE, type TrailLayout } from '@/components/path/geometry';
+import { captionBox, layoutBands, layoutLandmarks, layoutTrail, NODE, type TrailLayout } from '@/components/path/geometry';
+import { LANDMARK_ART, landmarkPlan, Landmarks } from '@/components/path/Landmarks';
 import { Landscape, motifFor, PALETTES } from '@/components/path/Landscape';
 import { Trail } from '@/components/path/Trail';
 import { UnitSheet } from '@/components/path/UnitSheet';
@@ -132,7 +133,29 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
   const intro = complete ? 300 : 0;
   const trail = useMemo(() => layoutTrail(width, total, headerH + 150 + intro), [width, total, headerH, intro]);
   const motif = motifFor(pathway.setting);
-  const bands = useMemo(() => layoutBands(width, trail.finish.y, PALETTES[motif], motif), [width, trail.finish.y, motif]);
+  // captions as laid out with the coach at its resting week (it moves a caption below its node)
+  const captions = useMemo(
+    () =>
+      pathway.units.map((u, i) => {
+        const p = trail.nodes[i];
+        const coach = mascotSpot(trail, width, Math.min(currentWeek, total));
+        const below = currentWeek === u.week && coach.sideRight === !(p.x > width / 2);
+        return captionBox(p, width, { title: u.title, subtitle: currentWeek === u.week ? u.subtitle : undefined }, below);
+      }),
+    [pathway.units, trail, width, currentWeek, total],
+  );
+  const landmarks = useMemo(() => layoutLandmarks(trail, landmarkPlan(motif, total), LANDMARK_ART, captions), [trail, motif, total, captions]);
+  const bands = useMemo(
+    () =>
+      layoutBands(
+        width,
+        trail.finish.y,
+        PALETTES[motif],
+        motif,
+        landmarks.map((l) => l.box),
+      ),
+    [width, trail.finish.y, motif, landmarks],
+  );
   const maxScroll = Math.max(0, trail.height + insets.bottom + layout.tabBarHeight - winH);
   const clampY = useCallback((y: number) => Math.min(maxScroll, Math.max(0, y)), [maxScroll]);
 
@@ -492,6 +515,7 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
       >
         <View style={{ width, height: trail.height }}>
           <Landscape bands={bands} width={width} height={trail.height} scrollY={scrollY} viewportH={winH} />
+          <Landmarks items={landmarks} paused={reduce || !focused} />
           <Trail layout={trail} walked={walked} scrollY={scrollY} viewportH={winH} />
 
           {shownComplete && (
