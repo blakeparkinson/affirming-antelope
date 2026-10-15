@@ -1,4 +1,4 @@
-import { addDays, dayKey, daysBetween, isDayKey, weekStartOf, type DayKey, type PracticeWeek } from "./habit";
+import { addDays, dayKey, daysBetween, isDayKey, streakRunStart, weekStartOf, type DayKey, type PracticeWeek, type Streak } from "./habit";
 import { SKILLS } from "./skills";
 import { warmthArc, type WarmthPoint } from "./warmth";
 import type { DemoSkillProgress } from "./demo";
@@ -138,12 +138,19 @@ function bestOf(roleplays: readonly RecapRoleplay[]): RecapRoleplayBest | null {
  *   roleplays  the role-plays kept on this device (the best one, and the learner's line)
  *   week       the synced practice week: when it is the week recapped, its days and count
  *              fill in practice done on another device (whose log this device doesn't have)
+ *   streak     the synced streak and its frozen days: once practice this week has moved the
+ *              stored week on, the run still says which of last week's days had practice
  */
 export function buildWeeklyRecap(
   log: readonly RecapPractice[],
   skills: Partial<Record<SkillId, DemoSkillProgress>>,
   weekStart: DayKey,
-  { roleplays = [], week }: { roleplays?: readonly RecapRoleplay[]; week?: PracticeWeek } = {},
+  {
+    roleplays = [],
+    week,
+    streak,
+    frozenDays = [],
+  }: { roleplays?: readonly RecapRoleplay[]; week?: PracticeWeek; streak?: Streak; frozenDays?: readonly DayKey[] } = {},
 ): WeeklyRecap {
   const monday = weekStartOf(weekStart);
   const days = Array.from({ length: 7 }, () => false);
@@ -179,6 +186,17 @@ export function buildWeeklyRecap(
     });
     reps = Math.max(reps, week.weeklyGoal.done);
   }
+  // every day of the streak's run was practised, except the days a freeze covered
+  const runStart = streak ? streakRunStart(streak, frozenDays) : null;
+  if (streak?.lastPracticeDay && runStart) {
+    const frozen = new Set(frozenDays);
+    for (let i = 0; i < 7; i++) {
+      const d = addDays(monday, i);
+      if (d >= runStart && d <= streak.lastPracticeDay && !frozen.has(d)) days[i] = true;
+    }
+  }
+  // at least one rep for each day known to have practice
+  reps = Math.max(reps, days.filter(Boolean).length);
   const inWeek = roleplays.filter((r) => indexIn(monday, localDay(r.endedAt)) >= 0 && r.transcript.length > 0);
   const daysPracticed = days.filter(Boolean).length;
   return {

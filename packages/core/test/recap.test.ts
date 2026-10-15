@@ -90,6 +90,20 @@ describe("buildWeeklyRecap", () => {
     assert.equal(other.empty, true);
   });
 
+  it("after this week's practice moved the synced week on, reads last week's days from the streak run", () => {
+    // the tablet practised Thursday to Sunday (the 1st frozen); Monday's practice there moved the week on.
+    // This phone has none of it in its log.
+    const streak = { days: 4, lastPracticeDay: NEXT_MON };
+    const week = { weekStart: NEXT_MON, weekDays: [true, false, false, false, false, false, false], weeklyGoal: { target: 3, done: 1, hitCount: 0 } };
+    const r = buildWeeklyRecap([], skills(), MON, { week, streak, frozenDays: ["2026-11-01"] });
+    assert.equal(r.empty, false);
+    assert.deepEqual(r.days, [false, false, false, true, true, true, false]);
+    assert.equal(r.reps, 3);
+    // a broken run says nothing about last week
+    const old = buildWeeklyRecap([], skills(), MON, { streak: { days: 2, lastPracticeDay: "2026-10-20" } });
+    assert.equal(old.empty, true);
+  });
+
   it("suggests the weakest unlocked skill, never a locked one", () => {
     const locked: DemoSkillProgress = { level: 1, percent: 0, status: "locked" };
     const only = (over: Partial<Record<SkillId, DemoSkillProgress>>) => ({ ...Object.fromEntries(Object.keys(skills()).map((k) => [k, locked])), ...over });

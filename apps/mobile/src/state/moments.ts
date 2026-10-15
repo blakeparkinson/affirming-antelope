@@ -27,7 +27,8 @@ interface Moments {
   /** The weekly recap, while it's open. A milestone waits until it closes. */
   recap: RecapMoment | null;
   showRecap: (r: RecapMoment) => void;
-  closeRecap: () => void;
+  /** `release`: play a waiting milestone now (a dismissal back to Home; not when a drill just opened). */
+  closeRecap: (release: boolean) => void;
 }
 
 /**
@@ -46,8 +47,8 @@ export const useMoments = create<Moments>()((set, get) => ({
   dismiss: () => set({ showing: null }),
   recap: null,
   showRecap: (r) => set({ recap: r }),
-  closeRecap: () => {
+  closeRecap: (release) => {
     set({ recap: null });
-    get().release();
+    if (release) get().release();
   },
 }));

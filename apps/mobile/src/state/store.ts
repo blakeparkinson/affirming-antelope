@@ -568,8 +568,8 @@ export const useLearner = create<LearnerState & LearnerActions>()(
         // v7 (spaced review): each skill's last practice, from the log this device kept. Skills with
         // no record here stay unset (never faded) until they're practised or another device's time syncs.
         if (from < 7 && s.skills) s.skills = backfillPracticedAt(s.skills, s.practiceLog ?? []);
-        // v8 (weekly recap): never shown. The next new week shows it, for a learner who practised before it.
-        if (from < 8) s.recapSeenWeek ??= null;
+        // v8 (weekly recap): counts as seen this week, so the first one comes on the next Monday, not mid-week.
+        if (from < 8) s.recapSeenWeek ??= weekStartOf(dayKey());
         return s as unknown as LearnerState & LearnerActions;
       },
     },

@@ -41,7 +41,7 @@ function weekRange(monday: string): string {
   return `${fmt(monday)} – ${fmt(addDays(monday, 6))}`;
 }
 
-function WeeklyRecap({ moment, onDone }: { moment: RecapMoment; onDone: () => void }) {
+function WeeklyRecap({ moment, onDone }: { moment: RecapMoment; onDone: (release: boolean) => void }) {
   const reduce = useReduceMotion();
   const insets = useSafeAreaInsets();
   // read once: the recap is a snapshot of the week, it doesn't move while it's open
@@ -67,9 +67,11 @@ function WeeklyRecap({ moment, onDone }: { moment: RecapMoment; onDone: () => vo
     (then?: () => void) => {
       if (leaving.current) return;
       leaving.current = true;
+      // back on Home a waiting milestone can play; over the drill "Start this week" opened, it can't
+      const release = !then;
       const done = (finished?: boolean) => {
         'worklet';
-        if (finished) scheduleOnRN(onDone);
+        if (finished) scheduleOnRN(onDone, release);
       };
       stage.value = withTiming(0, { duration: 160, easing: Easing.in(Easing.quad) });
       backdrop.value = withDelay(40, withTiming(0, { duration: 160 }, done));
@@ -218,7 +220,7 @@ function BestRoleplay({ best, play, settled }: { best: NonNullable<Recap['bestRo
           <QuotesIcon size={20} weight="fill" color={color.primaryTint} />
           <View style={styles.rowText}>
             <Text variant="caption" color={color.muted}>
-              What you said right before
+              What you said right before {first} opened up
             </Text>
             <Text variant="body" numberOfLines={4}>
               {best.line}

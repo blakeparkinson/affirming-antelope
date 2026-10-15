@@ -36,13 +36,16 @@ function roleplaysOf(sessions: readonly PracticeSession[]): RecapRoleplay[] {
 }
 
 export function recapFor(
-  s: Pick<LearnerState, 'practiceLog' | 'sessions' | 'skills' | 'weekStart' | 'weekDays' | 'weeklyGoal'>,
+  s: Pick<LearnerState, 'practiceLog' | 'sessions' | 'skills' | 'weekStart' | 'weekDays' | 'weeklyGoal' | 'streak' | 'freezes'>,
   weekStart: string,
 ): WeeklyRecap {
   return buildWeeklyRecap(s.practiceLog, s.skills, weekStart, {
     roleplays: roleplaysOf(s.sessions),
     // practice on another device: its days and count arrive with the synced week
     week: { weekStart: s.weekStart, weekDays: s.weekDays, weeklyGoal: s.weeklyGoal },
+    // and once this week's practice has moved the synced week on, the streak's run still has them
+    streak: s.streak,
+    frozenDays: s.freezes?.usedDays ?? [],
   });
 }
 

@@ -19,8 +19,9 @@ import { addDays, dayAt, dayKey, daysBetween, isDayKey, liveStreakDays, weekdayO
  * Never practiced: nothing (the offer comes after the first practice).
  *
  * Mondays: "Your week in review is ready" at 09:00, when the week before had practice and
- * the recap hasn't been seen yet. It takes the place of that day's daily or lapse reminder
- * (one ping), but not a streak nudge or last call.
+ * the recap hasn't been seen yet. It takes the place of that day's daily or lapse reminder,
+ * but not a streak nudge or last call. Once the recap is seen, the day's own reminder comes
+ * back (they opened the app, but may not have practised yet).
  */
 
 export type ReminderKind = "daily" | "streak" | "last_call" | "lapse" | "recap";
