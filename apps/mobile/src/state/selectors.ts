@@ -1,6 +1,21 @@
+import { useMemo } from 'react';
 import { getSkill, type PathActivity, type Pathway, type PathUnit, type Setting, type SkillId } from '@antelope/core';
 import { getPathway } from '@/data/pathways';
-import { progressOf, useLearner, type PathwayProgress } from './store';
+import { liveStreak, progressOf, thisWeek, today, useLearner, type PathwayProgress } from './store';
+
+/** The streak to show: 0 once a day has been missed (the stored run stays until the next practice). */
+export function useStreakDays(): number {
+  return useLearner((s) => liveStreak(s));
+}
+
+/** This week's goal and practice days, empty once a new week has begun. Stable until the store or the week changes. */
+export function useThisWeek(): { weekDays: boolean[]; weeklyGoal: { target: number; done: number; hitCount: number } } {
+  const weekStart = useLearner((s) => s.weekStart);
+  const weekDays = useLearner((s) => s.weekDays);
+  const weeklyGoal = useLearner((s) => s.weeklyGoal);
+  const day = today();
+  return useMemo(() => thisWeek({ weekStart, weekDays, weeklyGoal }, day), [weekStart, weekDays, weeklyGoal, day]);
+}
 
 /** The learner's active track (MI for Leaders or MI for Clinicians). */
 export function useActivePathway(): Pathway {

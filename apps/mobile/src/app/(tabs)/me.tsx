@@ -32,7 +32,7 @@ import {
 } from '@/design';
 import { Enter, RollingNumber, usePressScale } from '@/motion';
 import { pathwaySkills, useActivePathway, useCurrentWeek, weekLabel as weekOf } from '@/state/selectors';
-import { useLearner } from '@/state/store';
+import { liveStreak, useLearner } from '@/state/store';
 
 export default function Me() {
   const s = useLearner();
@@ -93,7 +93,7 @@ export default function Me() {
       </Enter>
 
       <Enter index={1} style={styles.stats}>
-        <Stat label="day streak" value={s.streak.days} icon={<Hoofprint size={22} tint={color.gold} rotate={-12} />} />
+        <Stat label="day streak" value={liveStreak(s)} icon={<Hoofprint size={22} tint={color.gold} rotate={-12} />} />
         <Stat label="scenarios done" value={s.scenariosCompleted} icon={<ChatsCircleIcon size={22} weight="fill" color={color.primary} />} />
         <Stat label="weekly goals hit" value={s.weeklyGoal.hitCount} icon={<FlagPennantIcon size={22} weight="fill" color={color.gold} />} />
       </Enter>

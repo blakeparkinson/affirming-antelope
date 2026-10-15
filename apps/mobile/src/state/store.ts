@@ -1,6 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   type ActivityKind,
+  dayKey,
   DEFAULT_PATHWAY_ID,
   type DemoSkillProgress,
   type DemoTrainerAssignment,
@@ -13,6 +14,11 @@ import {
   type SkillId,
   type SkillLevelNumber,
   type Turn,
+  liveStreakDays,
+  streakAfterPractice,
+  weekAfterPractice,
+  weekAsOf,
+  weekStartOf,
 } from '@antelope/core';
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -34,9 +40,7 @@ export const hadLearnerData: Promise<boolean> = AsyncStorage.getItem(LEARNER_KEY
 
 /** Local calendar day, YYYY-MM-DD. */
 export function today(d = new Date()): string {
-  const m = `${d.getMonth() + 1}`.padStart(2, '0');
-  const day = `${d.getDate()}`.padStart(2, '0');
-  return `${d.getFullYear()}-${m}-${day}`;
+  return dayKey(d);
 }
 
 /** Monday-start index 0..6 of a date. */
@@ -106,8 +110,11 @@ export interface LearnerState {
   progress: Partial<Record<PathwayId, PathwayProgress>>;
   /** Global: a skill is the same skill in either setting. */
   skills: Record<SkillId, DemoSkillProgress>;
+  /** The run ending on `lastPracticeDay`, which may be over: show `liveStreak(s)`. */
   streak: { days: number; lastPracticeDay: string | null };
-  /** Monday-start: which days this week had practice. */
+  /** Monday of the week `weekDays` and `weeklyGoal.done` count. Show `thisWeek(s)`. */
+  weekStart: string | null;
+  /** Monday-start: which days of `weekStart`'s week had practice. */
   weekDays: boolean[];
   weeklyGoal: { target: number; done: number; hitCount: number };
   scenariosCompleted: number;
@@ -169,6 +176,16 @@ export function syncedState(s: LearnerState): SyncedState {
 /** The active pathway's progress (a stable empty object before the first practice). */
 export function progressOf(s: Pick<LearnerState, 'progress' | 'activePathwayId'>, id: PathwayId = s.activePathwayId): PathwayProgress {
   return s.progress[id] ?? EMPTY_PROGRESS;
+}
+
+/** The streak to show today: 0 once a day has been missed, before the next practice resets it. */
+export function liveStreak(s: Pick<LearnerState, 'streak'>, day = today()): number {
+  return liveStreakDays(s.streak, day);
+}
+
+/** This week's goal and practice days: an empty week once a new Monday-start week begins. */
+export function thisWeek(s: Pick<LearnerState, 'weekStart' | 'weekDays' | 'weeklyGoal'>, day = today()) {
+  return weekAsOf({ weekStart: s.weekStart, weekDays: s.weekDays, weeklyGoal: s.weeklyGoal }, day);
 }
 
 /** Who's signed in, if anyone. Set by the auth listener; new records are stamped with it. */
@@ -236,22 +253,19 @@ export const useLearner = create<LearnerState & LearnerActions>()(
       recordPractice: (input) => {
         const record: PracticeRecord = { ...input, id: uuid(), at: input.at ?? new Date().toISOString(), ownerId: currentOwner };
         const before = get();
+        const day = today();
         set((s) => {
-          const day = today();
-          const firstToday = s.streak.lastPracticeDay !== day;
-          const weekDays = [...s.weekDays];
-          weekDays[weekdayIndex()] = true;
-          const done = s.weeklyGoal.done + 1;
-          const justHit = done === s.weeklyGoal.target;
+          const { weekStart, weekDays, weeklyGoal } = weekAfterPractice(s, day);
           const assignment = s.assignment && {
             ...s.assignment,
             items: s.assignment.items.map((it) => (it.refId === input.refId ? { ...it, done: true } : it)),
           };
           return {
             practiceLog: [record, ...s.practiceLog].slice(0, 200),
-            streak: firstToday ? { days: s.streak.days + 1, lastPracticeDay: day } : s.streak,
+            streak: streakAfterPractice(s.streak, day),
+            weekStart,
             weekDays,
-            weeklyGoal: { ...s.weeklyGoal, done, hitCount: s.weeklyGoal.hitCount + (justHit ? 1 : 0) },
+            weeklyGoal,
             scenariosCompleted: s.scenariosCompleted + (input.kind === 'roleplay' ? 1 : 0),
             skills: input.skill ? { ...s.skills, [input.skill]: bumpSkill(s.skills[input.skill], input.minutes) } : s.skills,
             assignment,
@@ -269,8 +283,9 @@ export const useLearner = create<LearnerState & LearnerActions>()(
           pathway_id: before.activePathwayId,
         });
         const after = get();
-        if (after.streak.days > before.streak.days) track('streak_extended', { streak_days: after.streak.days });
-        if (after.weeklyGoal.done === after.weeklyGoal.target && before.weeklyGoal.done !== before.weeklyGoal.target) {
+        if (after.streak.days > liveStreak(before, day)) track('streak_extended', { streak_days: after.streak.days });
+        const goalBefore = thisWeek(before, day).weeklyGoal;
+        if (after.weeklyGoal.done === after.weeklyGoal.target && goalBefore.done !== goalBefore.target) {
           track('weekly_goal_hit', { target: after.weeklyGoal.target });
         }
         return record;
@@ -334,13 +349,13 @@ export const useLearner = create<LearnerState & LearnerActions>()(
       setDemo: (on) =>
         set((s) => {
           const keep = { settings: s.settings, lastGreetedDay: null, practiceLog: [], sessions: [] };
-          if (on) return { ...demoSeed(weekdayIndex()), ...keep };
+          if (on) return { ...demoSeed(today()), ...keep };
           return { ...freshSeed(s.activePathwayId, s.pathwayChosenAt ?? new Date().toISOString()), ...keep };
         }),
       wipe: () => set((s) => ({ ...seed(), settings: s.settings })),
       resetProgress: () =>
         set((s) => ({
-          ...(s.demo ? demoSeed(weekdayIndex()) : freshSeed(s.activePathwayId, s.pathwayChosenAt)),
+          ...(s.demo ? demoSeed(today()) : freshSeed(s.activePathwayId, s.pathwayChosenAt)),
           settings: s.settings,
           lastGreetedDay: null,
         })),
@@ -363,7 +378,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
     {
       name: LEARNER_KEY,
       storage: createJSONStorage(() => AsyncStorage),
-      version: 3,
+      version: 4,
       migrate: (persisted, from) => {
         const s = (persisted ?? {}) as Record<string, unknown> & Partial<LearnerState> & { reviews?: unknown };
         // v2 (accounts): every record gets a uuid client id; sessions replace the local-only review queue.
@@ -394,6 +409,11 @@ export const useLearner = create<LearnerState & LearnerActions>()(
             lastGreetedDay: untouched ? null : (s.lastGreetedDay ?? null),
           };
           return next as LearnerState & LearnerActions;
+        }
+        // v4 (calendar weeks): the week weekDays and done count is the week of the last practice
+        if (from < 4) {
+          const last = s.streak?.lastPracticeDay;
+          s.weekStart = last ? weekStartOf(last) : null;
         }
         return s as unknown as LearnerState & LearnerActions;
       },

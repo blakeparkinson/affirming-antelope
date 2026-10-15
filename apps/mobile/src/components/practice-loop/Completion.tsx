@@ -7,7 +7,8 @@ import { PopIn } from '@/components/celebrate/PopIn';
 import { Mascot, type MascotHandle } from '@/components/mascot';
 import { CheckIcon, Chip, Hoofprint, ProgressRing, Raised, SealCheckIcon, Text, color, haptic, space } from '@/design';
 import { Burst, Enter, FADE_MS, RollingNumber, spring, useReduceMotion, type BurstHandle } from '@/motion';
-import { useLearner } from '@/state/store';
+import { useStreakDays, useThisWeek } from '@/state/selectors';
+import { liveStreak, thisWeek, useLearner } from '@/state/store';
 
 export interface PracticeSnapshot {
   streak: number;
@@ -19,14 +20,15 @@ export interface PracticeSnapshot {
 export function usePracticeSnapshot(): PracticeSnapshot {
   const [snap] = useState(() => {
     const s = useLearner.getState();
-    return { streak: s.streak.days, goalDone: s.weeklyGoal.done, goalTarget: s.weeklyGoal.target };
+    const goal = thisWeek(s).weeklyGoal;
+    return { streak: liveStreak(s), goalDone: goal.done, goalTarget: goal.target };
   });
   return snap;
 }
 
 export function useLivePractice(): PracticeSnapshot {
-  const streak = useLearner((s) => s.streak.days);
-  const goal = useLearner((s) => s.weeklyGoal);
+  const streak = useStreakDays();
+  const goal = useThisWeek().weeklyGoal;
   return { streak, goalDone: goal.done, goalTarget: goal.target };
 }
 

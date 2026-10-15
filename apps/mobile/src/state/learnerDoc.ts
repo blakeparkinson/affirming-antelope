@@ -1,4 +1,4 @@
-import { DEMO_LEARNER, freshSyncedDoc, LEGACY_CHOSEN_AT, progressFrom, type PathwayId, type PathwayProgress } from '@antelope/core';
+import { addDays, DEMO_LEARNER, freshSyncedDoc, weekdayOf, weekStartOf, LEGACY_CHOSEN_AT, progressFrom, type PathwayId, type PathwayProgress } from '@antelope/core';
 import type { LearnerState } from './store';
 
 /**
@@ -29,8 +29,9 @@ export function freshSeed(pathwayId: PathwayId, chosenAt: string | null): Seeded
 }
 
 /** Amanda, the demo learner (Me › Demo, dev builds only). */
-export function demoSeed(weekdayToday: number): Seeded {
+export function demoSeed(today: string): Seeded {
   const d = DEMO_LEARNER;
+  const weekdayToday = weekdayOf(today);
   // Demo week: practiced Monday through yesterday; today is still open.
   const weekDays = Array.from({ length: 7 }, (_, i) => i < weekdayToday && i < d.weeklyGoal.done + 2);
   return {
@@ -40,7 +41,8 @@ export function demoSeed(weekdayToday: number): Seeded {
     pathwayChosenAt: LEGACY_CHOSEN_AT,
     progress: { 'mi-for-leaders': progressFrom(d) },
     skills: structuredClone(d.skills),
-    streak: { days: d.streakDays, lastPracticeDay: null },
+    streak: { days: d.streakDays, lastPracticeDay: addDays(today, -1) },
+    weekStart: weekStartOf(today),
     weekDays,
     weeklyGoal: { ...d.weeklyGoal, hitCount: 3 },
     scenariosCompleted: 4,

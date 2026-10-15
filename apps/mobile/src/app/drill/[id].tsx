@@ -1,4 +1,4 @@
-import { getDrill, getSkill, getSkillLevel, type Drill, type DrillFeedback } from '@antelope/core';
+import { getDrill, getSkill, getSkillLevel, streakAfterPractice, type Drill, type DrillFeedback } from '@antelope/core';
 import { useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -50,8 +50,7 @@ function DrillSession() {
   const recordSession = useLearner((s) => s.recordSession);
   const recorded = useRef(false);
   const [day] = useState(() => {
-    const s = useLearner.getState().streak;
-    return s.lastPracticeDay === today() ? s.days : s.days + 1;
+    return streakAfterPractice(useLearner.getState().streak, today()).days;
   });
   const mins = Number(minutes) || 5;
   const drill = getDrill(drillId);
