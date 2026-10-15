@@ -13,6 +13,8 @@
 // View model "Coach" (the state machine contract, see apps/mobile/DESIGN.md "Mascot"):
 //   pose  number  0 wave, 1 celebrate, 2 head (wave art, raised arm hidden; the app crops it)
 //   mood  number  0 idle, 1 listening, 2 thinking, 3 cheer (repeating happy hops)
+//   still number  1 = reduced motion: the Idle layer keeps breathing but drops the head/ear/
+//                 tail/scarf/arm drift (the app also skips wave/hop/cheer then)
 //   wave, hop, cheer, nod, blink   triggers (one-shots; cheer swaps to the celebrate drawing
 //                                   mid-air when pose is wave)
 //
@@ -243,7 +245,7 @@ anim("pose_head", 0.5, "loop", POSE_KEYS(1, 0, 0));
 
 // ---------------------------------------------------------------- Idle layer (always on)
 // 6.4 s loop: two 3.2 s breaths; head, ears, scarf and tail follow the breath with lag (overlap),
-// plus an ear flick and a tail swish at off-beat times so the loop doesn't read as a metronome.
+// plus an ear flick and tail swishes at off-beat times so the loop doesn't read as a metronome.
 {
   const D = 6.4;
   const T = (s) => f(s);
@@ -254,16 +256,18 @@ anim("pose_head", 0.5, "loop", POSE_KEYS(1, 0, 0));
     // quick flick: snap up, overshoot back, settle
     [T(4.3), 0, E.inOut], [T(4.38), 11, E.out], [T(4.52), -3, E.inOut], [T(4.7), 1.5, E.inOut], [T(4.9), 0, E.inOut], [T(5.4), 1.8, E.inOut], [T(6.4), 0, E.inOut]];
   const earR = [[0, 0], [T(0.55), 0, E.inOut], [T(2.1), -2.4, E.inOut], [T(3.7), 0, E.inOut], [T(5.2), -2.2, E.inOut], [T(6.4), 0, E.inOut]];
-  const tail = [[0, 0], [T(0.6), 0, E.inOut], [T(2.0), 5, E.inOut], [T(3.4), -2, E.inOut],
-    [T(5.0), 0, E.inOut], [T(5.12), 14, E.out], [T(5.3), -8, E.inOut], [T(5.5), 6, E.inOut], [T(5.75), -2, E.inOut], [T(6.4), 0, E.inOut]];
+  // tail (frames): a lazy pendulum with a quick double flick early and a three-swish wag late,
+  // each snapping out and settling with shrinking overshoots
+  const tail = [[0, 0], [18, -4, E.inOut], [54, 5, E.inOut], [66, 5, E.inOut], [71, -16, E.out], [78, 12, E.inOut],
+    [85, -6, E.inOut], [96, 3, E.inOut], [144, -5, E.inOut], [192, 5, E.inOut], [246, 4, E.inOut], [251, -18, E.out],
+    [259, 16, E.inOut], [268, -14, E.inOut], [276, 10, E.inOut], [286, -4, E.inOut], [297, 2, E.inOut], [342, -4, E.inOut], [384, 0, E.inOut]];
   const scarf = [[0, 0], [T(0.5), 0, E.inOut], [T(2.05), 0.9, E.inOut], [T(3.7), 0, E.inOut], [T(5.25), 0.9, E.inOut], [T(6.4), 0, E.inOut]];
   const armDrift = [[0, 0], [T(0.35), 0, E.inOut], [T(1.9), -1.6, E.inOut], [T(3.55), 0, E.inOut], [T(5.1), -1.6, E.inOut], [T(6.4), 0, E.inOut]];
   const armRDrift = [[0, 0], [T(0.5), 0, E.inOut], [T(2.0), 1.6, E.inOut], [T(3.7), 0, E.inOut], [T(5.2), 1.6, E.inOut], [T(6.4), 0, E.inOut]];
   // celebrate arms keep pumping gently (it's a jump pose); left and right out of phase
   const celArmL = [[0, 0], [T(0.8), 3, E.inOut], [T(2.4), -2, E.inOut], [T(4.0), 3, E.inOut], [T(5.6), -2, E.inOut], [T(6.4), 0, E.inOut]];
   const celArmR = [[0, 0], [T(0.8), -3, E.inOut], [T(2.4), 2, E.inOut], [T(4.0), -3, E.inOut], [T(5.6), 2, E.inOut], [T(6.4), 0, E.inOut]];
-  anim("idle", D, "loop", [
-    POSES.map((p) => squash(`${p}HopBreath`, breath)),
+  const drift = [
     both("HeadIdle", "rotation", headRot),
     both("HeadIdle", "y", headY),
     both("EarLIdle", "rotation", earL),
@@ -274,7 +278,11 @@ anim("pose_head", 0.5, "loop", POSE_KEYS(1, 0, 0));
     track("wArmRIdle", "rotation", armRDrift),
     track("cArmLIdle", "rotation", celArmL),
     track("cArmRIdle", "rotation", celArmR),
-  ]);
+  ];
+  const breathing = POSES.map((p) => squash(`${p}HopBreath`, breath));
+  anim("idle", D, "loop", [breathing, drift]);
+  // reduced motion (view model `still` = 1): breathing only; every drifting node holds its rest
+  anim("idle_still", D, "loop", [breathing, drift.flat(Infinity).map((t) => track(t.target, t.property, [[0, 0]]))]);
 }
 
 // ---------------------------------------------------------------- Mood layer
@@ -510,7 +518,7 @@ anim("cheer_loop", 2.4, "loop", hopTracks(1.2, { squint: true, armsUp: false }))
 
 // ---------------------------------------------------------------- state machine
 const TRIGGERS = ["wave", "hop", "cheer", "nod", "blink"];
-const inputs = [{ name: "pose", type: "number" }, { name: "mood", type: "number" }, ...TRIGGERS.map((name) => ({ name, type: "trigger" }))];
+const inputs = [{ name: "pose", type: "number" }, { name: "mood", type: "number" }, ...TRIGGERS.map((name) => ({ name, type: "trigger" })), { name: "still", type: "number" }];
 const is = (input, value) => ({ input, op: "==", value });
 const isnt = (input, value) => ({ input, op: "!=", value });
 const fire = (input) => ({ input });
@@ -524,7 +532,15 @@ const layerPose = {
   const names = ["pose_wave", "pose_celebrate", "pose_head"];
   for (const from of names) names.forEach((to, v) => { if (to !== from) layerPose.transitions.push({ from, to, conditions: [is("pose", v)] }); });
 }
-const layerIdle = { name: "Idle", states: [{ name: "idle", animation: "idle" }], transitions: [{ from: "entry", to: "idle" }] };
+const layerIdle = {
+  name: "Idle",
+  states: [{ name: "idle", animation: "idle" }, { name: "idle_still", animation: "idle_still" }],
+  transitions: [
+    { from: "entry", to: "idle" },
+    { from: "idle", to: "idle_still", conditions: [is("still", 1)], durationMs: 300 },
+    { from: "idle_still", to: "idle", conditions: [isnt("still", 1)], durationMs: 300 },
+  ],
+};
 
 const layerMood = {
   name: "Mood",
@@ -690,6 +706,7 @@ export const COACH = ${JSON.stringify(layout, null, 2).replace(/"(\w+)":/g, "$1:
 export const COACH_VM = {
   pose: { wave: 0, celebrate: 1, head: 2 },
   mood: { idle: 0, listening: 1, thinking: 2, cheer: 3 },
+  still: { off: 0, on: 1 },
   triggers: ${JSON.stringify(TRIGGERS)},
 } as const;
 `,
