@@ -34,4 +34,12 @@ export interface MascotHandle {
   nod: () => void;
   /** One big jump for joy (the wave pose switches to the celebrate drawing mid-air). */
   cheer: () => void;
+  /**
+   * The antelope's own celebration: a stiff-legged jump straight up off all four feet, then a
+   * smaller second one (~1.2s). `onLand` fires on each landing (pair a haptic with it).
+   * Reduced motion: a cross-fade dip, and `onLand` once.
+   */
+  pronk: (opts?: { onLand?: () => void }) => void;
+  /** Cold: a quick sideways shiver (~0.4s). Reduced motion: nothing. */
+  shiver: () => void;
 }

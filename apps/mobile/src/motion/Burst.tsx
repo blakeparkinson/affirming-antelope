@@ -1,6 +1,7 @@
 import { forwardRef, useImperativeHandle, useState } from 'react';
 import { StyleSheet, View, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withTiming, type SharedValue } from 'react-native-reanimated';
+import { Hoofprint } from '@/design/icons';
 import { color } from '@/design/tokens';
 import { useReduceMotion } from './useMotionPrefs';
 
@@ -15,6 +16,8 @@ import { useReduceMotion } from './useMotionPrefs';
  *
  * Place it inside the element it bursts from; it centres itself and draws
  * outside its box. Call `fire()` on the visual peak (the same frame as the haptic).
+ * `particles="hoofprints"` (streak moments) throws little cloven prints instead of
+ * confetti: each points the way it was thrown and barely spins, like tracks scattering.
  * Reduced motion: renders nothing.
  */
 export interface BurstHandle {
@@ -34,6 +37,8 @@ export interface BurstProps {
   spread?: number;
   /** Particle size scale. */
   scale?: number;
+  /** Confetti (dots, diamonds, dashes), or hoofprints for streak moments. */
+  particles?: 'confetti' | 'hoofprints';
   style?: StyleProp<ViewStyle>;
 }
 
@@ -41,7 +46,7 @@ const PALETTE = [color.gold, color.gold, color.gold, color.goldShadow, color.pri
 const G = 1500; // pt/s²
 const K = 4.6; // drag, 1/s
 
-type Shape = 'dot' | 'diamond' | 'dash';
+type Shape = 'dot' | 'diamond' | 'dash' | 'hoof';
 interface Particle {
   vx: number;
   vy: number;
@@ -49,9 +54,11 @@ interface Particle {
   tint: string;
   shape: Shape;
   spin: number;
+  /** Resting rotation, degrees (hoofprints face their launch direction). */
+  heading: number;
 }
 
-function makeParticles(n: number, power: number, spread: number, scale: number, colors: string[]): Particle[] {
+function makeParticles(n: number, power: number, spread: number, scale: number, colors: string[], hooves: boolean): Particle[] {
   const out: Particle[] = [];
   for (let i = 0; i < n; i++) {
     // even angular coverage with jitter, so bursts never clump on one side
@@ -59,21 +66,23 @@ function makeParticles(n: number, power: number, spread: number, scale: number, 
     const rad = ((a - 90) * Math.PI) / 180;
     const speed = (520 + Math.random() * 420) * power;
     const r = Math.random();
-    const shape: Shape = r < 0.5 ? 'dot' : r < 0.8 ? 'diamond' : 'dash';
+    const shape: Shape = hooves ? 'hoof' : r < 0.5 ? 'dot' : r < 0.8 ? 'diamond' : 'dash';
     out.push({
       vx: Math.cos(rad) * speed,
       vy: Math.sin(rad) * speed,
-      size: (shape === 'dash' ? 4 : 5 + Math.random() * 4) * scale,
+      size: (shape === 'hoof' ? 13 + Math.random() * 7 : shape === 'dash' ? 4 : 5 + Math.random() * 4) * scale,
       tint: colors[i % colors.length],
       shape,
-      spin: (Math.random() - 0.5) * 720,
+      // a print points along its throw (toes first) and only wobbles; confetti tumbles
+      spin: shape === 'hoof' ? (Math.random() - 0.5) * 90 : (Math.random() - 0.5) * 720,
+      heading: shape === 'hoof' ? a : 0,
     });
   }
   return out;
 }
 
 export const Burst = forwardRef<BurstHandle, BurstProps>(function Burst(
-  { count = 14, power = 1, duration = 640, colors = PALETTE, spread = 75, scale = 1, style },
+  { count = 14, power = 1, duration = 640, colors = PALETTE, spread = 75, scale = 1, particles = 'confetti', style },
   ref,
 ) {
   const reduce = useReduceMotion();
@@ -85,12 +94,12 @@ export const Burst = forwardRef<BurstHandle, BurstProps>(function Burst(
     () => ({
       fire: () => {
         if (reduce) return;
-        setShot({ key: Date.now(), particles: makeParticles(count, power, spread, scale, colors) });
+        setShot({ key: Date.now(), particles: makeParticles(count, power, spread, scale, colors, particles === 'hoofprints') });
         t.value = 0;
         t.value = withTiming(duration / 1000, { duration, easing: Easing.linear });
       },
     }),
-    [reduce, count, power, spread, scale, colors, duration, t],
+    [reduce, count, power, spread, scale, colors, duration, particles, t],
   );
 
   if (!shot) return null;
@@ -115,9 +124,16 @@ function Dot({ p, t, life }: { p: Particle; t: SharedValue<number>; life: number
     const opacity = u < 0.6 ? 1 : Math.max(0, 1 - (u - 0.6) / 0.4);
     return {
       opacity: s <= 0 ? 0 : opacity,
-      transform: [{ translateX: x }, { translateY: y }, { rotate: `${p.spin * s + (p.shape === 'diamond' ? 45 : 0)}deg` }, { scale: grow * (1 - 0.45 * u) }],
+      transform: [{ translateX: x }, { translateY: y }, { rotate: `${p.heading + p.spin * s + (p.shape === 'diamond' ? 45 : 0)}deg` }, { scale: grow * (1 - 0.45 * u) }],
     };
   });
+  if (p.shape === 'hoof') {
+    return (
+      <Animated.View style={[styles.p, { width: p.size, height: p.size, marginLeft: -p.size / 2, marginTop: -p.size / 2 }, style]}>
+        <Hoofprint size={p.size} tint={p.tint} />
+      </Animated.View>
+    );
+  }
   const w = p.shape === 'dash' ? p.size * 2.6 : p.size;
   return (
     <Animated.View

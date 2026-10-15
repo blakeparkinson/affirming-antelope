@@ -1,4 +1,5 @@
 import { addDays, isDayKey, mergeFreezes, mergeStreaks, mergeWeeks, noFreezeHistory, weekStartOf, type StreakFreezes } from "./habit";
+import { asMilestones, mergeMilestones, type MilestoneSeen } from "./milestones";
 import { DEMO_LEARNER, freshLearnerState, type DemoLearnerState, type DemoSkillProgress } from "./demo";
 import { DEFAULT_PATHWAY_ID, getPathway } from "./pathway";
 import type { PathwayId, SkillId } from "./types";
@@ -45,6 +46,8 @@ export interface SyncedDoc {
   streak: { days: number; lastPracticeDay: string | null };
   /** Streak freezes earned and used. The count held comes from `freezesHeld`. */
   freezes: StreakFreezes;
+  /** Streak milestones celebrated (see `milestones.ts`), so another device doesn't replay one. */
+  milestones: MilestoneSeen[];
   /** Monday (YYYY-MM-DD) of the week `weekDays` and `weeklyGoal.done` count. Read them with `weekAsOf`. */
   weekStart: string | null;
   /** Monday-start: which days of `weekStart`'s week had practice. */
@@ -62,6 +65,7 @@ export const SYNCED_KEYS = [
   "skills",
   "streak",
   "freezes",
+  "milestones",
   "weekStart",
   "weekDays",
   "weeklyGoal",
@@ -100,6 +104,7 @@ export function freshSyncedDoc(pathwayId: PathwayId = DEFAULT_PATHWAY_ID, chosen
     skills: d.skills,
     streak: { days: d.streakDays, lastPracticeDay: null },
     freezes: noFreezeHistory(),
+    milestones: [],
     weekStart: null,
     weekDays: Array.from({ length: 7 }, () => false),
     weeklyGoal: { target: d.weeklyGoal.target, done: d.weeklyGoal.done, hitCount: 0 },
@@ -171,6 +176,9 @@ export function upgradeDoc(raw: unknown): Partial<SyncedDoc> {
   // Documents from before freezes have no ledger; the fallback's fills in (an empty one holds the starting freeze).
   const freezes = asFreezes(r.freezes);
   if (freezes) out.freezes = freezes;
+  // Likewise milestones: an older app's document has none, so the fallback's stand.
+  const milestones = asMilestones(r.milestones);
+  if (milestones) out.milestones = milestones;
   if (r.progress && typeof r.progress === "object") {
     const progress: SyncedDoc["progress"] = {};
     for (const [id, v] of Object.entries(r.progress as Record<string, unknown>)) {
@@ -304,6 +312,7 @@ export function mergeSynced(local: SyncedDoc, remoteRaw: unknown): SyncedDoc {
     skills: mergeSkills(local.skills, remote.skills),
     streak: mergeStreaks(local.streak, remote.streak, freezes.usedDays),
     freezes,
+    milestones: mergeMilestones(local.milestones ?? [], remote.milestones ?? []),
     ...week,
     scenariosCompleted: Math.max(local.scenariosCompleted, remote.scenariosCompleted),
   };

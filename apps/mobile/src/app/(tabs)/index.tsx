@@ -1,7 +1,7 @@
 import { addDays, getSkill } from '@antelope/core';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import { RefreshControl, StyleSheet, View } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
+import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import Animated, {
   Extrapolation,
   interpolate,
@@ -17,7 +17,7 @@ import { scheduleOnRN } from 'react-native-worklets';
 import { SectionHeader } from '@/components/common/SectionHeader';
 import { AssignmentCard } from '@/components/home/AssignmentCard';
 import { PracticeTiles } from '@/components/home/PracticeTiles';
-import { useSeen } from '@/components/home/motion';
+import { SEEN_DELAY, useSeen } from '@/components/home/motion';
 import { ProgressList } from '@/components/home/ProgressList';
 import { ThisWeek } from '@/components/home/ThisWeek';
 import { DailyRepCard } from '@/components/home/DailyRepCard';
@@ -27,12 +27,14 @@ import { getPathway } from '@/data/pathways';
 import { dailyRepShown, startDailyRep, useDailyRep } from '@/data/dailyRep';
 import { firstNameOf, unseenReviews, useAccount } from '@/state/account';
 import { syncNow } from '@/sync/engine';
-import { Mascot } from '@/components/mascot';
-import { ChatsCircleIcon, Hoofprint, LightningIcon, Screen, ShuffleIcon, SparkleIcon, Text, border, color, layout, space } from '@/design';
+import { Mascot, type MascotHandle } from '@/components/mascot';
+import { PRONK_MS } from '@/components/mascot/choreo';
+import { ChatsCircleIcon, haptic, Hoofprint, LightningIcon, Screen, ShuffleIcon, SparkleIcon, Text, border, color, layout, space } from '@/design';
 import { openDrill, openRoleplay, pickDrill, pickScenario } from '@/data/routes';
 import { Enter, FADE_MS, RollingNumber, useListLayout, useReduceMotion } from '@/motion';
 import { useActivePathway, useCurrentUnit, useCurrentWeek, useFrozenThisWeek, useProgressRows, useStreakDays, useThisWeek, weekLabel } from '@/state/selectors';
-import { today, useLearner } from '@/state/store';
+import { useMoments } from '@/state/moments';
+import { today, useLearner, type FreezeNotice } from '@/state/store';
 
 function greeting(d = new Date()) {
   const h = d.getHours();
@@ -47,7 +49,7 @@ function dateLine(d = new Date()) {
 }
 
 /** "A streak freeze covered yesterday, so your 12-day streak is safe. You have 1 left." */
-function freezeNoteText({ days, streakDays, held }: { days: string[]; streakDays: number; held: number }, day = today()) {
+function freezeNoteText({ days, streakDays, held }: FreezeNotice, day = today()) {
   const name = (d: string) => {
     if (d === addDays(day, -1)) return 'yesterday';
     const [y, m, dd] = d.split('-').map(Number);
@@ -85,15 +87,28 @@ export default function Home() {
   const { weeklyGoal: goal, weekDays } = useThisWeek();
   const frozenDays = useFrozenThisWeek();
   const settleStreak = useLearner((s) => s.settleStreak);
-  // Freezes spend themselves when Home opens. A new one gets a note for this visit only.
+  // Freezes spend themselves when Home opens. A new one gets a note and its pip's ice reveal, for this visit only.
   const [freezeNote, setFreezeNote] = useState<string | null>(null);
+  const [freezePips, setFreezePips] = useState<boolean[] | null>(null);
   useFocusEffect(
     useCallback(() => {
       const used = settleStreak();
-      if (used) setFreezeNote(freezeNoteText(used));
-      return () => setFreezeNote(null);
+      if (used) {
+        setFreezeNote(freezeNoteText(used));
+        setFreezePips(used.pips);
+      }
+      // a milestone moment that didn't get its turn after the practice (closed early) plays here
+      const t = setTimeout(() => useMoments.getState().release(), SEEN_DELAY + 300);
+      return () => {
+        clearTimeout(t);
+        setFreezeNote(null);
+        setFreezePips(null);
+      };
     }, [settleStreak]),
   );
+  const coach = useRef<MascotHandle>(null);
+  const shiver = useCallback(() => coach.current?.shiver(), []);
+  const onCoachTap = usePronkTaps(coach);
   const assignment = useLearner((s) => s.assignment);
   const skills = useLearner((s) => s.skills);
   const currentWeek = useCurrentWeek();
@@ -187,14 +202,11 @@ export default function Home() {
             )}
           </Text>
         </Animated.View>
-        <Mascot
-          pose="wave"
-          size={124}
-          greet={greet}
-          paused={!focused || coachAway}
-          accessibilityLabel="The antelope coach, waving"
-          style={styles.mascot}
-        />
+        <View style={styles.mascot}>
+          <Mascot ref={coach} pose="wave" size={124} greet={greet} paused={!focused || coachAway} accessibilityLabel="The antelope coach, waving" />
+          {/* easter egg: three quick taps and it pronks. On top, not around: the Rive canvas would take the touch */}
+          <Pressable onPressIn={onCoachTap} accessible={false} style={StyleSheet.absoluteFill} />
+        </View>
       </Enter>
 
       <Enter index={1} style={styles.heroWrap}>
@@ -217,7 +229,15 @@ export default function Home() {
 
       <Animated.View layout={listLayout}>
         <Enter index={2} style={styles.block}>
-          <ThisWeek streak={seen.streak} goal={seen.goal} weekDays={seen.weekDays} frozenDays={seen.frozenDays} freezeNote={freezeNote} />
+          <ThisWeek
+            streak={seen.streak}
+            goal={seen.goal}
+            weekDays={seen.weekDays}
+            frozenDays={seen.frozenDays}
+            freezeNote={freezeNote}
+            reveal={freezePips}
+            onShiver={shiver}
+          />
         </Enter>
       </Animated.View>
 
@@ -297,6 +317,28 @@ export default function Home() {
       </Animated.View>
     </Screen>
   );
+}
+
+/** Taps this close together count toward the easter egg. */
+const TAP_GAP_MS = 450;
+
+/**
+ * Three quick taps on Home's antelope and it pronks, with a thud on each landing. Taps
+ * during a pronk don't queue another; the count starts over after a pause.
+ */
+function usePronkTaps(coach: RefObject<MascotHandle | null>) {
+  const taps = useRef<{ n: number; at: number; busyUntil: number }>({ n: 0, at: 0, busyUntil: 0 });
+  return useCallback(() => {
+    const now = Date.now();
+    const t = taps.current;
+    if (now < t.busyUntil) return;
+    t.n = now - t.at <= TAP_GAP_MS ? t.n + 1 : 1;
+    t.at = now;
+    if (t.n < 3) return;
+    t.n = 0;
+    t.busyUntil = now + PRONK_MS;
+    coach.current?.pronk({ onLand: haptic.thud });
+  }, [coach]);
 }
 
 /** Fallback greeting height until it's measured (date + two title lines + padding). */

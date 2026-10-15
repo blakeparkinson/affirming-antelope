@@ -8,6 +8,8 @@ import { SectionHeader } from '@/components/common/SectionHeader';
 import { AccountSection, ProfileHead } from '@/components/me/AccountSection';
 import { ReminderSettings } from '@/components/reminders/ReminderSettings';
 import { remindersSupported } from '@/lib/reminders';
+import { FreezeSlot } from '@/components/me/FreezeSlot';
+import { useMoments } from '@/state/moments';
 import { SkillLadder } from '@/components/me/SkillLadder';
 import { TrainerInbox } from '@/components/me/TrainerInbox';
 import { isSimulatedOffline, setSimulatedOffline, supabaseConfigured } from '@/lib/supabase';
@@ -23,7 +25,6 @@ import {
   PressableSurface,
   Raised,
   Screen,
-  SnowflakeIcon,
   StethoscopeIcon,
   UsersThreeIcon,
   UserIcon,
@@ -107,9 +108,7 @@ export default function Me() {
           <View style={styles.freezesFace} accessible accessibilityLabel={`Streak freezes: ${freezes} of ${MAX_FREEZES}. ${FREEZE_HINT}`}>
             <View style={styles.freezeSlots}>
               {Array.from({ length: MAX_FREEZES }, (_, i) => (
-                <View key={i} style={[styles.freezeSlot, i < freezes && styles.freezeSlotHeld]}>
-                  <SnowflakeIcon size={20} weight="bold" color={i < freezes ? color.primary : color.faint} />
-                </View>
+                <FreezeSlot key={i} held={i < freezes} index={i} />
               ))}
             </View>
             <View style={styles.flex}>
@@ -248,6 +247,24 @@ export default function Me() {
                   }}
                 />
               ) : null}
+              {__DEV__ ? (
+                <LinkRow
+                  title="Play a streak milestone"
+                  onPress={() => {
+                    useMoments.getState().queue({ milestone: 7, from: 6 });
+                    useMoments.getState().release();
+                  }}
+                />
+              ) : null}
+              {__DEV__ ? (
+                <LinkRow
+                  title="Replay the streak freeze reveal"
+                  onPress={() => {
+                    s.previewFreezeReveal();
+                    router.navigate('/');
+                  }}
+                />
+              ) : null}
               {/* a local reset would just sync back from the account */}
               {signedIn ? null : <LinkRow title={s.demo ? 'Reset demo data' : 'Start this track over'} onPress={() => s.resetProgress()} last />}
             </Raised>
@@ -339,17 +356,6 @@ const styles = StyleSheet.create({
   freezes: { marginTop: space[3] },
   freezesFace: { flexDirection: 'row', alignItems: 'center', gap: space[3], padding: space[4] },
   freezeSlots: { flexDirection: 'row', gap: space[2] },
-  freezeSlot: {
-    width: 36,
-    height: 36,
-    borderRadius: radius.badge,
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: color.white,
-    borderWidth: 2,
-    borderColor: color.line,
-  },
-  freezeSlotHeld: { backgroundColor: color.soft, borderColor: color.primaryTint },
   stat: { flex: 1 },
   statFace: { padding: space[3], paddingVertical: space[4], gap: 2, alignItems: 'flex-start' },
   explain: { marginTop: -space[1], marginBottom: space[3] },

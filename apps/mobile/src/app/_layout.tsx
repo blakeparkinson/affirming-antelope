@@ -6,6 +6,7 @@ import { StyleSheet, View } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
 import { BrandSplash } from '@/components/brand/BrandSplash';
+import { MilestoneHost } from '@/components/celebrate/StreakMilestone';
 import { useBrandFonts } from '@/design/fonts';
 import { screenView, startAnalytics } from '@/lib/analytics';
 import { onReminderOpened, startReminders, useReminderTaps } from '@/lib/reminders';
@@ -99,6 +100,7 @@ export default function RootLayout() {
           <Stack.Screen name="sign-in" options={SHEET} />
         </Stack>
       </Animated.View>
+      <MilestoneHost />
       {!splashGone && <BrandSplash reduce={reduce} onDone={onSplashDone} />}
     </GestureHandlerRootView>
   );

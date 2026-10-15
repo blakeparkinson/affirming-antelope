@@ -73,6 +73,7 @@ track). Set on sign-in / when they change (`pathway_id` also when a track is pic
 | `next_step_chosen` | `from` (`drill`, `debrief`, `lesson`), `choice` (`try_again`, `same_skill`, `harder`, `new_scenario`, `one_more`, `done`) |
 | `practice_completed` | `kind`, `ref_id`, `skill?`, `minutes`, `activity_id?`, `in_course`, `pathway_id` |
 | `streak_extended` | `streak_days` |
+| `streak_milestone_reached` | `milestone` (3, 7, 14, 30, 50 or 100), `streak_days` (after the practice). Sent by the device whose practice crossed it, when the milestone moment queues. Once per milestone per streak run: the celebration is written to the synced document, so another device doesn't send it again |
 | `weekly_goal_hit` | `target` |
 | `streak_freeze_used` | `freezes_used` (missed days covered by this use), `freezes_held` (after), `streak_days` (the streak it protected), `saved` (false when a later missed day broke the streak anyway). Sent by the device that records the use, when Home opens or on the next practice |
 | `streak_freeze_earned` | `freezes_held` (after), `at_cap` (already holding 2, so the hit earned nothing). Sent with `weekly_goal_hit`, at most once a week |

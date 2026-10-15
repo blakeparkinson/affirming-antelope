@@ -13,6 +13,7 @@ import { friendlyError, withTimeout, type FriendlyError } from '@/components/pra
 import { Dock, KeyboardColumn, SessionHeader, sessionStyles } from '@/components/practice-loop/SessionChrome';
 import { HeroTarget, SessionSurface, useSession, useSessionClose } from '@/components/practice-loop/SessionSurface';
 import { CoachSays, InstructionChip, LearnerBubble, SpeechCard, useComposerLaunch } from '@/components/practice-loop/Speech';
+import { SunArc } from '@/components/practice-loop/SunArc';
 import { Shimmer } from '@/components/practice-loop/Thinking';
 import { ArrowRightIcon, Button, Chip, Hoofprint, LevelPips, Raised, Text, TextLink, color, drillSpeakerAvatar, haptic, layout, radius, space } from '@/design';
 import { nextDrillId } from '@/data/routes';
@@ -101,7 +102,10 @@ function DrillSession() {
     setComplete(true);
   };
 
+  // the daily rep (Home's card or a reminder): a sun crosses the landscape over its two minutes
+  const isDailyRep = source === 'today';
   const header = (
+    <>
     <SessionHeader
       onClose={close}
       center={
@@ -127,6 +131,8 @@ function DrillSession() {
       }
       trailing={<RepCounter count={done.length} />}
     />
+    {isDailyRep ? <SunArc done={done.length > 0} minutes={mins} /> : null}
+    </>
   );
 
   if (complete) {
