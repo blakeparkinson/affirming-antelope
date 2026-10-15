@@ -10,6 +10,7 @@ import {
   type DrillFeedback,
   type LearnerMove,
   type NextStep,
+  type Stance,
   scenarioFrame,
   type Frame,
   type ScenarioSpec,
@@ -167,18 +168,18 @@ const REPLIES: Record<Frame, typeof SPORTS_REPLIES> = {
   sports: SPORTS_REPLIES,
 };
 
-/** `frame` is the scenario's frame (scenarioFrame(spec)). */
-export function mockEmployeeReply(turns: Turn[], frame: Frame = "workplace"): string {
+/** `frame` is the scenario's frame (scenarioFrame(spec)). The stance is what the line would be played in. */
+export function mockEmployeeReply(turns: Turn[], frame: Frame = "workplace"): { text: string; stance: Stance } {
   const { rapport, lastMove } = rapportAfter(turns);
   const n = turns.filter((t) => t.speaker === "learner").length;
   const pick = (arr: string[]) => arr[(n - 1 + arr.length) % arr.length];
   const replies = REPLIES[frame];
   if (lastMove === "confront" || lastMove === "advice-without-permission" || rapport < -1) {
-    return pick(replies.entrench);
+    return { text: pick(replies.entrench), stance: "discord" };
   }
-  if (rapport < 2) return pick(replies.guarded);
-  if (rapport < 4.5) return pick(replies.opening);
-  return pick(replies.softened);
+  if (rapport < 2) return { text: pick(replies.guarded), stance: rapport < 0 ? "sustain" : "ambivalent" };
+  if (rapport < 4.5) return { text: pick(replies.opening), stance: "ambivalent" };
+  return { text: pick(replies.softened), stance: "change" };
 }
 
 /** Streams text in small chunks with small delays, like a real token stream. */

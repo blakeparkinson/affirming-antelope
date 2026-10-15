@@ -58,6 +58,20 @@ export const zone = {
   holdInk: '#8A7B5C',
 } as const;
 
+/**
+ * The counterpart's warmth in a role-play (warmth.ts): cold slate for pushback,
+ * cool for holding on, the chrome's own line at rest, apricot as they open up.
+ * Felt, never read: these only ever tint the portrait and the header's thread.
+ */
+export const warmth = {
+  cold: '#6F86AE',
+  cool: '#A3B4D3',
+  rest: color.line,
+  warm: '#F0A55E',
+  /** The soft glow behind a portrait that's opening up. */
+  glow: '#FFD3A1',
+} as const;
+
 /** 4pt grid. Use these, not raw numbers. */
 export const space = {
   0: 0,

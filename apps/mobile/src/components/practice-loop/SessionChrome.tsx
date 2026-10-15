@@ -18,12 +18,15 @@ export function SessionHeader({
   closeLabel = 'Close',
   center,
   trailing,
+  footer,
   style,
 }: {
   onClose: () => void;
   closeLabel?: string;
   center?: ReactNode;
   trailing?: ReactNode;
+  /** Along the header's bottom edge, e.g. the role-play's warmth thread. */
+  footer?: ReactNode;
   style?: StyleProp<ViewStyle>;
 }) {
   const insets = useSafeAreaInsets();
@@ -35,6 +38,7 @@ export function SessionHeader({
           <View style={styles.center}>{center}</View>
           <View style={styles.trailing}>{trailing}</View>
         </View>
+        {footer ? <View style={styles.footer}>{footer}</View> : null}
       </View>
     </DismissZone>
   );
@@ -136,6 +140,7 @@ const styles = StyleSheet.create({
   header: { paddingHorizontal: layout.gutter - 10, paddingBottom: space[2], backgroundColor: color.white, zIndex: 3 },
   headerRow: { flexDirection: 'row', alignItems: 'center', minHeight: 48, gap: space[2], width: '100%', maxWidth: layout.maxWidth + 20, alignSelf: 'center' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  footer: { position: 'absolute', left: layout.gutter, right: layout.gutter, bottom: 0 },
   trailing: { minWidth: 44, alignItems: 'flex-end', justifyContent: 'center', paddingRight: 10 },
   dock: { backgroundColor: color.white, paddingHorizontal: layout.gutter, paddingTop: space[3] },
   dockRule: { borderTopWidth: 2, borderTopColor: color.line },

@@ -166,17 +166,20 @@ export async function postForResponse(path: string, body: unknown, signal?: Abor
  * `response.body` as a ReadableStream. This uses `expo/fetch` (WinterCG fetch
  * with streaming, available in Expo Go on SDK 52+) on native, and the browser
  * `fetch` on web. If a stream still isn't available, it falls back to reading
- * the whole body and calls `onChunk` once with the full text.
+ * the whole body and calls `onChunk` once with the full text. `onHeaders`
+ * gets the successful response's headers before the first chunk.
  */
 export async function postStream(
   path: string,
   body: unknown,
   onChunk: (text: string) => void,
   signal?: AbortSignal,
+  onHeaders?: (headers: Headers) => void,
 ): Promise<string> {
   const doFetch = (expoFetch as unknown as typeof fetch) ?? fetch;
   const res = await send(doFetch, path, body, signal);
   if (!res.ok) throw await failure(res, path);
+  onHeaders?.(res.headers);
 
   const reader = res.body?.getReader?.();
   if (!reader) {

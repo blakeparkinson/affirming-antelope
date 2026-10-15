@@ -1,4 +1,4 @@
-import type { Turn } from '@antelope/core';
+import { isStance, type Stance, type Turn } from '@antelope/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { friendlyError, withTimeout, type FriendlyError } from '@/components/practice-loop/errors';
 import { postStream } from '@/lib/api';
@@ -8,6 +8,8 @@ export interface PendingReply {
   text: string;
   /** Still "thinking": show the typing dots. */
   typing: boolean;
+  /** How they're saying it (warmth.ts), known once the reply starts; never shown as a label. */
+  stance?: Stance;
 }
 
 const TICK = 33;
@@ -33,7 +35,7 @@ export function useEmployeeReply(scenarioId: string) {
   useEffect(() => () => live.current?.stop(), []);
 
   const request = useCallback(
-    (turns: Turn[], replyId: string, onDone: (text: string) => void, sink?: ReplyStreamSink) => {
+    (turns: Turn[], replyId: string, onDone: (text: string, stance?: Stance) => void, sink?: ReplyStreamSink) => {
       live.current?.stop();
       setError(null);
       const lastLearner = [...turns].reverse().find((t) => t.speaker === 'learner')?.text ?? '';
@@ -45,6 +47,7 @@ export function useEmployeeReply(scenarioId: string) {
       let failure: unknown = null;
       let last = Date.now();
       let stopped = false;
+      let stance: Stance | undefined;
 
       setPending({ id: replyId, text: '', typing: true });
       const req = withTimeout(30_000);
@@ -52,7 +55,7 @@ export function useEmployeeReply(scenarioId: string) {
       const finish = (text: string) => {
         stop();
         setPending(null);
-        onDone(text.trim());
+        onDone(text.trim(), stance);
       };
 
       const tick = setInterval(() => {
@@ -62,7 +65,7 @@ export function useEmployeeReply(scenarioId: string) {
         if (failure && shown >= buffer.length) {
           stop();
           setPending(null);
-          if (shown > 0) onDone(buffer.slice(0, shown).trim());
+          if (shown > 0) onDone(buffer.slice(0, shown).trim(), stance);
           else setError(friendlyError(failure));
           return;
         }
@@ -80,7 +83,7 @@ export function useEmployeeReply(scenarioId: string) {
         next = Math.min(next, buffer.length);
         budget -= next - shown;
         shown = next;
-        setPending({ id: replyId, text: buffer.slice(0, shown), typing: false });
+        setPending({ id: replyId, text: buffer.slice(0, shown), typing: false, stance });
         if (streamDone && shown >= buffer.length) finish(buffer);
       }, TICK);
 
@@ -101,6 +104,10 @@ export function useEmployeeReply(scenarioId: string) {
           sink?.push(chunk);
         },
         req.signal,
+        (headers) => {
+          const s = headers.get('x-stance');
+          if (isStance(s)) stance = s;
+        },
       )
         .then((full) => {
           if (full && full.length >= buffer.length) buffer = full;

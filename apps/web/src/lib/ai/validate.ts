@@ -1,4 +1,4 @@
-import type { SelfReflection, Turn } from "@antelope/core";
+import { isStance, type SelfReflection, type Turn } from "@antelope/core";
 import { ApiError } from "./http";
 
 export const MAX_TURNS = 40;
@@ -35,7 +35,8 @@ export function parseTurns(raw: unknown, opts: { lastMustBeLearner: boolean }): 
     if (text.length > MAX_TURN_CHARS) {
       throw new ApiError(400, `turns[${i}].text is too long (max ${MAX_TURN_CHARS} characters).`);
     }
-    return { id, speaker, text: text.trim() };
+    // the stance a counterpart line was played in, so the role-player keeps its tags (warmth.ts)
+    return speaker === "employee" && isStance(t.stance) ? { id, speaker, text: text.trim(), stance: t.stance } : { id, speaker, text: text.trim() };
   });
 
   if (!turns.some((t) => t.speaker === "learner")) throw new ApiError(400, "turns must include a learner turn.");
