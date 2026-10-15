@@ -2,7 +2,7 @@ import type { MoveTier } from '@antelope/core';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useEffect, useRef, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withSpring, withTiming } from 'react-native-reanimated';
 import { MoveMarker } from '@/components/practice-loop/MoveMarker';
 import type { MoveFamily } from '@/components/practice-loop/moves';
 import { color, haptic, moveColor, radius } from '@/design';
@@ -55,7 +55,8 @@ export function MoveStamp({ stamp, onPeak }: { stamp: Stamp; onPeak?: (tier: Mov
     timers.push(
       setTimeout(() => {
         if (reduce) {
-          o.value = withTiming(1, { duration: FADE_MS });
+          // Reanimated skips animations under the OS setting; this fade is the reduced-motion version, so it always runs
+          o.value = withTiming(1, { duration: FADE_MS, reduceMotion: ReduceMotion.Never });
           return;
         }
         o.value = withTiming(1, { duration: 70 });
