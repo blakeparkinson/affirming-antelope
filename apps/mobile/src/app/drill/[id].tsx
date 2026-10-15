@@ -1,4 +1,4 @@
-import { getDrill, getSkill, getSkillLevel, streakAfterPractice, type Drill, type DrillFeedback } from '@antelope/core';
+import { dayKey, getDrill, getSkill, getSkillLevel, streakAfterPractice, type Drill, type DrillFeedback } from '@antelope/core';
 import { useIsFocused, useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState } from 'react';
 import { ScrollView, StyleSheet, View } from 'react-native';
@@ -20,7 +20,7 @@ import { nextDrillId } from '@/data/routes';
 import { postJson } from '@/lib/api';
 import { practiceSource, track } from '@/lib/analytics';
 import { Enter, Expand, FADE_MS, RollingNumber, spring, useFades, useForwardSwap, useReduceMotion } from '@/motion';
-import { activePathwayId, today, useLearner } from '@/state/store';
+import { activePathwayId, useLearner } from '@/state/store';
 
 /**
  * The daily habit loop. One drill at a time; "One more?" chains through the
@@ -52,7 +52,7 @@ function DrillSession() {
   const recorded = useRef(false);
   const [day] = useState(() => {
     const s = useLearner.getState();
-    return streakAfterPractice(s.streak, today(), s.freezes).streak.days;
+    return streakAfterPractice(s.streak, dayKey(), s.freezes).streak.days;
   });
   const mins = Number(minutes) || 5;
   const drill = getDrill(drillId);

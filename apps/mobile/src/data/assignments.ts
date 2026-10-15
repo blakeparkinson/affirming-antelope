@@ -1,4 +1,4 @@
-import { getSkill, type DemoTrainerAssignment } from '@antelope/core';
+import { dayKey, daysBetween, getSkill, type DemoTrainerAssignment } from '@antelope/core';
 import type { Assignment, AssignmentItem, Cohort } from '@/state/account';
 import { personSeed } from '@/state/account';
 import type { PracticeRecord } from '@/state/store';
@@ -64,8 +64,7 @@ export function demoAssignmentView(a: DemoTrainerAssignment): AssignmentView {
 export function dueLabel(iso: string | null, now = new Date()): { label: string; overdue: boolean } {
   if (!iso) return { label: 'No due date', overdue: false };
   const due = new Date(iso);
-  const day = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
-  const days = Math.round((day(due) - day(now)) / 86_400_000);
+  const days = daysBetween(dayKey(now), dayKey(due));
   const md = due.toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',

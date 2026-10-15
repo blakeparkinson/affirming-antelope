@@ -1,4 +1,4 @@
-import { addDays, getSkill } from '@antelope/core';
+import { addDays, dayAt, dayKey, getSkill, type DayKey } from '@antelope/core';
 import { router, useFocusEffect, useIsFocused } from 'expo-router';
 import { useCallback, useEffect, useMemo, useRef, useState, type RefObject } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
@@ -34,7 +34,8 @@ import { openDrill, openRoleplay, pickDrill, pickScenario } from '@/data/routes'
 import { Enter, FADE_MS, RollingNumber, useListLayout, useReduceMotion } from '@/motion';
 import { useActivePathway, useCurrentUnit, useCurrentWeek, useFrozenThisWeek, useProgressRows, useStreakDays, useThisWeek, weekLabel } from '@/state/selectors';
 import { useMoments } from '@/state/moments';
-import { today, useLearner, type FreezeNotice } from '@/state/store';
+import { useLearner, type FreezeNotice } from '@/state/store';
+import { useToday } from '@/state/useToday';
 
 function greeting(d = new Date()) {
   const h = d.getHours();
@@ -44,17 +45,13 @@ function greeting(d = new Date()) {
   return 'Good evening';
 }
 
-function dateLine(d = new Date()) {
-  return d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+function dateLine(day: DayKey) {
+  return dayAt(day).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
 }
 
 /** "A streak freeze covered yesterday, so your 12-day streak is safe. You have 1 left." */
-function freezeNoteText({ days, streakDays, held }: FreezeNotice, day = today()) {
-  const name = (d: string) => {
-    if (d === addDays(day, -1)) return 'yesterday';
-    const [y, m, dd] = d.split('-').map(Number);
-    return new Date(y, m - 1, dd, 12).toLocaleDateString(undefined, { weekday: 'long' });
-  };
+function freezeNoteText({ days, streakDays, held }: FreezeNotice, day: DayKey) {
+  const name = (d: string) => (d === addDays(day, -1) ? 'yesterday' : dayAt(d).toLocaleDateString(undefined, { weekday: 'long' }));
   const names = days.map(name);
   const which = names.length === 1 ? names[0] : `${names.slice(0, -1).join(', ')} and ${names[names.length - 1]}`;
   const covered = days.length === 1 ? `A streak freeze covered ${which}` : `Streak freezes covered ${which}`;
@@ -87,6 +84,8 @@ export default function Home() {
   const { weeklyGoal: goal, weekDays } = useThisWeek();
   const frozenDays = useFrozenThisWeek();
   const settleStreak = useLearner((s) => s.settleStreak);
+  // Home stays mounted under the tabs: settle again when the day turns while it's open, or when the app comes back on a later day
+  const day = useToday();
   // Freezes spend themselves when Home opens. A new one gets a note and its pip's ice reveal, for this visit only.
   const [freezeNote, setFreezeNote] = useState<string | null>(null);
   const [freezePips, setFreezePips] = useState<boolean[] | null>(null);
@@ -94,7 +93,7 @@ export default function Home() {
     useCallback(() => {
       const used = settleStreak();
       if (used) {
-        setFreezeNote(freezeNoteText(used));
+        setFreezeNote(freezeNoteText(used, day));
         setFreezePips(used.pips);
       }
       // a milestone moment that didn't get its turn after the practice (closed early) plays here
@@ -104,7 +103,7 @@ export default function Home() {
         setFreezeNote(null);
         setFreezePips(null);
       };
-    }, [settleStreak]),
+    }, [settleStreak, day]),
   );
   const coach = useRef<MascotHandle>(null);
   const shiver = useCallback(() => coach.current?.shiver(), []);
@@ -124,7 +123,7 @@ export default function Home() {
   }, [focused, rep]);
 
   // The coach waves on the first visit of the day only.
-  const [greet] = useState(() => useLearner.getState().lastGreetedDay !== today());
+  const [greet] = useState(() => useLearner.getState().lastGreetedDay !== dayKey());
   useEffect(() => {
     if (greet) markGreeted();
   }, [greet, markGreeted]);
@@ -189,7 +188,7 @@ export default function Home() {
           }}
         >
           <Text variant="caption" color={color.muted}>
-            {dateLine()}
+            {dateLine(day)}
           </Text>
           <Text variant="title" accessibilityRole="header" style={styles.hello}>
             {firstName ? (

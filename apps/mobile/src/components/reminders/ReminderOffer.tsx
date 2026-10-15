@@ -4,6 +4,7 @@ import { StyleSheet, View } from 'react-native';
 import { BottomSheet, Button, SegmentedControl, Text, TextLink, color, space } from '@/design';
 import { track } from '@/lib/analytics';
 import { openNotificationSettings, remindersSupported, turnOnReminders } from '@/lib/reminders';
+import { useMoments } from '@/state/moments';
 import { useLearner } from '@/state/store';
 
 type Phase = 'ask' | 'busy' | 'on' | 'blocked';
@@ -39,16 +40,18 @@ export function ReminderOffer({ ready = true }: { ready?: boolean }) {
   const [timeIndex, setTimeIndex] = useState(TIME_INDEX);
   const opened = useRef(false);
   const busy = useRef(false);
+  // a streak milestone crossed by this practice has the screen first; the sheet rises after it
+  const moment = useMoments((s) => !!(s.queued || s.showing));
 
   useEffect(() => {
-    if (!offer || !ready || opened.current) return;
+    if (!offer || !ready || moment || opened.current) return;
     const t = setTimeout(() => {
       opened.current = true;
       setOpen(true);
       track('reminder_prompt_shown', { ask: (useLearner.getState().settings.reminderAsks ?? 0) + 1 });
     }, OPEN_AFTER_MS);
     return () => clearTimeout(t);
-  }, [offer, ready]);
+  }, [offer, ready, moment]);
 
   if (!offer) return null;
 

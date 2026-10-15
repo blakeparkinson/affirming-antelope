@@ -34,11 +34,13 @@ export function dayKey(d: Date = new Date()): DayKey {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
-/** A day key as a local date at noon (clear of DST shifts at midnight). */
-function parseDay(day: DayKey): Date {
+/** A day key at a local wall-clock time. Noon by default: clear of DST shifts at midnight. */
+export function dayAt(day: DayKey, hour = 12, minute = 0): Date {
   const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d, 12);
+  return new Date(y, m - 1, d, hour, minute, 0, 0);
 }
+
+const parseDay = (day: DayKey) => dayAt(day);
 
 export function isDayKey(v: unknown): v is DayKey {
   return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
@@ -64,6 +66,20 @@ export function weekStartOf(day: DayKey): DayKey {
 /** Whole calendar days from `a` to `b` (b - a). */
 export function daysBetween(a: DayKey, b: DayKey): number {
   return Math.round((parseDay(b).getTime() - parseDay(a).getTime()) / 86_400_000);
+}
+
+/** Time zones span 26 hours, so a flight can set the local date back at most two days. */
+const MAX_DAYS_BACK = 2;
+
+/**
+ * The day a practice on `today` counts for: today, or the last practice day when the clock
+ * reads up to two days earlier than it (a flight west). So no day counts twice and a run
+ * never moves backwards. A last practice further ahead came from a clock that was wrong,
+ * and doesn't hold later practice to its day. The reminder plan reads a future practice the same way.
+ */
+export function practiceDay(today: DayKey, lastPracticeDay: DayKey | null): DayKey {
+  if (!lastPracticeDay || lastPracticeDay <= today) return today;
+  return daysBetween(today, lastPracticeDay) <= MAX_DAYS_BACK ? lastPracticeDay : today;
 }
 
 const emptyWeekDays = () => Array.from({ length: 7 }, () => false);
@@ -170,18 +186,19 @@ export function liveStreakDays(streak: Streak, today: DayKey, freezes: StreakFre
 /**
  * The streak after practising on `today`: same day keeps it, the day after extends it,
  * a gap the freezes cover extends it (frozen days don't add to the count), any other gap
- * restarts it. Returns the ledger with the frozen days recorded.
+ * restarts it. A clock that reads before the last practice counts as that day
+ * (`practiceDay`). Returns the ledger with the frozen days recorded.
  */
 export function streakAfterPractice(
   streak: Streak,
   today: DayKey,
   freezes: StreakFreezes,
 ): { streak: Streak; freezes: StreakFreezes; used: DayKey[] } {
-  const last = streak.lastPracticeDay;
-  if (last === today && streak.days > 0) return { streak, freezes, used: [] };
-  const settled = settleFreezes(streak, freezes, today);
+  const day = practiceDay(today, streak.lastPracticeDay);
+  if (streak.lastPracticeDay === day && streak.days > 0) return { streak, freezes, used: [] };
+  const settled = settleFreezes(streak, freezes, day);
   const days = settled.alive ? streak.days + 1 : 1;
-  return { streak: { days, lastPracticeDay: today }, freezes: settled.freezes, used: settled.used };
+  return { streak: { days, lastPracticeDay: day }, freezes: settled.freezes, used: settled.used };
 }
 
 /** The first practice day of the run ending on `lastPracticeDay`, stepping over frozen days. */
@@ -273,11 +290,12 @@ export function freezeReveal(
 
 /**
  * The weekly goal as of `today`: the stored week if it is this week, else an empty week
- * (same target, same weeks-hit count). Returns the input itself when nothing changes.
+ * (same target, same weeks-hit count). A clock that reads the week before the stored one
+ * (a flight west over Sunday midnight) keeps it. Returns the input itself when nothing changes.
  */
 export function weekAsOf<T extends PracticeWeek>(w: T, today: DayKey): T {
   const start = weekStartOf(today);
-  if (w.weekStart === start) return w;
+  if (w.weekStart === start || (w.weekStart && start < w.weekStart && daysBetween(start, w.weekStart) <= 7)) return w;
   return { ...w, weekStart: start, weekDays: emptyWeekDays(), weeklyGoal: { ...w.weeklyGoal, done: 0 } };
 }
 

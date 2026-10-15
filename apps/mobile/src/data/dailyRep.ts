@@ -1,7 +1,8 @@
 import { DAILY_REP_MINUTES, DAILY_REP_RECENT_DAYS, addDays, dayKey, getDrill, getSkill, pickDailyRep, type DailyRep, type DailyRepEntry, type PathwayId, type SkillId } from '@antelope/core';
 import { useEffect, useMemo } from 'react';
 import { track } from '@/lib/analytics';
-import { today, useLearner, type LearnerState } from '@/state/store';
+import { useLearner, type LearnerState } from '@/state/store';
+import { useToday } from '@/state/useToday';
 import { getPathway } from './pathways';
 import { openDrill } from './routes';
 
@@ -51,7 +52,7 @@ function titleOf(drillId: string, pathwayId: PathwayId): string {
 }
 
 /** Today's rep, and the pin to store when it isn't pinned yet. */
-export function dailyRepFor(s: RepInputs, day: string = today()): { view: DailyRepView; pin: RepInputs['dailyRep'] } | null {
+export function dailyRepFor(s: RepInputs, day: string = dayKey()): { view: DailyRepView; pin: RepInputs['dailyRep'] } | null {
   const pathway = s.activePathwayId;
   const { completedToday, recentDrillIds } = history(s, day);
   const pinned = s.dailyRep;
@@ -85,7 +86,7 @@ export function useDailyRep(): DailyRepView | null {
   const activePathwayId = useLearner((s) => s.activePathwayId);
   const dailyRep = useLearner((s) => s.dailyRep);
   const pinDailyRep = useLearner((s) => s.pinDailyRep);
-  const day = today();
+  const day = useToday();
   const r = useMemo(
     () => dailyRepFor({ skills, practiceLog, sessions, activePathwayId, dailyRep }, day),
     [skills, practiceLog, sessions, activePathwayId, dailyRep, day],
@@ -100,7 +101,7 @@ const shown = new Set<string>();
 
 /** Home shows the card: once per drill and state a day, however often Home is opened. */
 export function dailyRepShown(rep: DailyRepView): void {
-  const key = `${today()}|${rep.drillId}|${rep.done}`;
+  const key = `${dayKey()}|${rep.drillId}|${rep.done}`;
   if (shown.has(key)) return;
   shown.add(key);
   track('daily_rep_shown', { drill_id: rep.drillId, skill: rep.skill, done: rep.done, pathway_id: useLearner.getState().activePathwayId });
