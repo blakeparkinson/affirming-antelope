@@ -1,4 +1,4 @@
-import { Stack, usePathname } from 'expo-router';
+import { Stack, usePathname, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { useCallback, useEffect, useState } from 'react';
@@ -8,7 +8,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-na
 import { BrandSplash } from '@/components/brand/BrandSplash';
 import { useBrandFonts } from '@/design/fonts';
 import { screenView, startAnalytics } from '@/lib/analytics';
-import { onReminderOpened, startReminders } from '@/lib/reminders';
+import { onReminderOpened, startReminders, useReminderTaps } from '@/lib/reminders';
 import { color } from '@/design/tokens';
 import { spring } from '@/motion/springs';
 import { useReduceMotion } from '@/motion/useMotionPrefs';
@@ -69,6 +69,9 @@ export default function RootLayout() {
   }, [ready, reduce, rise]);
 
   const onSplashDone = useCallback(() => setSplashGone(true), []);
+  // a tapped reminder opens today's rep, from the tabs only (never over a practice session)
+  const segments = useSegments();
+  useReminderTaps(ready && onboarded && splashGone, segments[0] === '(tabs)');
   const app = useAnimatedStyle(() => ({ transform: [{ scale: 0.97 + 0.03 * rise.value }] }));
 
   if (!ready) return <View style={styles.root} />;

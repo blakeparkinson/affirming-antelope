@@ -1,6 +1,7 @@
 import { noFreezeHistory, planReminders, type ReminderPrefs, type ReminderSource } from '@antelope/core';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { AppState } from 'react-native';
+import { currentDailyRep, startDailyRep } from '@/data/dailyRep';
 import { track } from '@/lib/analytics';
 import { useLearner, type LearnerState } from '@/state/store';
 import { notifier } from './notify';
@@ -70,14 +71,46 @@ export function startReminders(): void {
   }
 }
 
-/** Reminder taps, for analytics. The app opens where it was (Home on a cold start). */
+/** A tap that came in before the app could navigate (the one that launched it). */
+let pending: ReminderOpen | null = null;
+let deliver: ((open: ReminderOpen) => void) | null = null;
+
+/** Reminder taps: counted, then routed by `useReminderTaps` (held until it's mounted). */
 export function onReminderOpened(listener?: (open: ReminderOpen) => void): () => void {
   return notifier.onOpen((open) => {
     if (open.kind) track('reminder_opened', { kind: open.kind });
     listener?.(open);
+    if (deliver) deliver(open);
+    else pending = open;
   });
 }
 
+/**
+ * Root layout: a tapped reminder opens today's rep, once the app can navigate (`canRoute`:
+ * hydrated, onboarded, splash gone). Only from a tab screen: a tap that lands mid-session
+ * just brings the app back to that session. Once today's rep is done there's nothing to
+ * open, so the app stays where it was.
+ */
+export function useReminderTaps(canRoute: boolean, onTabs: boolean): void {
+  const onTabsRef = useRef(onTabs);
+  onTabsRef.current = onTabs;
+  useEffect(() => {
+    if (!canRoute) return;
+    const route = () => {
+      if (!onTabsRef.current) return;
+      const rep = currentDailyRep();
+      if (rep && !rep.done) startDailyRep(rep, rep.drillId, 'reminder');
+    };
+    deliver = route;
+    if (pending) {
+      pending = null;
+      route();
+    }
+    return () => {
+      deliver = null;
+    };
+  }, [canRoute]);
+}
 
 /**
  * Turn reminders on at `time`: asks for permission first when it still can. Returns the
