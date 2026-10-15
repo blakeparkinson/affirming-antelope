@@ -201,7 +201,7 @@ export default function Home() {
         {rep ? <DailyRepCard rep={rep} onStart={(id) => startDailyRep(rep, id, 'home')} /> : null}
       </Enter>
 
-      {/* a trainer's feedback is the most personal thing on Home: right under today's practice */}
+      {/* a trainer's feedback is the most personal thing on Home: right under the daily rep */}
       {newest ? (
         <Animated.View layout={listLayout}>
           <Enter index={2} from="scale" style={styles.feedback}>
