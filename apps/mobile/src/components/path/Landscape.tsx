@@ -1,8 +1,8 @@
-import type { Setting } from '@antelope/core';
-import { memo } from 'react';
+import { LANDSCAPE_TINTS, type Setting } from '@antelope/core';
+import { memo, type ReactNode } from 'react';
 import { StyleSheet, View } from 'react-native';
 import Animated, { useAnimatedStyle, type SharedValue } from 'react-native-reanimated';
-import Svg, { Circle, Ellipse, G, Path, Rect } from 'react-native-svg';
+import Svg, { Ellipse, G, Path, Rect } from 'react-native-svg';
 import { color } from '@/design';
 import { BAND_DEPTH, ridgeLag, SKY_LAG, type Band, type BandPalette, type Motif, type Prop } from './geometry';
 
@@ -18,18 +18,19 @@ export function motifFor(setting: Setting): Motif {
  * end in the same ochre-tint meadow (arrival is an achievement); the earth tones
  * between are what differ: warm sand on the savanna, pale sage on the wetland.
  */
+// the hexes live in core, where the caption-contrast tests check them under every light
 export const PALETTES: Record<Motif, BandPalette> = {
   savanna: {
-    horizon: '#F4F6FF',
-    cool: [color.soft, color.softDeep, '#E9EDFD'],
-    earth: ['#FCF3E3', '#F7F1E6'],
-    meadow: '#FBEED6',
+    horizon: LANDSCAPE_TINTS.horizon,
+    cool: [...LANDSCAPE_TINTS.cool],
+    earth: [...LANDSCAPE_TINTS.savannaEarth],
+    meadow: LANDSCAPE_TINTS.meadow,
   },
   wetland: {
-    horizon: '#F4F6FF',
-    cool: [color.soft, color.softDeep, '#E9EDFD'],
-    earth: ['#EAF4F1', '#E3EFEB'],
-    meadow: '#FBEED6',
+    horizon: LANDSCAPE_TINTS.horizon,
+    cool: [...LANDSCAPE_TINTS.cool],
+    earth: [...LANDSCAPE_TINTS.wetlandEarth],
+    meadow: LANDSCAPE_TINTS.meadow,
   },
 };
 
@@ -37,7 +38,8 @@ export const PALETTES: Record<Motif, BandPalette> = {
  * Flat, banded landscape in brand tints. Ridges lag behind the trail more the
  * higher they sit on screen (the horizon is up), and the sun lags most, so it
  * sinks behind the first ridge as you set off (see `ridgeLag`). Navy appears
- * only as tiny accents: a few birds, a few acacias or reeds.
+ * only as tiny accents: a few birds, a few acacias or reeds. `sky` is what hangs in the sky
+ * layer (the sun or moon, see Daylight), lagging with it.
  */
 export const Landscape = memo(function Landscape({
   bands,
@@ -45,17 +47,20 @@ export const Landscape = memo(function Landscape({
   height,
   scrollY,
   viewportH,
+  sky,
 }: {
   bands: Band[];
   width: number;
   height: number;
   scrollY: SharedValue<number>;
   viewportH: number;
+  sky?: ReactNode;
 }) {
-  const sky = useAnimatedStyle(() => ({ transform: [{ translateY: Math.min(Math.max(scrollY.value, 0), 600) * SKY_LAG }] }));
+  const skyLag = useAnimatedStyle(() => ({ transform: [{ translateY: Math.min(Math.max(scrollY.value, 0), 600) * SKY_LAG }] }));
   return (
     <View pointerEvents="none" style={[StyleSheet.absoluteFill, { height }]}>
-      <Animated.View style={[StyleSheet.absoluteFill, sky]}>
+      <Animated.View style={[StyleSheet.absoluteFill, skyLag]}>
+        {sky}
         <Sky width={width} />
       </Animated.View>
       {bands.map((b, i) => (
@@ -68,8 +73,6 @@ export const Landscape = memo(function Landscape({
 function Sky({ width }: { width: number }) {
   return (
     <Svg width={width} height={260} style={StyleSheet.absoluteFill}>
-      <Circle cx={width * 0.8} cy={150} r={46} fill={color.gold} opacity={0.16} />
-      <Circle cx={width * 0.8} cy={150} r={28} fill={color.gold} opacity={0.22} />
       <Birds x={width * 0.18} y={170} />
     </Svg>
   );

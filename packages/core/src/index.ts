@@ -17,3 +17,5 @@ export * from "./learnerDoc";
 export type { Database, Json, Tables, TablesInsert, TablesUpdate } from "./db.types";
 export * from "./analytics";
 export * from "./recap";
+export * from "./bounds";
+export * from "./daylight";
