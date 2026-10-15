@@ -5,6 +5,7 @@ import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useSta
 import { AppState, StyleSheet, View } from 'react-native';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
+import { riveCall } from '@/lib/riveCall';
 import { spring } from '@/motion/springs';
 import { useReduceMotion } from '@/motion/useMotionPrefs';
 import { runPronk, runShiver } from './choreo';
@@ -85,8 +86,8 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
   useEffect(() => {
     const v = view.current;
     if (!v || !viewReady) return;
-    if (live) v.play().catch(() => {});
-    else v.pause().catch(() => {});
+    if (live) riveCall(() => v.play()).catch(() => {});
+    else riveCall(() => v.pause()).catch(() => {});
   }, [live, viewReady]);
 
   // ---- pose changes: squash, swap at the bottom, stretch, settle (the Rive side swaps instantly)
@@ -152,7 +153,7 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
   const onHybridRef = useCallback((r: RiveViewRef | null) => {
     view.current = r;
     if (!r) return;
-    r.awaitViewReady()
+    riveCall(() => r.awaitViewReady())
       .then((ok) => setViewReady(ok))
       .catch(() => setFailed(true));
   }, []);
