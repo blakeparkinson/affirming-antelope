@@ -175,6 +175,11 @@ export interface Turn {
    */
   speaker: "learner" | "employee";
   text: string;
+  /**
+   * Counterpart lines in a live role-play: the stance the role-player played the
+   * line in (warmth.ts). Drives the portrait and the warmth thread; never shown as a label.
+   */
+  stance?: Stance;
 }
 
 /** MITI-informed behavior codes for learner turns. */

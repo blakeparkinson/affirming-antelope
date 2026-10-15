@@ -1,4 +1,4 @@
-import { rolePlayerMessages, rolePlayerSystemPrompt, type ScenarioSpec, type Turn } from "@antelope/core";
+import { parseStanceTag, rolePlayerMessages, rolePlayerSystemPrompt, type ScenarioSpec, type Stance, type Turn } from "@antelope/core";
 import { ApiError } from "./http";
 import { logUsage, resolveRole } from "./providers";
 
@@ -6,17 +6,20 @@ const TURN_TIMEOUT_MS = 45_000;
 const encoder = new TextEncoder();
 
 /**
- * Streams the employee's next line as UTF-8 text deltas.
+ * Streams the employee's next line as UTF-8 text deltas, with the stance it was
+ * played in.
  *
- * The first delta is awaited before returning, so failures that happen before
- * any output (bad key, rate limit, refusal, timeout) can still become a clean
- * JSON error with a real status code instead of a broken 200 stream.
+ * The reply opens with a private stance tag ("[change] ..."). It is read off
+ * before returning and never streamed, so the learner only ever gets the words;
+ * the stance goes back as a header. Waiting for it also means failures that
+ * happen before any output (bad key, rate limit, refusal, timeout) can still
+ * become a clean JSON error with a real status code instead of a broken 200 stream.
  */
 export async function streamEmployeeReply(
   spec: ScenarioSpec,
   turns: Turn[],
   signal: AbortSignal,
-): Promise<ReadableStream<Uint8Array>> {
+): Promise<{ stance?: Stance; body: ReadableStream<Uint8Array> }> {
   const { provider, model } = resolveRole("rolePlayer");
   const started = Date.now();
   const log = async (label: string, ttfbMs?: number) =>
@@ -42,17 +45,35 @@ export async function streamEmployeeReply(
   });
 
   const iterator = stream[Symbol.asyncIterator]();
-  const first = await iterator.next();
-  if (first.done || !first.value) {
+  // read until the tag is settled and there are words to send
+  let head = "";
+  let ended = false;
+  let tag = parseStanceTag(head);
+  while (!tag.done || !tag.text) {
+    const next = await iterator.next();
+    if (next.done) {
+      ended = true;
+      tag = parseStanceTag(head, true);
+      break;
+    }
+    head += next.value;
+    tag = parseStanceTag(head);
+  }
+  const first = tag.done ? tag.text : "";
+  if (!first.trim()) {
     await log("roleplay.turn(empty)");
     throw new ApiError(502, "The AI did not produce a reply. Please try again.");
   }
   const ttfbMs = Date.now() - started;
 
-  return new ReadableStream<Uint8Array>({
+  const body = new ReadableStream<Uint8Array>({
     async start(controller) {
       try {
-        controller.enqueue(encoder.encode(first.value));
+        controller.enqueue(encoder.encode(first));
+        if (ended) {
+          await log("roleplay.turn", ttfbMs);
+          return controller.close();
+        }
         for (;;) {
           const next = await iterator.next();
           if (next.done) break;
@@ -70,6 +91,7 @@ export async function streamEmployeeReply(
       stream.abort();
     },
   });
+  return { stance: tag.done ? tag.stance : undefined, body };
 }
 
 function errName(err: unknown): string {

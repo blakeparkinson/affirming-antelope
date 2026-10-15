@@ -1,4 +1,4 @@
-import { scenarioFrame, type ScenarioSpec, type Turn } from '@antelope/core';
+import { scenarioFrame, type ScenarioSpec, type Stance, type Turn } from '@antelope/core';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
@@ -28,6 +28,7 @@ import {
 import { track } from '@/lib/analytics';
 import { useLearner } from '@/state/store';
 import { FADE_MS, spring, useFades, useListLayout, useReduceMotion, useTickSwap } from '@/motion';
+import { PersonaPresence, WarmthThread, useWarmth } from './Presence';
 import { useEmployeeReply } from './useEmployeeReply';
 import { TalkDock } from './voice/TalkDock';
 import { useVoiceTurn, type VoiceFallback } from './voice/useVoiceTurn';
@@ -131,6 +132,15 @@ export function Conversation({
   const rows: Row[] = turns.map((t) => ({ id: t.id, speaker: t.speaker, text: t.text, live: false, typing: false }));
   if (pending) rows.push({ id: pending.id, speaker: 'employee', text: pending.text, live: true, typing: pending.typing || !pending.text });
 
+  // how they're carrying themselves: the line being said now, else the last one (while they think, they hold)
+  const lastSaid = [...turns].reverse().find((t) => t.speaker === 'employee');
+  const speaking = pending && !pending.typing && pending.text ? pending : null;
+  const stance: Stance | undefined = speaking ? speaking.stance : lastSaid?.stance;
+  const line = speaking ? speaking.id : lastSaid?.id;
+  const warmth = useWarmth(stance);
+  // the first time they open up in this conversation (not the opening line): a light haptic and a spark
+  const opened = stance === 'change' && line !== turns[0]?.id;
+
   const send = () => {
     const text = draft.trim();
     if (!text || pending) return;
@@ -143,10 +153,11 @@ export function Conversation({
     let base = turnsRef.current;
     if (spoken && pending) {
       // they cut in while the reply was still arriving: keep what had been said
+      const how = pending.stance;
       const partial = pending.typing ? (cut(), '') : cut();
       if (partial) {
         streamed.current.add(`t${base.length}`);
-        base = [...base, { id: `t${base.length}`, speaker: 'employee', text: partial }];
+        base = [...base, withStance({ id: `t${base.length}`, speaker: 'employee', text: partial }, how)];
       }
     }
     const said = base.filter((t) => t.speaker === 'learner').length;
@@ -163,11 +174,11 @@ export function Conversation({
     request(
       history,
       `t${history.length}`,
-      (reply) => {
+      (reply, said) => {
         if (!reply) return;
         const now = turnsRef.current;
         streamed.current.add(`t${now.length}`);
-        const nextTurns: Turn[] = [...now, { id: `t${now.length}`, speaker: 'employee', text: reply }];
+        const nextTurns: Turn[] = [...now, withStance({ id: `t${now.length}`, speaker: 'employee', text: reply }, said)];
         turnsRef.current = nextTurns;
         onTurns(nextTurns);
       },
@@ -179,8 +190,9 @@ export function Conversation({
   const end = () => {
     voice.stopSpeaking();
     // keep whatever has been said so far, including a reply mid-sentence
+    const said = pending?.stance;
     const partial = pending && !pending.typing ? cut() : (cut(), '');
-    const final = partial ? [...turns, { id: `t${turns.length}`, speaker: 'employee' as const, text: partial }] : turns;
+    const final = partial ? [...turns, withStance({ id: `t${turns.length}`, speaker: 'employee', text: partial }, said)] : turns;
     // the debrief needs the learner to have spoken at least once
     if (!final.some((t) => t.speaker === 'learner')) return onLeave();
     track('roleplay_ended', { scenario_id: scenario.id, learner_turns: final.filter((t) => t.speaker === 'learner').length, ended_early: !ready });
@@ -208,7 +220,9 @@ export function Conversation({
           <View style={styles.who}>
             <View ref={seat} collapsable={false} onLayout={() => onSeat?.(seat.current)} style={seatHidden ? styles.hidden : undefined}>
               <SpeakingRing active={talk && voice.state === 'speaking'} level={voice.speakLevel} size={36}>
-                <Avatar {...avatar} size={36} />
+                <PersonaPresence stance={stance} line={line} warmth={warmth} size={36} spark={opened}>
+                  <Avatar {...avatar} size={36} />
+                </PersonaPresence>
               </SpeakingRing>
             </View>
             <View style={styles.whoCopy}>
@@ -230,6 +244,7 @@ export function Conversation({
             <EndButton ready={ready} disabled={learnerCount === 0} onPress={() => (ready ? end() : setConfirm('end'))} />
           </View>
         }
+        footer={<WarmthThread warmth={warmth} stance={stance} />}
       />
       <GoalReminder goal={scenario.learnerGoal} open={goalOpen} onToggle={() => setGoalOpen((v) => !v)} />
 
@@ -358,6 +373,11 @@ export function Conversation({
 }
 
 type Row = { id: string; speaker: Turn['speaker']; text: string; live: boolean; typing: boolean };
+
+/** A counterpart line, with the stance it was played in when the API said. */
+function withStance(turn: Turn, stance?: Stance): Turn {
+  return stance ? { ...turn, stance } : turn;
+}
 
 /**
  * One line of the thread. Yours launches out of the composer; theirs rises from

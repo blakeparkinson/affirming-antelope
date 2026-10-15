@@ -32,6 +32,7 @@ import {
 import { Enter, useReduceMotion } from '@/motion';
 import { Cascade } from './Cascade';
 import { TypeIn } from './TypeIn';
+import { WarmthTimeline } from './WarmthTimeline';
 import { KeyMoments } from './KeyMoments';
 import { MovesPanel } from './MovesPanel';
 import { ReplayChart, type Exchange } from './ReplayChart';
@@ -56,6 +57,7 @@ const played = new WeakSet<DebriefData>();
  *   typed    the compact ticks land: hoofprint stamp + burst, streak rolls, ring advances (PracticeTicks)
  *   +700     each section below plays when it's on screen (≥ 80pt into the viewport), never before the coach
  *            has finished, so nothing competes with the words:
+ *     warmth    the conversation's warmth thread draws start to end, each line's node popping as it's reached
  *     chart     the line traces left to right; markers pop as it reaches them; key moments (ochre rings)
  *               land with a light haptic; it settles on the first key moment
  *     moves     tallies roll up on a 70ms stagger, then the balance beam tips (haptic tick at its first peak)
@@ -239,6 +241,14 @@ export function Debrief({
           <ReminderOffer ready={typed} />
 
           <Section index={2} title="How the conversation moved" onLayout={track('chart')}>
+            <WarmthTimeline
+              turns={turns}
+              annotations={debrief.annotations}
+              start={scenario.desiredTrajectory[0]}
+              name={p.name}
+              play={plays('chart')}
+              settled={settled}
+            />
             <ReplayChart exchanges={exchanges} name={p.name} avatar={scenarioAvatar(scenario)} play={plays('chart')} settled={settled} />
           </Section>
 

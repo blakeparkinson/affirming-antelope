@@ -64,7 +64,8 @@ function RoleplayFlow({ scenario, params }: { scenario: ScenarioSpec; params: Pa
   // brief → conversation: the person's portrait walks with you into the meeting and takes its seat in the header
   const [flight, setFlight] = useState<{ from: Rect; to?: Rect } | null>(null);
   const [entered, setEntered] = useState(false);
-  const opening: Turn[] = [{ id: 't0', speaker: 'employee', text: scenario.openingLine }];
+  // they open in the scenario's starting stance, so the portrait starts where they are
+  const opening: Turn[] = [{ id: 't0', speaker: 'employee', text: scenario.openingLine, stance: scenario.desiredTrajectory[0] }];
   const [phase, setPhase] = useState<Phase>('brief');
   const [session, setSession] = useState(0);
   const [turns, setTurns] = useState<Turn[]>(opening);
