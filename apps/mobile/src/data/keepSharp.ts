@@ -1,6 +1,5 @@
 import { DAILY_REP_MINUTES, dayKey, daysBetween, fadedSkills, type DemoSkillProgress, type FadedSkill, type SkillId, type SkillLevelNumber } from '@antelope/core';
 import { track } from '@/lib/analytics';
-import { today } from '@/state/store';
 import { startDailyRep, type DailyRepView } from './dailyRep';
 import { activeSetting, hasDrills, openDrill, pickDrill } from './routes';
 
@@ -29,7 +28,7 @@ const shown = new Set<string>();
 
 /** Once per skill a day, however often Home is opened. */
 export function skillFadedShown(f: KeepSharpView): void {
-  const key = `${today()}|${f.skill}`;
+  const key = `${dayKey()}|${f.skill}`;
   if (shown.has(key)) return;
   shown.add(key);
   track('skill_faded_shown', { skill: f.skill, level: f.level, sharpness: Math.round(f.sharpness * 100) / 100, days: f.days, faded: f.count });
