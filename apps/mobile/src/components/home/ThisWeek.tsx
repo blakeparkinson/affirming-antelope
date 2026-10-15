@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
+import { weekdayOf } from '@antelope/core';
 import { StyleSheet, View } from 'react-native';
 import Animated, {
   cancelAnimation,
@@ -15,7 +16,7 @@ import Svg, { Path } from 'react-native-svg';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Callout, Card, Hoofprint, ProgressRing, SnowflakeIcon, Text, color, haptic, radius, space } from '@/design';
 import { Expand, FADE_MS, RollingNumber, spring, useReduceMotion } from '@/motion';
-import { weekdayIndex } from '@/state/store';
+import { useToday } from '@/state/useToday';
 import { TickSwap, useOnChange } from './motion';
 
 const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
@@ -51,7 +52,7 @@ export function ThisWeek({
   onShiver?: () => void;
 }) {
   const reduce = useReduceMotion();
-  const todayIdx = weekdayIndex();
+  const todayIdx = weekdayOf(useToday());
   const hit = goal.done >= goal.target;
   const onFilled = useCallback(() => haptic.success(), []);
   // the ring's count starts where it is (no roll on mount); it rolls on change

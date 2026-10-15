@@ -1,4 +1,4 @@
-import { addDays, dayKey, daysBetween, liveStreakDays, type DayKey, type Streak, type StreakFreezes } from "./habit";
+import { addDays, dayAt, dayKey, daysBetween, liveStreakDays, type DayKey, type Streak, type StreakFreezes } from "./habit";
 
 /**
  * Practice reminders, planned on the device (no server). The app cancels everything
@@ -91,12 +91,6 @@ function pick<T>(lines: readonly T[], day: DayKey, kind: ReminderKind): T {
   return lines[h % lines.length];
 }
 
-/** `day` at a local wall-clock time. */
-function at(day: DayKey, hour: number, minute: number): Date {
-  const [y, m, d] = day.split("-").map(Number);
-  return new Date(y, m - 1, d, hour, minute, 0, 0);
-}
-
 /** Does a reminder at this time get the 20:30 last call on a streak-at-risk day? */
 export function hasLastCall(hour: number, minute: number): boolean {
   return hour * 60 + minute <= LAST_CALL_LATEST_OWN;
@@ -124,7 +118,7 @@ export function planReminders({
   const today = dayKey(now);
   const raw = streak.lastPracticeDay;
   if (!raw) return [];
-  // a practice "in the future" (the clock moved back): treat it as today
+  // a practice "in the future" (the clock moved back): treat it as today, as `practiceDay` does
   const last = raw > today ? today : raw;
   const run = { ...streak, lastPracticeDay: last };
 
@@ -139,7 +133,7 @@ export function planReminders({
     const gap = daysBetween(last, day);
     if (gap <= 0) continue;
     if (gap > LAPSE_GAP) break;
-    const own = at(day, prefs.hour, prefs.minute);
+    const own = dayAt(day, prefs.hour, prefs.minute);
     // the streak ends tonight: still alive today, gone tomorrow (no freeze left to cover today)
     const atRisk = streak.days >= 2 && liveStreakDays(run, day, freezes) > 0 && liveStreakDays(run, addDays(day, 1), freezes) === 0;
     if (gap === LAPSE_GAP && !atRisk) {
@@ -152,7 +146,7 @@ export function planReminders({
     }
     add("streak", day, own, pick(STREAK, day, "streak")(streak.days));
     if (hasLastCall(prefs.hour, prefs.minute)) {
-      add("last_call", day, at(day, LAST_CALL.hour, LAST_CALL.minute), pick(LAST_CALL_LINES, day, "last_call")(streak.days));
+      add("last_call", day, dayAt(day, LAST_CALL.hour, LAST_CALL.minute), pick(LAST_CALL_LINES, day, "last_call")(streak.days));
     }
   }
   return out;

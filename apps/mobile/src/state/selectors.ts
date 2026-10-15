@@ -2,11 +2,13 @@ import { useMemo } from 'react';
 import { getSkill, type PathActivity, type Pathway, type PathUnit, type Setting, type SkillId } from '@antelope/core';
 import { getPathway } from '@/data/pathways';
 import { freezesHeld } from '@antelope/core';
-import { frozenThisWeek, liveStreak, progressOf, thisWeek, today, useLearner, type PathwayProgress } from './store';
+import { frozenThisWeek, liveStreak, progressOf, thisWeek, useLearner, type PathwayProgress } from './store';
+import { useToday } from './useToday';
 
 /** The streak to show: 0 once a day has been missed (the stored run stays until the next practice). */
 export function useStreakDays(): number {
-  return useLearner((s) => liveStreak(s));
+  const day = useToday();
+  return useLearner((s) => liveStreak(s, day));
 }
 
 /** This week's goal and practice days, empty once a new week has begun. Stable until the store or the week changes. */
@@ -14,14 +16,14 @@ export function useThisWeek(): { weekDays: boolean[]; weeklyGoal: { target: numb
   const weekStart = useLearner((s) => s.weekStart);
   const weekDays = useLearner((s) => s.weekDays);
   const weeklyGoal = useLearner((s) => s.weeklyGoal);
-  const day = today();
+  const day = useToday();
   return useMemo(() => thisWeek({ weekStart, weekDays, weeklyGoal }, day), [weekStart, weekDays, weeklyGoal, day]);
 }
 
 /** Which days of this week a streak freeze covered (Monday-start). Stable until the ledger or the day changes. */
 export function useFrozenThisWeek(): boolean[] {
   const freezes = useLearner((s) => s.freezes);
-  const day = today();
+  const day = useToday();
   return useMemo(() => frozenThisWeek({ freezes }, day), [freezes, day]);
 }
 

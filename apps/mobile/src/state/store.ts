@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
   type ActivityKind,
   dayKey,
+  practiceDay,
   DEFAULT_PATHWAY_ID,
   type DemoSkillProgress,
   type DemoTrainerAssignment,
@@ -50,16 +51,6 @@ export const LEARNER_KEY = 'antelope.learner.v1';
 export const hadLearnerData: Promise<boolean> = AsyncStorage.getItem(LEARNER_KEY)
   .then((v) => v != null)
   .catch(() => false);
-
-/** Local calendar day, YYYY-MM-DD. */
-export function today(d = new Date()): string {
-  return dayKey(d);
-}
-
-/** Monday-start index 0..6 of a date. */
-export function weekdayIndex(d = new Date()): number {
-  return (d.getDay() + 6) % 7;
-}
 
 export interface PracticeRecord {
   /** uuid, created on the device. Also the row's `client_id` in activity_completions. */
@@ -227,19 +218,19 @@ export function progressOf(s: Pick<LearnerState, 'progress' | 'activePathwayId'>
 }
 
 /** The streak to show today: 0 once a day has been missed, before the next practice resets it. */
-export function liveStreak(s: Pick<LearnerState, 'streak' | 'freezes'>, day = today()): number {
+export function liveStreak(s: Pick<LearnerState, 'streak' | 'freezes'>, day = dayKey()): number {
   return liveStreakDays(s.streak, day, s.freezes ?? noFreezeHistory());
 }
 
 /** Which days of this week a freeze covered (Monday-start). */
-export function frozenThisWeek(s: Pick<LearnerState, 'freezes'>, day = today()): boolean[] {
+export function frozenThisWeek(s: Pick<LearnerState, 'freezes'>, day = dayKey()): boolean[] {
   const used = new Set(s.freezes?.usedDays ?? []);
   const monday = weekStartOf(day);
   return Array.from({ length: 7 }, (_, i) => used.has(addDays(monday, i)));
 }
 
 /** This week's goal and practice days: an empty week once a new Monday-start week begins. */
-export function thisWeek(s: Pick<LearnerState, 'weekStart' | 'weekDays' | 'weeklyGoal'>, day = today()) {
+export function thisWeek(s: Pick<LearnerState, 'weekStart' | 'weekDays' | 'weeklyGoal'>, day = dayKey()) {
   return weekAsOf({ weekStart: s.weekStart, weekDays: s.weekDays, weeklyGoal: s.weeklyGoal }, day);
 }
 
@@ -310,7 +301,8 @@ export const useLearner = create<LearnerState & LearnerActions>()(
       recordPractice: (input) => {
         const record: PracticeRecord = { ...input, id: uuid(), at: input.at ?? new Date().toISOString(), ownerId: currentOwner };
         const before = get();
-        const day = today();
+        // one day for the streak, the week, the freeze earned and the milestone
+        const day = practiceDay(dayKey(), before.streak.lastPracticeDay);
         const practised = streakAfterPractice(before.streak, day, before.freezes ?? noFreezeHistory());
         const goalHit = weekAfterPractice(before, day).justHit;
         const freezes = goalHit ? freezesAfterGoalHit(practised.freezes, day) : practised.freezes;
@@ -412,11 +404,11 @@ export const useLearner = create<LearnerState & LearnerActions>()(
       },
 
       setSetting: (key, value) => set((s) => ({ settings: { ...s.settings, [key]: value } })),
-      markGreeted: () => set({ lastGreetedDay: today() }),
+      markGreeted: () => set({ lastGreetedDay: dayKey() }),
       pinDailyRep: (pin) => set({ dailyRep: pin }),
       settleStreak: () => {
         const s = get();
-        const day = today();
+        const day = dayKey();
         const { settled, seenThrough, reveal } = freezeReveal(s.streak, s.freezes ?? noFreezeHistory(), s.freezeNoticeSeen, day);
         if (settled.used.length) {
           set({ freezes: settled.freezes });
@@ -446,20 +438,20 @@ export const useLearner = create<LearnerState & LearnerActions>()(
       setDemo: (on) =>
         set((s) => {
           const keep = { settings: s.settings, lastGreetedDay: null, practiceLog: [], sessions: [], dailyRep: null };
-          if (on) return { ...demoSeed(today()), ...keep };
+          if (on) return { ...demoSeed(dayKey()), ...keep };
           return { ...freshSeed(s.activePathwayId, s.pathwayChosenAt ?? new Date().toISOString()), ...keep };
         }),
       wipe: () => set((s) => ({ ...seed(), settings: s.settings })),
       resetProgress: () =>
         set((s) => ({
-          ...(s.demo ? demoSeed(today()) : freshSeed(s.activePathwayId, s.pathwayChosenAt)),
+          ...(s.demo ? demoSeed(dayKey()) : freshSeed(s.activePathwayId, s.pathwayChosenAt)),
           settings: s.settings,
           lastGreetedDay: null,
           dailyRep: null,
         })),
       previewFreezeReveal: () =>
         set((s) => {
-          const day = today();
+          const day = dayKey();
           const yesterday = addDays(day, -1);
           const week = thisWeek(s, day);
           const weekDays = [...week.weekDays];

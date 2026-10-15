@@ -2,7 +2,6 @@
 // Mock learner state for the demo user, plus a fresh state for real new
 // learners. All people are fictional.
 
-import { dailyDrillOrder, getDrill } from "./drills";
 import { DEFAULT_PATHWAY_ID, getPathway } from "./pathway";
 import { SKILLS } from "./skills";
 import type { ActivityKind, PathwayId, SkillId, SkillLevelNumber } from "./types";
@@ -36,16 +35,6 @@ export interface DemoTrainerAssignment {
   items: DemoAssignmentItem[];
 }
 
-export interface DemoTodaysPractice {
-  kind: ActivityKind;
-  refId: string;
-  title: string;
-  skill: SkillId;
-  minutes: number;
-  /** Coach-voice line explaining why this practice today. */
-  why: string;
-}
-
 export interface DemoLearnerState {
   user: { id: string; firstName: string; role: string; organization: string };
   pathwayId: string;
@@ -59,7 +48,6 @@ export interface DemoLearnerState {
   weeklyGoal: { target: number; done: number };
   /** null for a learner with no trainer assignment yet (see freshLearnerState). */
   trainerAssignment: DemoTrainerAssignment | null;
-  todaysPractice: DemoTodaysPractice;
 }
 
 /** Amanda always has an assignment, so callers can read it without a null check. */
@@ -104,14 +92,6 @@ export const DEMO_LEARNER: DemoLearnerState & { trainerAssignment: DemoTrainerAs
       { kind: "roleplay", title: "The reports are late again", refId: "PM-017", done: false },
     ],
   },
-  todaysPractice: {
-    kind: "drill",
-    refId: "drill-evoking-05",
-    title: "Responding to sustain talk",
-    skill: "sustain-talk",
-    minutes: 5,
-    why: "One short drill on meeting pushback without arguing. It sets you up for this week's role-play.",
-  },
 };
 
 /**
@@ -133,10 +113,6 @@ export function freshLearnerState(
     ]),
   ) as Record<SkillId, DemoSkillProgress>;
 
-  const firstDrillId = dailyDrillOrder(pathway.id)[0];
-  const firstDrill = getDrill(firstDrillId);
-  const activity = firstUnit.activities.find((a) => a.kind === "drill" && a.refIds?.includes(firstDrillId));
-
   return {
     user: { id: "", firstName: "", role: "", organization: "", ...user },
     pathwayId: pathway.id,
@@ -148,13 +124,5 @@ export function freshLearnerState(
     streakDays: 0,
     weeklyGoal: { target: 3, done: 0 },
     trainerAssignment: null,
-    todaysPractice: {
-      kind: "drill",
-      refId: firstDrillId,
-      title: activity?.title ?? "Your first drill",
-      skill: firstDrill?.skill ?? "oars",
-      minutes: 2,
-      why: "One short drill to start. Spotting the core skills comes before using them.",
-    },
   };
 }
