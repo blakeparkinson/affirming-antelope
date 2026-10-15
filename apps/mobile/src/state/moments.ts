@@ -1,11 +1,8 @@
+import type { SkillId } from '@antelope/core';
 import { create } from 'zustand';
+import { EMPTY_QUEUE, dismiss, enqueue, release, type Moment, type MomentQueue } from './momentQueue';
 
-/** A streak milestone waiting for, or playing, its full-screen moment. */
-export interface MilestoneMoment {
-  milestone: number;
-  /** The streak before the practice that crossed it: the number rolls up from here. */
-  from: number;
-}
+export type { LevelUpMoment, MilestoneMoment, Moment } from './momentQueue';
 
 /** The weekly recap on screen (RecapHost). */
 export interface RecapMoment {
@@ -15,40 +12,54 @@ export interface RecapMoment {
   preview?: boolean;
 }
 
-interface Moments {
+/** After one moment closes, the next waits this long so the two read as separate beats. */
+export const NEXT_MOMENT_AFTER = 350;
+
+interface Moments extends MomentQueue {
   /** Crossed by a practice; held until the completion screen's ticks have landed. */
-  queued: MilestoneMoment | null;
-  /** On screen now (MilestoneHost). */
-  showing: MilestoneMoment | null;
-  queue: (m: MilestoneMoment) => void;
-  /** Play the queued moment, if any (the ticks landed, or Home came back into view). */
+  queue: (m: Moment) => void;
+  /** Play the next waiting moment, if any (the ticks landed, Home came back into view, or the last one closed). */
   release: () => void;
+  /** The moment on screen is done; the next one follows after a beat. */
   dismiss: () => void;
-  /** The weekly recap, while it's open. A milestone waits until it closes. */
+  /** The weekly recap, while it's open. Completion moments wait until it closes. */
   recap: RecapMoment | null;
   showRecap: (r: RecapMoment) => void;
-  /** `release`: play a waiting milestone now (a dismissal back to Home; not when a drill just opened). */
+  /** `release`: play a waiting moment now (a dismissal back to Home; not when a drill just opened). */
   closeRecap: (release: boolean) => void;
+  /** Skills that levelled up since Me last showed them: their row glows once. */
+  levelled: SkillId[];
+  /** Me showed the glow. */
+  clearLevelled: () => void;
 }
 
+let nextTimer: ReturnType<typeof setTimeout> | undefined;
+
 /**
- * One-off celebration moments. Device-only and not persisted: a moment that never got its
- * turn (the app closed first) is skipped, never replayed later out of context. Whether a
- * milestone was celebrated lives in the synced document (`milestones`), not here.
+ * One-off celebration moments, played one at a time (see momentQueue: the streak, then the
+ * skill). Device-only and not persisted: a moment that never got its turn (the app closed
+ * first) is skipped, never replayed later out of context. Whether a milestone was celebrated
+ * lives in the synced document (`milestones`), not here.
  */
 export const useMoments = create<Moments>()((set, get) => ({
-  queued: null,
-  showing: null,
-  queue: (m) => set({ queued: m }),
-  release: () => {
-    const { queued, showing } = get();
-    if (queued && !showing && !get().recap) set({ queued: null, showing: queued });
+  ...EMPTY_QUEUE,
+  queue: (m) =>
+    set((s) => ({
+      ...enqueue(s, m),
+      levelled: m.kind === 'level-up' && !s.levelled.includes(m.skill) ? [...s.levelled, m.skill] : s.levelled,
+    })),
+  release: () => set((s) => release(s, !!s.recap)),
+  dismiss: () => {
+    set((s) => dismiss(s));
+    clearTimeout(nextTimer);
+    if (get().pending.length) nextTimer = setTimeout(() => get().release(), NEXT_MOMENT_AFTER);
   },
-  dismiss: () => set({ showing: null }),
   recap: null,
   showRecap: (r) => set({ recap: r }),
-  closeRecap: (release) => {
+  closeRecap: (rel) => {
     set({ recap: null });
-    if (release) get().release();
+    if (rel) get().release();
   },
+  levelled: [],
+  clearLevelled: () => set({ levelled: [] }),
 }));

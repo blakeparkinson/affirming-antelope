@@ -37,7 +37,8 @@ export function Pip({ fill, tint, height, width, delay = 0, settled = false, red
   const wait = useRef(delay);
   wait.current = delay;
   useEffect(() => {
-    if (reduce) v.value = withTiming(fill, { duration: reducedFade ? FADE_MS : 0 });
+    // a staggered fade still waits its turn (LevelPips filling one by one); a snap is immediate
+    if (reduce) v.value = reducedFade ? withDelay(wait.current, withTiming(fill, { duration: FADE_MS })) : withTiming(fill, { duration: 0 });
     else v.value = withDelay(wait.current, withSpring(fill, spring.settle));
   }, [fill, reduce, reducedFade, v]);
   const fillStyle = useAnimatedStyle(() =>

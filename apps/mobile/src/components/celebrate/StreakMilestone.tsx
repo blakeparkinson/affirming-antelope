@@ -40,7 +40,7 @@ const PRONK_AT = 300;
 export function MilestoneHost() {
   const showing = useMoments((s) => s.showing);
   const dismiss = useMoments((s) => s.dismiss);
-  if (!showing) return null;
+  if (showing?.kind !== 'milestone') return null;
   return <StreakMilestone key={showing.milestone} moment={showing} onDone={dismiss} />;
 }
 

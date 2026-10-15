@@ -1,3 +1,4 @@
+import type { SkillId } from '@antelope/core';
 import type { TextStyle } from 'react-native';
 
 /**
@@ -49,6 +50,23 @@ export const moveColor = {
   inconsistent: '#C46A3F', // warm terracotta
   neutral: color.faint,
 } as const;
+
+/**
+ * One colour per skill, for its level-up moment (the card's edge, the burst, the Me row's
+ * glow). Mid-tone so each reads on white and on `soft`; no red (levelling up is good news).
+ */
+export const skillTint = {
+  oars: color.primary,
+  engaging: '#2E8C7E', // teal
+  focusing: '#7B61D9', // violet
+  evoking: '#D99025', // ochre, a shade deeper than gold so it holds on white
+  planning: '#3C8DD0', // sky
+  'change-talk': '#3E9F6E', // green
+  'sustain-talk': '#C46A3F', // terracotta
+  discord: '#C9577E', // rose
+  leadership: color.navy,
+  'full-conversation': '#5A6FA8', // slate
+} as const satisfies Record<SkillId, string>;
 
 /** Debrief replay chart bands (employee stance). */
 export const zone = {

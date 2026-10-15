@@ -386,7 +386,13 @@ export const useLearner = create<LearnerState & LearnerActions>()(
         if (after.streak.days > streakBefore) track('streak_extended', { streak_days: after.streak.days });
         if (milestone) {
           track('streak_milestone_reached', { milestone, streak_days: after.streak.days });
-          useMoments.getState().queue({ milestone, from: streakBefore });
+          useMoments.getState().queue({ kind: 'milestone', milestone, from: streakBefore });
+        }
+        const skillAfter = input.skill ? after.skills[input.skill] : undefined;
+        if (input.skill && skillAfter && skillAfter.level > (skillBefore && skillBefore.status !== 'locked' ? skillBefore.level : 1)) {
+          // levels only climb by one per practice (bumpSkill); the completion screen plays it after the streak
+          const from = skillBefore && skillBefore.status !== 'locked' ? skillBefore : { level: 1 as const, percent: 0 };
+          useMoments.getState().queue({ kind: 'level-up', skill: input.skill, from: from.level, to: skillAfter.level, fromPercent: from.percent, toPercent: skillAfter.percent });
         }
         const goalBefore = thisWeek(before, day).weeklyGoal;
         if (after.weeklyGoal.done === after.weeklyGoal.target && goalBefore.done !== goalBefore.target) {

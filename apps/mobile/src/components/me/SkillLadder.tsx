@@ -1,20 +1,57 @@
 import { SKILL_LEVELS, skillLevelQuestion, type DemoSkillProgress, type Skill } from '@antelope/core';
-import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
-import Animated, { useAnimatedStyle, useSharedValue, withSpring } from 'react-native-reanimated';
-import { CaretDownIcon, CheckIcon, LevelPips, Text, color, haptic, space } from '@/design';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import { CaretDownIcon, CheckIcon, LevelPips, Text, color, haptic, layout, radius, skillTint, space } from '@/design';
 import { Enter, spring } from '@/motion';
 
-/** One skill: its current level question, expanding to the full six-rung ladder. */
-export function SkillLadder({ skill, progress, last }: { skill: Skill; progress: DemoSkillProgress; last: boolean }) {
+/** The newly levelled row's glow: up in 420ms, held, then a slow 1.1s fade. Once. */
+const GLOW = { rise: 420, hold: 900, fade: 1100, peak: 0.16 } as const;
+/** How often a waiting glow checks whether its row has scrolled into view, and how long it waits once there. */
+const VISIBLE_POLL = 200;
+const VISIBLE_SETTLE = 250;
+
+/**
+ * One skill: its current level question, expanding to the full six-rung ladder.
+ * `glow`: the skill levelled up since Me was last in view; its row glows softly in the skill's colour,
+ * once, when the row is first on screen (the skill levels often sit below the fold).
+ */
+export function SkillLadder({ skill, progress, last, glow = false }: { skill: Skill; progress: DemoSkillProgress; last: boolean; glow?: boolean }) {
   const [open, setOpen] = useState(false);
+  const shine = useSharedValue(0);
+  const row = useRef<View>(null);
+  const { height } = useWindowDimensions();
+  const insets = useSafeAreaInsets();
+  useEffect(() => {
+    if (!glow) return;
+    const bottom = height - insets.bottom - layout.tabBarHeight;
+    const poll = setInterval(() => {
+      row.current?.measureInWindow((_x, y, _w, h) => {
+        // the whole row, below the status bar and above the tab bar
+        if (!h || y < insets.top || y + h > bottom) return;
+        clearInterval(poll);
+        // opacity only, so reduced motion plays it as is
+        shine.value = withDelay(
+          VISIBLE_SETTLE,
+          withSequence(
+            withTiming(GLOW.peak, { duration: GLOW.rise, easing: Easing.out(Easing.quad) }),
+            withDelay(GLOW.hold, withTiming(0, { duration: GLOW.fade, easing: Easing.inOut(Easing.quad) })),
+          ),
+        );
+      });
+    }, VISIBLE_POLL);
+    return () => clearInterval(poll);
+  }, [glow, shine, height, insets.top, insets.bottom]);
+  const shineStyle = useAnimatedStyle(() => ({ opacity: shine.value }));
   const rot = useSharedValue(0);
   const caret = useAnimatedStyle(() => ({ transform: [{ rotate: `${rot.value * 180}deg` }] }));
   const fresh = progress.status === 'locked';
   const level = SKILL_LEVELS[progress.level - 1];
 
   return (
-    <View style={[styles.wrap, !last && styles.rule]}>
+    <View ref={row} collapsable={false} style={[styles.wrap, !last && styles.rule]}>
+      <Animated.View pointerEvents="none" style={[styles.glow, { backgroundColor: skillTint[skill.id] }, shineStyle]} />
       <Pressable
         onPress={() => {
           haptic.tick();
@@ -89,6 +126,7 @@ export function SkillLadder({ skill, progress, last }: { skill: Skill; progress:
 
 const styles = StyleSheet.create({
   wrap: { paddingVertical: space[1] },
+  glow: { position: 'absolute', top: 2, bottom: 2, left: -space[2], right: -space[2], borderRadius: radius.md },
   rule: { borderBottomWidth: 2, borderBottomColor: color.soft },
   head: { flexDirection: 'row', alignItems: 'center', gap: space[3], paddingVertical: space[3], minHeight: 56 },
   headCopy: { flex: 1, gap: 4 },

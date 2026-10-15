@@ -30,9 +30,9 @@ const DAY_LETTERS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
 export function RecapHost() {
   const recap = useMoments((s) => s.recap);
-  const milestone = useMoments((s) => s.showing);
+  const moment = useMoments((s) => s.showing);
   const close = useMoments((s) => s.closeRecap);
-  if (!recap || milestone) return null;
+  if (!recap || moment) return null;
   return <WeeklyRecap key={recap.weekStart} moment={recap} onDone={close} />;
 }
 
