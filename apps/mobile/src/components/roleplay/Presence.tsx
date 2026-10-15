@@ -31,7 +31,9 @@ import { Burst, spring, useReduceMotion, type BurstHandle } from '@/motion';
  * Every pose is a spring on the UI thread, so a change mid-move carries its velocity.
  * The header's warmth thread eases its colour over 900ms and a highlight carries the
  * new colour out from the portrait to both ends. The first time they open up in a
- * conversation: a light haptic and a small spark. Reduced motion: colour cross-fades only.
+ * conversation: a light haptic and a small spark. A strong move from the learner
+ * (liveMoves.ts) pulses the glow once: up in 180ms, back down over 700ms.
+ * Reduced motion: colour cross-fades only.
  */
 
 /** Warmth (-1..1) to the thread's colour. */
@@ -61,6 +63,7 @@ export function PersonaPresence({
   warmth,
   size,
   spark,
+  pulse = 0,
   children,
 }: {
   stance?: Stance;
@@ -70,6 +73,8 @@ export function PersonaPresence({
   size: number;
   /** Turns true once, the first time they open up: haptic + spark. */
   spark?: boolean;
+  /** Counts strong moves; each new value pulses the glow once. */
+  pulse?: number;
   children: ReactNode;
 }) {
   const reduce = useReduceMotion();
@@ -83,6 +88,7 @@ export function PersonaPresence({
   const shiver = useSharedValue(0);
   const glow = useSharedValue(v.glow);
   const breathe = useSharedValue(0);
+  const flare = useSharedValue(0);
   const burst = useRef<BurstHandle>(null);
 
   useEffect(() => {
@@ -136,6 +142,11 @@ export function PersonaPresence({
     burst.current?.fire();
   }, [spark]);
 
+  useEffect(() => {
+    if (!pulse || reduce) return;
+    flare.value = withSequence(withTiming(1, { duration: 180, easing: Easing.out(Easing.quad) }), withTiming(0, { duration: 700, easing: EASE }));
+  }, [pulse, reduce, flare]);
+
   const body = useAnimatedStyle(() => ({
     transform: [
       { translateY: lift.value + kick.value * 1.5 },
@@ -153,8 +164,8 @@ export function PersonaPresence({
     };
   });
   const halo = useAnimatedStyle(() => ({
-    opacity: glow.value * (0.5 + 0.2 * breathe.value),
-    transform: [{ scale: reduce ? 1 : 0.75 + 0.25 * glow.value + 0.06 * breathe.value }],
+    opacity: Math.min(1, glow.value * (0.5 + 0.2 * breathe.value) + 0.65 * flare.value),
+    transform: [{ scale: reduce ? 1 : 0.75 + 0.25 * glow.value + 0.06 * breathe.value + 0.2 * flare.value }],
   }));
 
   const g = size * 1.5;

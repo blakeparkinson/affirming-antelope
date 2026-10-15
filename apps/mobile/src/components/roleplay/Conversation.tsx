@@ -1,10 +1,11 @@
-import { scenarioFrame, type ScenarioSpec, type Stance, type Turn } from '@antelope/core';
+import { liveMoments, moveLines, scenarioFrame, staggerTimes, type MoveTier, type ScenarioSpec, type Stance, type Turn } from '@antelope/core';
 import { useEffect, useRef, useState } from 'react';
 import { Platform, Pressable, ScrollView, StyleSheet, View, type NativeScrollEvent, type NativeSyntheticEvent } from 'react-native';
 import Animated, { useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { Composer, setLaunchPad } from '@/components/practice-loop/Composer';
 import { ConfirmSheet } from '@/components/practice-loop/ConfirmSheet';
 import { SaveProgressLink } from '@/components/practice-loop/ErrorBits';
+import { MOVE } from '@/components/practice-loop/moves';
 import { callName, conversationLabel } from '@/components/practice-loop/names';
 import { Dock, KeyboardColumn, SessionHeader, sessionStyles } from '@/components/practice-loop/SessionChrome';
 import { EmployeeBubble, LearnerBubble, LiveEmployeeBubble, useBubbleEntrance, useComposerLaunch } from '@/components/practice-loop/Speech';
@@ -28,8 +29,9 @@ import {
 import { track } from '@/lib/analytics';
 import { useLearner } from '@/state/store';
 import { FADE_MS, spring, useFades, useListLayout, useReduceMotion, useTickSwap } from '@/motion';
+import { BubbleSheen, MoveStamp, type Stamp } from './MoveStamp';
 import { PersonaPresence, WarmthThread, useWarmth } from './Presence';
-import { useEmployeeReply } from './useEmployeeReply';
+import { useEmployeeReply, type ReplyRead } from './useEmployeeReply';
 import { TalkDock } from './voice/TalkDock';
 import { useVoiceTurn, type VoiceFallback } from './voice/useVoiceTurn';
 import { MuteToggle, SpeakingRing, type ReplyMode } from './voice/VoiceBits';
@@ -40,7 +42,9 @@ const MIN_TURNS = 3;
  * The conversation. Feels like talking to a person, not a bot: the opening
  * line is already there, replies take a beat (typing dots) and then arrive at
  * a speaking pace. Auto-scroll follows the conversation unless you've scrolled
- * up to reread; then a "New reply" pill offers the way back. No live scores.
+ * up to reread; then a "New reply" pill offers the way back. No live scores: your
+ * skill shows only as a marker that pops onto your own bubble when the reply comes
+ * back (MoveStamp), never as words.
  */
 export function Conversation({
   scenario,
@@ -124,6 +128,16 @@ export function Conversation({
   turnsRef.current = turns;
   // replies that streamed in are already on screen; don't re-enter them when they settle
   const streamed = useRef(new Set<string>());
+  // the move markers on your bubbles; any already read when this mounts pop in turn, quietly
+  const lastPop = useRef(-Infinity);
+  const [stamps, setStamps] = useState<Record<string, Stamp>>(() => {
+    const tiers = liveMoments(moveLines(turns));
+    const read = turns.filter((t) => t.speaker === 'learner' && t.move && tiers[t.id]);
+    const at = staggerTimes(read.map(() => Date.now()));
+    lastPop.current = at[at.length - 1] ?? -Infinity;
+    return Object.fromEntries(read.map((t, i) => [t.id, stampFor(t.move!, tiers[t.id], at[i], true)]));
+  });
+  const [pulse, setPulse] = useState(0);
 
   const learnerCount = turns.filter((t) => t.speaker === 'learner').length;
   const ready = learnerCount >= MIN_TURNS;
@@ -170,7 +184,25 @@ export function Conversation({
     ask(next);
   };
 
+  /** The role-player's read of your line is back (before its words): pin the move to your bubble. */
+  const onRead = (learnerId: string, { move, stance: drew }: ReplyRead) => {
+    if (!move) return;
+    const now = turnsRef.current;
+    const nextTurns = now.map((t) => (t.id === learnerId && t.speaker === 'learner' ? { ...t, move } : t));
+    turnsRef.current = nextTurns;
+    onTurns(nextTurns);
+    const tier = liveMoments(moveLines(nextTurns, { after: learnerId, stance: drew }))[learnerId];
+    if (!tier) return;
+    setStamps((s) => {
+      if (s[learnerId]) return s; // a resend: it already popped
+      const [at] = staggerTimes([Date.now()], lastPop.current);
+      lastPop.current = at;
+      return { ...s, [learnerId]: stampFor(move, tier, at) };
+    });
+  };
+
   const ask = (history: Turn[]) => {
+    const learnerId = history[history.length - 1]?.id;
     request(
       history,
       `t${history.length}`,
@@ -184,6 +216,7 @@ export function Conversation({
       },
       // Talk mode: the same stream is spoken, sentence by sentence
       talk ? voice.beginReply() : undefined,
+      (read) => learnerId && onRead(learnerId, read),
     );
   };
 
@@ -220,7 +253,7 @@ export function Conversation({
           <View style={styles.who}>
             <View ref={seat} collapsable={false} onLayout={() => onSeat?.(seat.current)} style={seatHidden ? styles.hidden : undefined}>
               <SpeakingRing active={talk && voice.state === 'speaking'} level={voice.speakLevel} size={36}>
-                <PersonaPresence stance={stance} line={line} warmth={warmth} size={36} spark={opened}>
+                <PersonaPresence stance={stance} line={line} warmth={warmth} size={36} spark={opened} pulse={pulse}>
                   <Avatar {...avatar} size={36} />
                 </PersonaPresence>
               </SpeakingRing>
@@ -271,6 +304,8 @@ export function Conversation({
                 <Message
                   key={r.id}
                   row={r}
+                  stamp={stamps[r.id]}
+                  onStrong={() => setPulse((n) => n + 1)}
                   avatar={avatar}
                   name={p.name}
                   delay={i === 0 ? (arriving ? 400 : 250) : r.live ? 120 : 0}
@@ -384,19 +419,62 @@ function withStance(turn: Turn, stance?: Stance): Turn {
  * their side as typing dots and stays the same element while the words arrive.
  * Rows carry a layout spring so anything that changes size above them moves them, not snaps them.
  */
-function Message({ row, avatar, name, delay, settled }: { row: Row; avatar: AvatarIdentity; name: string; delay: number; settled: boolean }) {
+function Message({
+  row,
+  avatar,
+  name,
+  delay,
+  settled,
+  stamp,
+  onStrong,
+}: {
+  row: Row;
+  avatar: AvatarIdentity;
+  name: string;
+  delay: number;
+  settled: boolean;
+  stamp?: Stamp;
+  onStrong: () => void;
+}) {
   const layout = useListLayout();
-  if (row.speaker === 'learner') return <LearnerMessage text={row.text} layout={layout} />;
+  if (row.speaker === 'learner') return <LearnerMessage text={row.text} layout={layout} stamp={stamp} onStrong={onStrong} />;
   return <EmployeeMessage row={row} avatar={avatar} name={name} delay={delay} settled={settled} layout={layout} />;
 }
 
-function LearnerMessage({ text, layout }: { text: string; layout: ReturnType<typeof useListLayout> }) {
+/** Yours, with its move marker once the reply comes back. The row grows a little to make room; rows below spring down. */
+function LearnerMessage({ text, layout, stamp, onStrong }: { text: string; layout: ReturnType<typeof useListLayout>; stamp?: Stamp; onStrong: () => void }) {
   const launch = useComposerLaunch();
+  const [shine, setShine] = useState(false);
+  const onPeak = (tier: MoveTier) => {
+    setShine(true);
+    if (tier === 'strong') onStrong();
+  };
   return (
-    <Animated.View ref={launch.ref} onLayout={launch.onLayout} collapsable={false} layout={layout} style={[styles.msg, launch.style]}>
-      <LearnerBubble text={text} />
+    <Animated.View
+      ref={launch.ref}
+      onLayout={launch.onLayout}
+      collapsable={false}
+      layout={layout}
+      style={[styles.msg, stamp && styles.stamped, launch.style]}
+    >
+      <LearnerBubble
+        text={text}
+        accessory={
+          stamp ? (
+            <>
+              <BubbleSheen play={shine} />
+              <MoveStamp stamp={stamp} onPeak={onPeak} />
+            </>
+          ) : null
+        }
+      />
     </Animated.View>
   );
+}
+
+/** A move marker: the move's own shape, or the neutral dot for a weak move (never a negative one). */
+function stampFor(move: NonNullable<Turn['move']>, tier: MoveTier, at: number, quiet?: boolean): Stamp {
+  return { family: tier === 'weak' ? 'neutral' : MOVE[move].family, tier, at, quiet };
 }
 
 function EmployeeMessage({
@@ -522,6 +600,8 @@ const styles = StyleSheet.create({
   thread: { paddingTop: space[3], paddingBottom: space[5] },
   stamp: { marginBottom: space[4] },
   msg: { marginBottom: space[3] },
+  // room for the marker hanging off the bubble's corner; above the row below, so a burst isn't covered
+  stamped: { marginBottom: space[3] + 8, zIndex: 1 },
   retry: { gap: space[2], marginTop: space[2] },
   readyHint: { marginTop: space[2] },
   // flexGrow 0: the raised face must not stretch to the header's height

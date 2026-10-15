@@ -102,13 +102,15 @@ export function useComposerLaunch(skip = false) {
 // ---------------------------------------------------------------------------
 
 /** The learner's words: cobalt, raised on deep cobalt, tail at bottom right. */
-export function LearnerBubble({ text, compact, style }: { text: string; compact?: boolean; style?: StyleProp<ViewStyle> }) {
+/** `accessory` draws inside the bubble after the text (a sheen, a marker on its corner). */
+export function LearnerBubble({ text, compact, style, accessory }: { text: string; compact?: boolean; style?: StyleProp<ViewStyle>; accessory?: ReactNode }) {
   return (
     <View style={[styles.learnerWrap, style]}>
       <Bubble side="learner" compact={compact}>
         <Text variant="body" color={color.white} style={compact ? styles.compactText : undefined} selectable>
           {text}
         </Text>
+        {accessory}
       </Bubble>
     </View>
   );
