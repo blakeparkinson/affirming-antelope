@@ -125,6 +125,143 @@ export function layoutTrail(width: number, count: number, top: number): TrailLay
   return { width, height: finish.y + FINISH_TAIL, step, amp, nodes, d, length, nodeLen, ys, lens, start, finish };
 }
 
+// ---------------------------------------------------------------- landmarks
+
+export interface Rect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+}
+
+/** One landmark on the trail, in content space: `x`/`width` its box, `ground` the y it stands on. */
+export interface LandmarkPlacement<Id extends string = string> {
+  id: Id;
+  x: number;
+  width: number;
+  height: number;
+  ground: number;
+  /** Its box, for keeping the small scenery props clear of it. */
+  box: Rect;
+}
+
+export interface LandmarkArt {
+  width: number;
+  height: number;
+  /** y (art units) the drawing stands on. */
+  ground: number;
+  /** How much of its width may run off the screen edge (0..1). */
+  peek: number;
+}
+
+const TRAIL_R = 26;
+const MARGIN = 10;
+
+const overlaps = (a: Rect, b: Rect) => a.x < b.x + b.w && b.x < a.x + a.w && a.y < b.y + b.h && b.y < a.y + a.h;
+
+/**
+ * What a landmark must stay clear of: the trail, every node and every caption. Not the coach:
+ * it stands beside the current week only and is drawn in front, so when it reaches a landmark it
+ * stands by it (and the landmarks never move as the weeks go by).
+ */
+function obstacles(trail: TrailLayout, captions: Rect[]): Rect[] {
+  const { nodes, start, finish } = trail;
+  const out: Rect[] = captions.map((c) => ({ x: c.x - 8, y: c.y - 8, w: c.w + 16, h: c.h + 16 }));
+  for (const p of nodes) out.push({ x: p.x - NODE / 2 - 6, y: p.y - NODE / 2 - 6, w: NODE + 12, h: NODE + 12 });
+  // the finish flag, its caption and the coach beside it at the end
+  out.push({ x: finish.x - 130, y: finish.y - 70, w: 260, h: 140 });
+  // the trail itself, as short boxes along straight runs between its points (it bows a little
+  // between nodes, so the boxes are generous)
+  const pts = [start, ...nodes, finish];
+  for (let i = 0; i < pts.length - 1; i++) {
+    const a = pts[i];
+    const b = pts[i + 1];
+    for (let k = 0; k <= 12; k++) {
+      const t = k / 12;
+      const x = a.x + (b.x - a.x) * t;
+      const y = a.y + (b.y - a.y) * t;
+      out.push({ x: x - TRAIL_R - 8, y: y - TRAIL_R, w: (TRAIL_R + 8) * 2, h: TRAIL_R * 2 });
+    }
+  }
+  return out;
+}
+
+/**
+ * Landmarks between weeks: one in each chosen gap, on the side the trail leaves free. The
+ * biggest size that clears every obstacle wins (largest first, nudged up and down within the
+ * gap); a gap with no room gets nothing. Pure and deterministic, so a landmark never jumps.
+ */
+export function layoutLandmarks<Id extends string>(
+  trail: TrailLayout,
+  plan: { gap: number; id: Id }[],
+  art: Record<Id, LandmarkArt>,
+  /** The week captions' boxes, as the screen lays them out (see `captionBox`). */
+  captions: Rect[],
+): LandmarkPlacement<Id>[] {
+  const { width, nodes } = trail;
+  const avoid = obstacles(trail, captions);
+  const out: LandmarkPlacement<Id>[] = [];
+  for (const { gap, id } of plan) {
+    if (gap < 0 || gap >= nodes.length - 1) continue;
+    const a = nodes[gap];
+    const b = nodes[gap + 1];
+    const midY = (a.y + b.y) / 2;
+    const trailX = (a.x + b.x) / 2;
+    const A = art[id];
+    const sides = trailX > width / 2 ? ['left', 'right'] : ['right', 'left'];
+    let placed: LandmarkPlacement<Id> | null = null;
+    search: for (let scale = 1; scale >= 0.45; scale -= 0.05) {
+      const w = width * 0.56 * scale;
+      const h = (w * A.height) / A.width;
+      // the drawing's visible box: from its top down to where it stands (ground), plus a bit
+      const standH = (h * A.ground) / A.height;
+      for (const side of sides) {
+        // flush with the edge first, then peeking in from beyond it (at most a third off-screen)
+        for (const off of [0, 0.1, 0.2, 0.3].filter((o) => o <= A.peek)) {
+          const x = side === 'left' ? MARGIN - w * (0.04 + off) : width - MARGIN - w * (0.96 - off);
+          const x0 = Math.max(0, x + w * 0.06);
+          const x1 = Math.min(width, x + w * 0.94);
+          for (const dy of [0, -8, 8, -16, 16, -24, 24, -32, 32, -40, 40, -48, 48]) {
+            const ground = midY + standH / 2 + dy;
+            const box: Rect = { x: x0, y: ground - standH, w: x1 - x0, h: standH + 6 };
+            if (avoid.some((o) => overlaps(box, o))) continue;
+            placed = { id, x, width: w, height: h, ground, box };
+            break search;
+          }
+        }
+      }
+    }
+    if (placed) out.push(placed);
+  }
+  return out;
+}
+
+/**
+ * A week caption's box, estimated from its text the way the Path lays it out: beside the node
+ * on the side toward the middle (or below it when the coach takes that side), at most `room`
+ * wide, the title up to two lines, the current week's subtitle under it. Generous on purpose:
+ * it only keeps landmarks away.
+ */
+export function captionBox(
+  p: Pt,
+  width: number,
+  text: { title: string; subtitle?: string },
+  below: boolean,
+): Rect {
+  const labelLeft = p.x > width / 2;
+  const room = Math.max(110, labelLeft ? p.x - NODE / 2 - 26 : width - p.x - NODE / 2 - 26);
+  const long = text.title.length > 16;
+  const titleW = text.title.length * (long ? 8.6 : 10.4);
+  const subW = (text.subtitle?.length ?? 0) * 7;
+  const w = Math.min(room, Math.max(70, titleW, subW) + 6);
+  const titleLines = Math.min(2, Math.ceil(titleW / room));
+  const subLines = text.subtitle ? Math.ceil(subW / room) : 0;
+  const h = 18 + titleLines * (long ? 21 : 25) + subLines * 18 + 6;
+  const top = below ? p.y + NODE / 2 + 14 : p.y - 26;
+  const x = labelLeft ? p.x - NODE / 2 - 14 - w : p.x + NODE / 2 + 14;
+  return { x, y: top, w, h };
+}
+
 /** Landscape bands: wavy ridgelines down the canvas. */
 export interface Band {
   y: number;
@@ -205,7 +342,7 @@ export interface BandPalette {
  * ridge before the meadow is always cool (a clear edge against the warm
  * meadow) and the first ridge is always the pale horizon.
  */
-export function layoutBands(width: number, finishY: number, palette: BandPalette, motif: Motif): Band[] {
+export function layoutBands(width: number, finishY: number, palette: BandPalette, motif: Motif, avoid: Rect[] = []): Band[] {
   const destY = finishY - DEST_ABOVE;
   const span = Math.max(1, destY - FIRST_RIDGE);
   let n = Math.max(1, Math.round(span / BAND_GAP));
@@ -246,7 +383,11 @@ export function layoutBands(width: number, finishY: number, palette: BandPalette
     const props: Prop[] = [];
     if (destination) props.push(...destinationProps(motif, on));
     else if (i > 0) props.push(...ridgeProps(motif, i, width, on));
-    bands.push({ y, d, fill, props, destination });
+    // small props make way for the landmarks (content space, ignoring the ridge's parallax lag)
+    const clear = avoid.length
+      ? props.filter((p) => !avoid.some((r) => p.x > r.x - 30 && p.x < r.x + r.w + 30 && y + p.y > r.y - 80 && y + p.y < r.y + r.h + 60))
+      : props;
+    bands.push({ y, d, fill, props: clear, destination });
   }
   return bands;
 }

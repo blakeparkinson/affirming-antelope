@@ -46,3 +46,6 @@ example
 /dist-web
 /test-results
 /playwright-report
+
+# Landmark review renders (scripts/landmarks/build.mjs --preview)
+scripts/landmarks/preview/
