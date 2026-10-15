@@ -236,10 +236,7 @@ export function Debrief({
           <Enter index={1} style={styles.ticks}>
             <PracticeTicks before={before} compact delay={settled ? 0 : 150} start={typed} />
           </Enter>
-
-          <Enter index={1}>
-            <ReminderOffer compact style={styles.ticks} />
-          </Enter>
+          <ReminderOffer ready={typed} />
 
           <Section index={2} title="How the conversation moved" onLayout={track('chart')}>
             <ReplayChart exchanges={exchanges} name={p.name} avatar={personaAvatar(p, scenario.setting)} play={plays('chart')} settled={settled} />

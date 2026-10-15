@@ -304,10 +304,8 @@ export function CompletionMoment({ title, subtitle, before, children }: { title:
           <PracticeTicks before={before} delay={480} onGoalHit={hop} />
         </Enter>
       </View>
-      <Enter index={5}>
-        <ReminderOffer style={styles.offer} />
-      </Enter>
       {children ? <Enter index={6}>{children}</Enter> : null}
+      <ReminderOffer />
     </View>
   );
 }
@@ -318,7 +316,6 @@ const styles = StyleSheet.create({
   hero: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: space[5], zIndex: 1 },
   copy: { alignItems: 'center', gap: space[2], paddingHorizontal: space[4] },
   full: { alignSelf: 'stretch' },
-  offer: { marginBottom: space[3] },
   ticks: { flexDirection: 'row', gap: space[3] },
   ticksCompact: { gap: space[2] },
   stat: { flex: 1 },

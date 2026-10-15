@@ -60,6 +60,8 @@ export const notifier: Notifier = {
       const open = toOpen(r);
       if (seen.has(open.id)) return;
       seen.add(open.id);
+      // handled: a later read of the launch response (another listener, a remount) won't count it again
+      Notifications.clearLastNotificationResponse();
       listener(open);
     };
     // the tap that launched the app, then any while it runs
