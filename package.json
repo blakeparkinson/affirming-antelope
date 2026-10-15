@@ -9,6 +9,7 @@
     "web": "npm run dev --workspace web",
     "mobile": "npm run start --workspace mobile",
     "typecheck": "npm run typecheck --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
     "db:start": "supabase start",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",

@@ -31,7 +31,7 @@ import { Mascot } from '@/components/mascot';
 import { ChatsCircleIcon, Hoofprint, LightningIcon, Screen, ShuffleIcon, SparkleIcon, Text, border, color, layout, space } from '@/design';
 import { openDrill, openRoleplay, pickDrill, pickScenario } from '@/data/routes';
 import { Enter, FADE_MS, RollingNumber, useListLayout, useReduceMotion } from '@/motion';
-import { useActivePathway, useCurrentUnit, useCurrentWeek, useProgressRows, weekLabel } from '@/state/selectors';
+import { useActivePathway, useCurrentUnit, useCurrentWeek, useProgressRows, useStreakDays, useThisWeek, weekLabel } from '@/state/selectors';
 import { today, useLearner } from '@/state/store';
 
 function greeting(d = new Date()) {
@@ -67,9 +67,8 @@ export default function Home() {
     await syncNow();
     setRefreshing(false);
   }, []);
-  const streak = useLearner((s) => s.streak.days);
-  const goal = useLearner((s) => s.weeklyGoal);
-  const weekDays = useLearner((s) => s.weekDays);
+  const streak = useStreakDays();
+  const { weeklyGoal: goal, weekDays } = useThisWeek();
   const assignment = useLearner((s) => s.assignment);
   const skills = useLearner((s) => s.skills);
   const currentWeek = useCurrentWeek();

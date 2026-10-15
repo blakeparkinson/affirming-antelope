@@ -1,3 +1,4 @@
+import { isDayKey, mergeStreaks, mergeWeeks, weekStartOf } from "./habit";
 import { DEMO_LEARNER, freshLearnerState, type DemoLearnerState, type DemoSkillProgress } from "./demo";
 import { DEFAULT_PATHWAY_ID, getPathway } from "./pathway";
 import type { PathwayId, SkillId } from "./types";
@@ -40,8 +41,11 @@ export interface SyncedDoc {
   progress: Partial<Record<PathwayId, PathwayProgress>>;
   /** Global: a skill is the same skill in either setting. */
   skills: Record<SkillId, DemoSkillProgress>;
+  /** Read it with `liveStreakDays`: `days` is the run ending on `lastPracticeDay`, which may be over. */
   streak: { days: number; lastPracticeDay: string | null };
-  /** Monday-start: which days this week had practice. */
+  /** Monday (YYYY-MM-DD) of the week `weekDays` and `weeklyGoal.done` count. Read them with `weekAsOf`. */
+  weekStart: string | null;
+  /** Monday-start: which days of `weekStart`'s week had practice. */
   weekDays: boolean[];
   weeklyGoal: { target: number; done: number; hitCount: number };
   scenariosCompleted: number;
@@ -55,6 +59,7 @@ export const SYNCED_KEYS = [
   "progress",
   "skills",
   "streak",
+  "weekStart",
   "weekDays",
   "weeklyGoal",
   "scenariosCompleted",
@@ -91,6 +96,7 @@ export function freshSyncedDoc(pathwayId: PathwayId = DEFAULT_PATHWAY_ID, chosen
     progress: { [pathwayId]: progressFrom({ ...d, currentWeek: Math.max(1, d.currentWeek) }) },
     skills: d.skills,
     streak: { days: d.streakDays, lastPracticeDay: null },
+    weekStart: null,
     weekDays: Array.from({ length: 7 }, () => false),
     weeklyGoal: { target: d.weeklyGoal.target, done: d.weeklyGoal.done, hitCount: 0 },
     scenariosCompleted: 0,
@@ -141,6 +147,13 @@ export function upgradeDoc(raw: unknown): Partial<SyncedDoc> {
   const out: Partial<SyncedDoc> = {};
   for (const k of ["firstName", "role", "skills", "streak", "weekDays", "weeklyGoal", "scenariosCompleted"] as const) {
     if (r[k] !== undefined && r[k] !== null) (out as Record<string, unknown>)[k] = r[k];
+  }
+  // Before `weekStart` existed, the week counted was the one of the last practice (only practice
+  // writes weekDays and done). Always set it alongside them, so a fallback's week is never borrowed.
+  if (isDayKey(r.weekStart)) out.weekStart = r.weekStart;
+  else if (out.weekDays || out.weeklyGoal) {
+    const last = (r.streak as { lastPracticeDay?: unknown } | undefined)?.lastPracticeDay;
+    out.weekStart = isDayKey(last) ? weekStartOf(last) : null;
   }
   if (r.progress && typeof r.progress === "object") {
     const progress: SyncedDoc["progress"] = {};
@@ -200,8 +213,10 @@ export function fillSkills(
 }
 
 // ---------------------------------------------------------------------------
-// Merge. Every rule is monotonic (progress only moves forward), so merging is
-// order-independent: merge(a, b) == merge(b, a) for the fields that matter.
+// Merge. Every rule is order-independent: merge(a, b) == merge(b, a) for the fields
+// that matter. Course progress only moves forward; the streak and the weekly goal
+// follow the calendar rules in `habit.ts` (a stale copy never revives a broken
+// streak or last week's count).
 // Documents are upgraded on read (`upgradeDoc`): v2 (one pathway at the top level)
 // becomes v3 (progress per pathway), and an untouched v2 demo seed becomes fresh.
 // ---------------------------------------------------------------------------
@@ -216,14 +231,6 @@ function mergeSkills(a: SyncedDoc["skills"], b: Partial<SyncedDoc["skills"]> | u
     out[k] = !mine || skillRank(theirs) > skillRank(mine) ? theirs : mine;
   }
   return out;
-}
-
-function mergeStreak(a: SyncedDoc["streak"], b: SyncedDoc["streak"] | undefined): SyncedDoc["streak"] {
-  if (!b) return a;
-  const da = a.lastPracticeDay ?? "";
-  const db = b.lastPracticeDay ?? "";
-  if (da === db) return a.days >= b.days ? a : b;
-  return da > db ? a : b;
 }
 
 function mergeAllProgress(a: SyncedDoc["progress"], b: SyncedDoc["progress"]): SyncedDoc["progress"] {
@@ -256,7 +263,6 @@ export function normalizeSynced<T extends SyncedDoc>(remote: unknown, fallback: 
 /** Merge `remoteRaw` (the account's copy, any shape) into `local`. The account wins identity ties. */
 export function mergeSynced(local: SyncedDoc, remoteRaw: unknown): SyncedDoc {
   const remote = normalizeSynced(remoteRaw, local);
-  const weekDays = Array.from({ length: 7 }, (_, i) => !!local.weekDays[i] || !!remote.weekDays[i]);
   return {
     // identity: the account's copy wins (it's what the learner set up)
     firstName: remote.firstName || local.firstName,
@@ -264,13 +270,9 @@ export function mergeSynced(local: SyncedDoc, remoteRaw: unknown): SyncedDoc {
     ...laterChoice(local, remote),
     progress: mergeAllProgress(local.progress, remote.progress),
     skills: mergeSkills(local.skills, remote.skills),
-    streak: mergeStreak(local.streak, remote.streak),
-    weekDays,
-    weeklyGoal: {
-      target: remote.weeklyGoal.target || local.weeklyGoal.target,
-      done: Math.max(local.weeklyGoal.done, remote.weeklyGoal.done),
-      hitCount: Math.max(local.weeklyGoal.hitCount, remote.weeklyGoal.hitCount),
-    },
+    streak: mergeStreaks(local.streak, remote.streak),
+    // the account's goal target wins
+    ...mergeWeeks(remote, local),
     scenariosCompleted: Math.max(local.scenariosCompleted, remote.scenariosCompleted),
   };
 }
