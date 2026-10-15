@@ -31,5 +31,6 @@ export const COACH = {
 export const COACH_VM = {
   pose: { wave: 0, celebrate: 1, head: 2 },
   mood: { idle: 0, listening: 1, thinking: 2, cheer: 3 },
+  still: { off: 0, on: 1 },
   triggers: ["wave","hop","cheer","nod","blink"],
 } as const;

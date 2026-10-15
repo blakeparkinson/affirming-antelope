@@ -159,7 +159,7 @@ Brief → conversation ("walking into the meeting")
 handle.current?.wave() | hop() | turn() | nod() | cheer()
 ```
 
-- `size` is the height in pt of the pose's drawing. `greet` waves once after mount. Changing `pose` squashes, swaps at the bottom of the squash, then stretches and settles. Pass `paused={!useIsFocused()}` from screens; the mascot also pauses when the app is backgrounded. Reduced motion keeps blinks, breathing and moods but skips wave/hop/cheer and the cheer mood's hops.
+- `size` is the height in pt of the pose's drawing. `greet` waves once after mount. Changing `pose` squashes, swaps at the bottom of the squash, then stretches and settles. Pass `paused={!useIsFocused()}` from screens; the mascot also pauses when the app is backgrounded. Reduced motion keeps blinks, nods, breathing and moods but skips wave/hop/cheer, the cheer mood's hops and the idle drift (head, ears, tail, scarf, arms).
 - Suggested use: drill feedback `head`/`listening`, a correct answer `hop()`, an approving beat `nod()`, the coach working something out `thinking`, debrief completion `celebrate`/`cheer`.
 - **Two implementations behind one API** (`index.ts`). `RiveMascot` (Rive file `assets/rive/mascot-coach.riv`) on native builds that link the Rive runtime; `MascotSprite` (layered PNGs, `assets/mascot/rig/`, from `scripts/build-mascot-rig.py`) on Expo Go, Expo web, and whenever the Rive file fails to load. The choice is a capability check (`riveAvailable.ts`: platform, Expo Go, Nitro hybrid objects), never a try-and-see; `RiveMascot` is `require`d only when it passes. The sprite also covers the first frames while the Rive file loads.
 - **Rive layout.** One artboard, `Coach` (820x1140), holds both drawings. `coach.generated.ts` gives each pose's drawing rect on it; `RiveMascot` sizes the canvas so that rect is the layout box and lets the canvas overhang it (hops and ears never clip). The head pose shows the wave drawing cropped below the face, open above for hops.
@@ -177,9 +177,10 @@ The app drives it through data binding: `RiveView dataBind={instance}` with the 
 | `hop` | trigger | Anticipation squash, launch stretch, apex, landing squash, rebound, settle (1.33 s). Volume-preserving squash; the head keeps most of its shape; ears, tail and scarf follow through. |
 | `cheer` | trigger | A bigger hop with arms up and a happy squint. From the wave pose the drawing swaps to the celebrate drawing at the bottom of the squash and back at landing; head and celebrate poses hop in place. |
 | `nod` | trigger | Head dips twice (foreshortened), ears lag, a contented half-squint. |
+| `still` | number | `1` while reduced motion is on: the Idle layer mixes (300 ms) to breathing only and the drifting nodes hold their rest. `0` restores the full idle loop. |
 | `blink` | trigger | Blink now. Blinks also run by themselves on an irregular 2.9 / 4.3 / 1.7 / 5.4 s chain with one double blink. |
 
-Layers, back to front: **Pose** (drawing visibility), **Idle** (6.4 s loop: breath at the feet, head/ears/scarf/tail/arm drift with lag, an ear flick and a tail swish off the beat), **Mood**, **Blink**, **Action** (one-shots return to rest on their own). Each layer keys its own node in a nested chain (`wHead > wHeadMood > wHeadAct > wHeadIdle`, same for ears, tail, scarf, arms, and `wHop > wHopSquash > wHopBreath > wHopLean` at the feet; `c*` for the celebrate drawing), so motion from different layers adds up instead of fighting. Authored at 60 fps.
+Layers, back to front: **Pose** (drawing visibility), **Idle** (6.4 s loop: breath at the feet, head/ears/scarf/tail/arm drift with lag, an ear flick and tail swishes off the beat; breathing only when `still` is 1), **Mood**, **Blink**, **Action** (one-shots return to rest on their own). Each layer keys its own node in a nested chain (`wHead > wHeadMood > wHeadAct > wHeadIdle`, same for ears, tail, scarf, arms, and `wHop > wHopSquash > wHopBreath > wHopLean` at the feet; `c*` for the celebrate drawing), so motion from different layers adds up instead of fighting. Authored at 60 fps.
 
 ## State: `src/state/store.ts` (zustand, persisted to AsyncStorage)
 

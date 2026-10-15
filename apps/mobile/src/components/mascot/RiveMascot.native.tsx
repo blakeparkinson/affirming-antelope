@@ -61,7 +61,7 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
   const shake = useSharedValue(0);
   const fade = useSharedValue(1);
 
-  const setNumber = useCallback((name: 'pose' | 'mood', value: number) => {
+  const setNumber = useCallback((name: 'pose' | 'mood' | 'still', value: number) => {
     const p = vm.current?.numberProperty(name);
     if (p && p.value !== value) p.value = value;
   }, []);
@@ -76,6 +76,10 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
   useEffect(() => {
     if (instance) setNumber('mood', moodValue(mood, reduce));
   }, [instance, mood, reduce, setNumber]);
+  // reduced motion: the idle loop keeps breathing but stops the head/ear/tail/scarf drift
+  useEffect(() => {
+    if (instance) setNumber('still', reduce ? COACH_VM.still.on : COACH_VM.still.off);
+  }, [instance, reduce, setNumber]);
 
   // ---- pause when told to or when the app is backgrounded
   useEffect(() => {
