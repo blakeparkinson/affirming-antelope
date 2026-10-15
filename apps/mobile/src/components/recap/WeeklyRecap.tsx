@@ -1,6 +1,7 @@
 import { addDays, dayAt, getScenario, getSkill, getSkillLevel, recapMotion, type WeeklyRecap as Recap } from '@antelope/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { AccessibilityInfo, Modal, ScrollView, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, ScrollView, StyleSheet, View } from 'react-native';
+import { MomentOverlay } from '@/design/MomentOverlay';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN } from 'react-native-worklets';
@@ -93,7 +94,7 @@ function WeeklyRecap({ moment, onDone }: { moment: RecapMoment; onDone: (release
   }));
 
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={dismiss}>
+    <MomentOverlay onRequestClose={dismiss}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
       <Animated.View style={[styles.root, { paddingTop: insets.top + space[2], paddingBottom: insets.bottom + space[4] }, stageStyle]} accessibilityViewIsModal>
         <View style={styles.close}>
@@ -119,7 +120,7 @@ function WeeklyRecap({ moment, onDone }: { moment: RecapMoment; onDone: (release
           <TextLink label="Not now" onPress={dismiss} style={styles.notNow} />
         </View>
       </Animated.View>
-    </Modal>
+    </MomentOverlay>
   );
 }
 

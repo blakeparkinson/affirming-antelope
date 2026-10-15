@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react';
-import { AccessibilityInfo, Modal, Pressable, StyleSheet, View } from 'react-native';
+import { AccessibilityInfo, Pressable, StyleSheet, View } from 'react-native';
+import { MomentOverlay } from '@/design/MomentOverlay';
 import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSpring, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { Mascot, type MascotHandle } from '@/components/mascot';
@@ -93,7 +94,7 @@ function StreakMilestone({ moment, onDone }: { moment: MilestoneMoment; onDone: 
   }));
 
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={leave}>
+    <MomentOverlay onRequestClose={leave}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
       <Pressable style={styles.root} onPress={leave} accessibilityViewIsModal accessible={false}>
         <Animated.View style={[styles.stage, stageStyle]}>
@@ -121,7 +122,7 @@ function StreakMilestone({ moment, onDone }: { moment: MilestoneMoment; onDone: 
           <Button variant="onPrimary" label="Keep going" fullWidth onPress={leave} />
         </Animated.View>
       </Pressable>
-    </Modal>
+    </MomentOverlay>
   );
 }
 

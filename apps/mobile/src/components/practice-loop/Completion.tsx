@@ -96,6 +96,7 @@ export function PracticeTicks({
   delay = 450,
   start = true,
   onGoalHit,
+  onLanded,
 }: {
   before: PracticeSnapshot;
   compact?: boolean;
@@ -103,6 +104,8 @@ export function PracticeTicks({
   start?: boolean;
   /** Fired on the frame the weekly ring closes, when this practice completed the goal. */
   onGoalHit?: () => void;
+  /** Fired once the ring has landed: the ticks have read, so whatever follows them can start counting. */
+  onLanded?: () => void;
 }) {
   const reduce = useReduceMotion();
   const after = useLivePractice();
@@ -141,11 +144,12 @@ export function PracticeTicks({
   const onRingLand = useCallback(() => {
     setPhase(2);
     milestoneAfter.current = setTimeout(() => useMoments.getState().release(), MILESTONE_AFTER);
+    onLanded?.();
     if (!justHit) return;
     haptic.success();
     goalBurst.current?.fire();
     goalHit.current?.();
-  }, [justHit]);
+  }, [justHit, onLanded]);
 
   const land = () => {
     'worklet';
@@ -293,6 +297,9 @@ export function CompletionMoment({ title, subtitle, before, children }: { title:
     return () => clearTimeout(t);
   }, []);
   const hop = useCallback(() => mascot.current?.hop(), []);
+  // the reminder sheet waits for the ticks to land (and for any moment they release), never over them
+  const [landed, setLanded] = useState(false);
+  const onLanded = useCallback(() => setLanded(true), []);
 
   return (
     <View style={styles.root}>
@@ -309,11 +316,11 @@ export function CompletionMoment({ title, subtitle, before, children }: { title:
           </Text>
         </Enter>
         <Enter index={4} style={styles.full}>
-          <PracticeTicks before={before} delay={480} onGoalHit={hop} />
+          <PracticeTicks before={before} delay={480} onGoalHit={hop} onLanded={onLanded} />
         </Enter>
       </View>
       {children ? <Enter index={6}>{children}</Enter> : null}
-      <ReminderOffer />
+      <ReminderOffer ready={landed} />
     </View>
   );
 }

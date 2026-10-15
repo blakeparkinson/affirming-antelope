@@ -14,7 +14,7 @@ const TIME_INDEX = Math.max(
   REMINDER_TIMES.findIndex((t) => t.hour === DEFAULT_REMINDER_TIME.hour && t.minute === DEFAULT_REMINDER_TIME.minute),
 );
 
-/** After the celebration has landed: the stamp, the streak roll and the ring take about 1.4s. */
+/** Counted from `ready` (the ticks have landed): long enough to read them before the sheet covers them. */
 const OPEN_AFTER_MS = 1800;
 
 /** Whether to offer, decided once when the completion screen opens (the practice is already logged). */

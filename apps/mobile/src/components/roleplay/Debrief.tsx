@@ -137,6 +137,10 @@ export function Debrief({
   }, [debrief]);
   const [typed, setTyped] = useState(settled);
   const onTyped = useCallback(() => setTyped(true), []);
+  // the reminder sheet is a modal: it waits for the ticks, then for the learner to have read down to
+  // their moves, so it never rises over the coach's words or a section that is still drawing
+  const [landed, setLanded] = useState(false);
+  const onLanded = useCallback(() => setLanded(true), []);
   // the compact ticks get their moment (stamp, roll, ring) before the chart starts drawing beside them
   const [ticked, setTicked] = useState(settled);
   useEffect(() => {
@@ -236,9 +240,9 @@ export function Debrief({
           </Enter>
 
           <Enter index={1} style={styles.ticks}>
-            <PracticeTicks before={before} compact delay={settled ? 0 : 150} start={typed} />
+            <PracticeTicks before={before} compact delay={settled ? 0 : 150} start={typed} onLanded={onLanded} />
           </Enter>
-          <ReminderOffer ready={typed} />
+          <ReminderOffer ready={landed && (settled || !!seen.moves)} />
 
           <Section index={2} title="How the conversation moved" onLayout={track('chart')}>
             <WarmthTimeline

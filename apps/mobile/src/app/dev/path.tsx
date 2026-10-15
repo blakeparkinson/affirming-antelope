@@ -5,6 +5,7 @@
 // light that long after Path opens, so the cross-fade plays on screen.
 // week: set the active track's current week first (earlier weeks done). replay=1 rewinds the
 // seen week so Path plays the N-1 → N unlock. motion: reduce | system (Me > Settings > Motion).
+// to=home opens Home instead, so tapping the Path tab plays the unlock on a first (fresh) mount.
 import { DAY_PHASES, type DayPhase } from '@antelope/core';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useEffect } from 'react';
@@ -15,7 +16,7 @@ import { useLearner } from '@/state/store';
 import { setDayPhaseOverride } from '@/state/useDayPhase';
 
 export default function DevPath() {
-  const p = useLocalSearchParams<{ time?: string; in?: string; week?: string; replay?: string; motion?: string }>();
+  const p = useLocalSearchParams<{ time?: string; in?: string; week?: string; replay?: string; motion?: string; to?: string }>();
   useEffect(() => {
     if (!__DEV__) return;
     const light = () => {
@@ -39,7 +40,7 @@ export default function DevPath() {
     }
     useAccount.getState().set({ onboarded: true });
     if (p.replay === '1') useLearner.getState().replayPathUnlock();
-    setTimeout(() => router.replace('/path'), 50);
+    setTimeout(() => router.replace(p.to === 'home' ? '/' : '/path'), 50);
   }, [p.time, p.in, p.week, p.replay, p.motion]);
   return __DEV__ ? <View /> : null;
 }

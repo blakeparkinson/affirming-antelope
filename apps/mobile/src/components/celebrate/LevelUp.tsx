@@ -1,6 +1,7 @@
 import { getSkill, getSkillLevel, skillLevelQuestion, type SkillLevelNumber } from '@antelope/core';
 import { useCallback, useEffect, useRef, useState, type ComponentProps } from 'react';
-import { AccessibilityInfo, Modal, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { AccessibilityInfo, Pressable, StyleSheet, View, useWindowDimensions } from 'react-native';
+import { MomentOverlay } from '@/design/MomentOverlay';
 import Animated, {
   Easing,
   useAnimatedReaction,
@@ -184,7 +185,7 @@ function LevelUp({ moment, onDone }: { moment: LevelUpMoment; onDone: () => void
   const colors = [tint, tint, tint, color.gold, color.primaryTint, tint];
 
   return (
-    <Modal transparent visible animationType="none" statusBarTranslucent navigationBarTranslucent onRequestClose={leave}>
+    <MomentOverlay onRequestClose={leave}>
       <Animated.View style={[StyleSheet.absoluteFill, styles.backdrop, backdropStyle]} />
       <Pressable style={styles.root} onPress={leave} accessibilityViewIsModal accessible={false}>
         <Animated.View style={[styles.stage, stageStyle]}>
@@ -229,7 +230,7 @@ function LevelUp({ moment, onDone }: { moment: LevelUpMoment; onDone: () => void
           <Button label="Keep going" fullWidth onPress={leave} />
         </Animated.View>
       </Pressable>
-    </Modal>
+    </MomentOverlay>
   );
 }
 

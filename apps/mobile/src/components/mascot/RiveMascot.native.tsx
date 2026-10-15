@@ -3,7 +3,7 @@
 import { Fit, RiveView, useRiveFile, useViewModelInstance, type RiveViewRef, type ViewModelInstance } from '@rive-app/react-native';
 import { forwardRef, useCallback, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { AppState, StyleSheet, View } from 'react-native';
-import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
+import Animated, { Easing, ReduceMotion, useAnimatedStyle, useSharedValue, withSequence, withSpring, withTiming } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 import { riveCall } from '@/lib/riveCall';
 import { spring } from '@/motion/springs';
@@ -14,6 +14,8 @@ import { MascotSprite } from './MascotSprite';
 import type { MascotHandle, MascotMood, MascotPose, MascotProps } from './types';
 
 const FILE = require('../../../assets/rive/mascot-coach.riv');
+/** The still sprite placeholder cross-fades into Rive over this long once the view is ready. */
+const REVEAL_MS = 160;
 
 type Trigger = (typeof COACH_VM.triggers)[number];
 
@@ -168,6 +170,25 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
     ],
   }));
 
+  // the still sprite hands over to Rive with a short cross-fade: the two drawings don't line up
+  // exactly (pose, scale, offset), so a same-frame swap read as a pop
+  const ready = !!riveFile && !!instance && viewReady;
+  const reveal = useSharedValue(0);
+  const [revealed, setRevealed] = useState(false);
+  useEffect(() => {
+    if (!ready) {
+      // the view re-attached: the sprite holds the spot again until Rive is back
+      reveal.value = 0;
+      setRevealed(false);
+      return;
+    }
+    reveal.value = withTiming(1, { duration: REVEAL_MS, easing: Easing.out(Easing.quad), reduceMotion: ReduceMotion.Never }, (f) => {
+      if (f) scheduleOnRN(setRevealed, true);
+    });
+  }, [ready, reveal]);
+  const riveIn = useAnimatedStyle(() => ({ opacity: reveal.value }));
+  const spriteOut = useAnimatedStyle(() => ({ opacity: 1 - reveal.value }));
+
   if (fileError || failed) return <MascotSprite {...props} ref={ref} />;
 
   const rect = COACH.rects[shown];
@@ -184,7 +205,6 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
   // head pose: crop the body below the face, but leave room above and beside for hops and ears
   const clip = shown === 'head';
   const pad = 140 * s;
-  const ready = !!riveFile && !!instance && viewReady;
 
   return (
     <View
@@ -194,17 +214,16 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
       accessibilityLabel={accessibilityLabel}
       pointerEvents="none"
     >
-      {!ready ? (
+      {!revealed ? (
         // first paint and loading (a few hundred ms): a still sprite holds the spot so nothing pops
         // in; still, so a sprite hop can't be cut off mid-air when Rive takes over
-        <MascotSprite {...props} ref={undefined} greet={false} paused mood="idle" style={StyleSheet.absoluteFill} />
+        <Animated.View style={[StyleSheet.absoluteFill, spriteOut]}>
+          <MascotSprite {...props} ref={undefined} greet={false} paused mood="idle" style={StyleSheet.absoluteFill} />
+        </Animated.View>
       ) : null}
       <Animated.View style={[StyleSheet.absoluteFill, { transformOrigin: '50% 96%' }, wrap]}>
-        <View
-          style={[
-            clip ? { position: 'absolute', left: -pad, right: -pad, top: -rect.y * s, bottom: 0, overflow: 'hidden' } : StyleSheet.absoluteFill,
-            !ready && styles.hidden,
-          ]}
+        <Animated.View
+          style={[clip ? { position: 'absolute', left: -pad, right: -pad, top: -rect.y * s, bottom: 0, overflow: 'hidden' } : StyleSheet.absoluteFill, riveIn]}
         >
           {riveFile && instance ? (
             <RiveView
@@ -219,10 +238,9 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
               style={clip ? { ...canvas, left: canvas.left + pad, top: 0 } : canvas}
             />
           ) : null}
-        </View>
+        </Animated.View>
       </Animated.View>
     </View>
   );
 });
 
-const styles = StyleSheet.create({ hidden: { opacity: 0 } });
