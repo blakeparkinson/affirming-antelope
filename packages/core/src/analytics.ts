@@ -6,6 +6,7 @@
 // or names. The types below make that hard to get wrong: there is no `string` property
 // that could hold free text, only unions and content ids.
 
+import type { ReminderKind } from "./reminders";
 import type { PathwayId, SkillId, SkillLevelNumber } from "./types";
 
 // ---------------------------------------------------------------------------
@@ -45,6 +46,8 @@ export type PracticeSource =
   | "review_recommendation"
   | "next_step";
 
+/** Where reminders were turned on or declined: the completion-screen offer, or Me › Reminders. */
+export type ReminderSource = "offer" | "me";
 export type SignInReason = "welcome" | "cohort" | "review" | "me" | "quota";
 export type AppEntry = "direct" | "website_cta" | "guide" | "deep_link";
 export type NextStepFrom = "drill" | "debrief" | "lesson";
@@ -112,6 +115,12 @@ export interface AnalyticsEvents {
   };
   streak_extended: { streak_days: number };
   weekly_goal_hit: { target: number };
+  /** The completion screen offered practice reminders (`ask` 1 after the first practice, 2 after the third). */
+  reminder_prompt_shown: { ask: number };
+  reminder_opt_in: { source: ReminderSource; hour: number; minute: number };
+  reminder_declined: { source: ReminderSource; reason: "not_now" | "permission_denied" };
+  reminder_opened: { kind: ReminderKind };
+  reminder_settings_changed: { on: boolean; hour: number; minute: number };
   cohort_joined: { cohort_id: string };
   /** The learner picked (or switched) their track. */
   pathway_chosen: { pathway_id: PathwayId; source: "onboarding" | "me" | "cohort" };

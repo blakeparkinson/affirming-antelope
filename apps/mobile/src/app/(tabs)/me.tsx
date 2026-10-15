@@ -6,6 +6,8 @@ import { useCallback, useEffect, useState, type ReactNode } from 'react';
 import { Pressable, RefreshControl, StyleSheet, View } from 'react-native';
 import { SectionHeader } from '@/components/common/SectionHeader';
 import { AccountSection, ProfileHead } from '@/components/me/AccountSection';
+import { ReminderSettings } from '@/components/reminders/ReminderSettings';
+import { remindersSupported } from '@/lib/reminders';
 import { SkillLadder } from '@/components/me/SkillLadder';
 import { TrainerInbox } from '@/components/me/TrainerInbox';
 import { isSimulatedOffline, setSimulatedOffline, supabaseConfigured } from '@/lib/supabase';
@@ -180,6 +182,7 @@ export default function Me() {
       <Enter index={5}>
         <SectionHeader title="Settings" />
         <Raised contentStyle={styles.settings}>
+          {remindersSupported ? <ReminderSettings rowStyle={[styles.row, styles.rule]} /> : null}
           <SettingRow title="Reduce motion" detail="Cross-fades instead of movement">
             <Switch
               accessibilityLabel="Reduce motion"

@@ -6,6 +6,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { Mascot } from '@/components/mascot';
 import { callName } from '@/components/practice-loop/names';
 import { PracticeTicks, type PracticeSnapshot } from '@/components/practice-loop/Completion';
+import { ReminderOffer } from '@/components/reminders/ReminderOffer';
 import { Dock, SessionHeader, sessionStyles } from '@/components/practice-loop/SessionChrome';
 import {
   ArrowCounterClockwiseIcon,
@@ -234,6 +235,10 @@ export function Debrief({
 
           <Enter index={1} style={styles.ticks}>
             <PracticeTicks before={before} compact delay={settled ? 0 : 150} start={typed} />
+          </Enter>
+
+          <Enter index={1}>
+            <ReminderOffer compact style={styles.ticks} />
           </Enter>
 
           <Section index={2} title="How the conversation moved" onLayout={track('chart')}>
