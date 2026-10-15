@@ -90,6 +90,18 @@ describe("parseStanceTag", () => {
     assert.deepEqual(parseStanceTag("[open-question] [amb", true), { done: true, stance: undefined, move: "open-question", text: "" });
   });
 
+  it("reads a tag written with spaces, capitals or underscores", () => {
+    assert.deepEqual(parseStanceTag("[Complex Reflection] [Change] Yeah."), { done: true, stance: "change", move: "complex-reflection", text: "Yeah." });
+    assert.deepEqual(parseStanceTag("[open_question] [sustain] No."), { done: true, stance: "sustain", move: "open-question", text: "No." });
+    // still waiting while a spaced tag streams in
+    assert.deepEqual(parseStanceTag("[Complex Ref"), { done: false });
+  });
+
+  it("leaves a bracketed phrase that isn't a tag in the reply", () => {
+    assert.deepEqual(parseStanceTag("[I know] it's late."), { done: true, text: "[I know] it's late." });
+    assert.deepEqual(parseStanceTag("[open-question] [I know] it's late."), { done: true, stance: undefined, move: "open-question", text: "[I know] it's late." });
+  });
+
   it("strips no more than two tags", () => {
     assert.deepEqual(parseStanceTag("[summary] [change] [laughs] Okay."), { done: true, stance: "change", move: "summary", text: "[laughs] Okay." });
   });

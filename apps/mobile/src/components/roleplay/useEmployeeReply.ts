@@ -14,7 +14,6 @@ export interface PendingReply {
 
 const TICK = 33;
 
-/** Optional listener for the raw reply stream (Talk mode speaks it sentence by sentence). */
 /** The role-player's private read, which arrives with the reply's headers, before any words. */
 export interface ReplyRead {
   /** How the learner's last line read (liveMoves.ts). */
@@ -23,6 +22,7 @@ export interface ReplyRead {
   stance?: Stance;
 }
 
+/** Optional listener for the raw reply stream (Talk mode speaks it sentence by sentence). */
 export interface ReplyStreamSink {
   push(chunk: string): void;
   end(): void;

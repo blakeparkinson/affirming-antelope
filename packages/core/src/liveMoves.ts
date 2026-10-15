@@ -63,15 +63,16 @@ export function liveMoments(lines: MoveLine[]): Record<string, MoveTier> {
 
 /**
  * The learner lines of a transcript, each with the stance of the counterpart line after it.
- * `drawing` is the reply still arriving: its stance is known (a header) before its words are.
+ * `drew` holds the stance each reply was played in, by learner line, as its header said:
+ * known before the words arrive, and kept when a reply is cut off before it says anything.
  */
-export function moveLines(turns: Turn[], drawing?: { after: string; stance?: Stance }): MoveLine[] {
+export function moveLines(turns: Turn[], drew: Record<string, Stance | undefined> = {}): MoveLine[] {
   const lines: MoveLine[] = [];
   turns.forEach((t, i) => {
     if (t.speaker !== "learner") return;
     const next = turns[i + 1];
-    const drew = next?.speaker === "employee" ? next.stance : drawing?.after === t.id ? drawing.stance : undefined;
-    lines.push({ id: t.id, move: t.move, drew });
+    const stance = (next?.speaker === "employee" ? next.stance : undefined) ?? drew[t.id];
+    lines.push({ id: t.id, move: t.move, drew: stance });
   });
   return lines;
 }

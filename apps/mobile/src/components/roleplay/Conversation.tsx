@@ -138,6 +138,9 @@ export function Conversation({
     return Object.fromEntries(read.map((t, i) => [t.id, stampFor(t.move!, tiers[t.id], at[i], true)]));
   });
   const [pulse, setPulse] = useState(0);
+  // the stance each reply was played in, by your line, as its header said; kept if the reply is cut off unsaid
+  const drewRef = useRef<Record<string, Stance | undefined>>({});
+  const popped = useRef(new Set(Object.keys(stamps)));
 
   const learnerCount = turns.filter((t) => t.speaker === 'learner').length;
   const ready = learnerCount >= MIN_TURNS;
@@ -186,19 +189,19 @@ export function Conversation({
 
   /** The role-player's read of your line is back (before its words): pin the move to your bubble. */
   const onRead = (learnerId: string, { move, stance: drew }: ReplyRead) => {
-    if (!move) return;
+    // a resend: the marker already popped, and the line keeps the read it popped with
+    if (!move || popped.current.has(learnerId)) return;
+    drewRef.current[learnerId] = drew;
     const now = turnsRef.current;
     const nextTurns = now.map((t) => (t.id === learnerId && t.speaker === 'learner' ? { ...t, move } : t));
     turnsRef.current = nextTurns;
     onTurns(nextTurns);
-    const tier = liveMoments(moveLines(nextTurns, { after: learnerId, stance: drew }))[learnerId];
+    const tier = liveMoments(moveLines(nextTurns, drewRef.current))[learnerId];
     if (!tier) return;
-    setStamps((s) => {
-      if (s[learnerId]) return s; // a resend: it already popped
-      const [at] = staggerTimes([Date.now()], lastPop.current);
-      lastPop.current = at;
-      return { ...s, [learnerId]: stampFor(move, tier, at) };
-    });
+    popped.current.add(learnerId);
+    const [at] = staggerTimes([Date.now()], lastPop.current);
+    lastPop.current = at;
+    setStamps((s) => ({ ...s, [learnerId]: stampFor(move, tier, at) }));
   };
 
   const ask = (history: Turn[]) => {

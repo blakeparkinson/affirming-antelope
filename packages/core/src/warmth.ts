@@ -20,7 +20,7 @@ export function isStance(x: unknown): x is Stance {
 const MAX_TAG = 30;
 /** The role-player writes a move tag, then a stance tag; anything past two is the reply. */
 const MAX_TAGS = 2;
-const TAG = /^\[\s*([A-Za-z-]{1,28})\s*\]\s*/;
+const TAG = /^\[\s*([A-Za-z][A-Za-z _-]{0,27}?)\s*\]\s*/;
 
 export type StanceTagParse =
   /** Too little text yet to tell whether a tag is coming: keep buffering. */
@@ -45,14 +45,17 @@ export function parseStanceTag(head: string, final = false): StanceTagParse {
   let tags = 0;
   let m: RegExpExecArray | null;
   while (tags < MAX_TAGS && (m = TAG.exec(rest))) {
-    const word = m[1].toLowerCase();
+    // "[Complex Reflection]" and "[open_question]" are the same tag as "[complex-reflection]"
+    const word = m[1].toLowerCase().replace(/[\s_]+/g, "-");
+    // a several-word bracket counts only when it names a real tag: "[I know] ..." is the reply
+    if (/[\s_]/.test(m[1]) && !isStance(word) && !isLearnerMove(word)) break;
     if (isStance(word)) stance = word;
     else if (isLearnerMove(word)) move = word;
     rest = rest.slice(m[0].length);
     tags++;
   }
   // could still become a tag: "", "[", "[chan"
-  const partial = tags < MAX_TAGS && (rest === "" || (rest.startsWith("[") && !rest.includes("]") && rest.length <= MAX_TAG && /^\[\s*[A-Za-z-]*\s*$/.test(rest)));
+  const partial = tags < MAX_TAGS && (rest === "" || (rest.startsWith("[") && !rest.includes("]") && rest.length <= MAX_TAG && /^\[\s*[A-Za-z _-]*$/.test(rest)));
   if (partial && !final && !(tags > 0 && rest === "")) return { done: false };
   if (!tags) return { done: true, text: partial ? "" : head };
   return { done: true, stance, ...(move ? { move } : {}), text: partial ? "" : rest };

@@ -87,9 +87,22 @@ describe("moveLines", () => {
   });
 
   it("takes the stance of the reply still arriving", () => {
-    assert.deepEqual(moveLines(turns, { after: "t3", stance: "change" })[1], { id: "t3", move: "open-question", drew: "change" });
-    // a stale drawing for another line changes nothing
-    assert.equal(moveLines(turns, { after: "t1", stance: "discord" })[0].drew, "ambivalent");
+    assert.deepEqual(moveLines(turns, { t3: "change" })[1], { id: "t3", move: "open-question", drew: "change" });
+    // the saved reply wins over a header for the same line
+    assert.equal(moveLines(turns, { t1: "discord" })[0].drew, "ambivalent");
+  });
+
+  it("remembers the stance of a reply that was cut off before it said anything", () => {
+    // t1's reply had a change header, then the learner cut in: no counterpart line follows it
+    const cut: Turn[] = [
+      { id: "t0", speaker: "employee", text: "Hi." },
+      { id: "t1", speaker: "learner", text: "Sounds hard.", move: "simple-reflection" },
+      { id: "t2", speaker: "learner", text: "Tell me more.", move: "open-question" },
+      { id: "t3", speaker: "employee", text: "Well...", stance: "change" },
+    ];
+    const tiers = liveMoments(moveLines(cut, { t1: "change", t2: "change" }));
+    // the first change talk was t1's; t2 doesn't celebrate it again
+    assert.deepEqual(tiers, { t1: "strong", t2: "good" });
   });
 });
 
