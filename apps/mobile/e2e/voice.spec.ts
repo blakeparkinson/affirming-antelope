@@ -96,7 +96,7 @@ async function onboard(page: Page) {
   await page.getByRole('button', { name: /try it first|get started/i }).tap();
   await page.getByText('Patients', { exact: true }).tap();
   await page.getByRole('button', { name: /continue/i }).tap();
-  await expect(page.getByText(/today.s practice/i)).toBeVisible();
+  await expect(page.getByText(/daily rep/i)).toBeVisible();
 }
 
 async function openTalk(page: Page) {

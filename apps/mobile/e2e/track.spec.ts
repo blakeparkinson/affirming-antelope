@@ -36,7 +36,7 @@ test('with no hint, Your team comes first and is preselected', async ({ page }) 
   await expect(page.getByRole('radio', { name: /^Your team/ })).toBeChecked();
   await expect(page.getByRole('radio', { name: /^Patients/ })).not.toBeChecked();
   await page.getByRole('button', { name: /continue/i }).tap();
-  await expect(page.getByText(/today.s practice/i)).toBeVisible();
+  await expect(page.getByText(/daily rep/i)).toBeVisible();
   expect(await activePathway(page)).toBe('mi-for-leaders');
 });
 
@@ -52,7 +52,7 @@ test('a clinicians launch hint preselects Patients, and Your team is still one t
 test('a clinicians launch hint carries through to the chosen track', async ({ page }) => {
   await toTrackStep(page, '/?src=audience_clinicians');
   await page.getByRole('button', { name: /continue/i }).tap();
-  await expect(page.getByText(/today.s practice/i)).toBeVisible();
+  await expect(page.getByText(/daily rep/i)).toBeVisible();
   expect(await activePathway(page)).toBe('mi-for-clinicians');
 });
 
