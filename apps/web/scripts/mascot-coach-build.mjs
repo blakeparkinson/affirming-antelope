@@ -127,14 +127,13 @@ for (const p of POSES) {
   image(p, "armR", armR);
 
   if (p === "w") {
-    // raised arm: three rigid cut-out pieces (shoulder > elbow > wrist) with round joint caps, so
-    // the wave bends and whips. (A bone-skinned mesh rendered with jaggies and a seam on iOS.)
+    // raised arm: one piece swung from the shoulder (scripts/mascot_cleanup.py merges the cut
+    // shoulder/forearm/hoof back together; bending them apart showed their cut edges). The
+    // elbow and wrist groups stay, empty, so older keys and the rest pose still resolve.
     const armL = chain(`${p}ArmL`, lean, P("armLUpper"), ["Vis", "Act", "Idle"]);
     const elbow = chain("wElbow", armL, A(p, ELBOW), ["Act"]);
-    const wrist = chain("wWrist", elbow, A(p, WRIST), ["Act"]);
-    image(p, "armLFore", elbow);
-    image(p, "armLHoof", wrist);
-    image(p, "armLUpper", armL);
+    chain("wWrist", elbow, A(p, WRIST), ["Act"]);
+    image(p, "armL", armL);
   } else {
     const armL = chain(`${p}ArmL`, lean, P("armL"), ["Act", "Idle"]);
     image(p, "armL", armL);
@@ -474,13 +473,11 @@ anim("nod", 0.95, "oneShot", POSES.flatMap((p) => [
   }),
 ]));
 
-// wave: anticipation in toward the face, then the forearm whips outward 2.5 times; elbow and
-// hoof lag the shoulder (overlap) and the last swing settles with overshoot.
+// wave: the whole raised arm swings from the shoulder in two and a half smooth arcs (~2 per
+// second), opening outward only so the hoof never crosses the face.
 {
-  const sh = [[0, 0], [10, 3, E.inOut], [21, -9, E.out], [32, -1, E.inOut], [43, -9, E.inOut], [54, -1, E.inOut], [65, -6, E.inOut], [80, 1.5, E.inOut], [96, 0, E.inOut]];
-  const el = [[0, 0], [13, 4, E.inOut], [25, -15, E.out], [36, 1, E.inOut], [47, -15, E.inOut], [58, 1, E.inOut], [69, -10, E.inOut], [85, 2, E.inOut], [104, 0, E.inOut]];
-  const hf = [[0, 0], [16, 3, E.inOut], [29, -12, E.out], [40, 4, E.inOut], [51, -12, E.inOut], [62, 4, E.inOut], [73, -8, E.inOut], [89, 2.5, E.inOut], [110, 0, E.inOut]];
-  const tr = [track("wArmLAct", "rotation", sh), track("wElbowAct", "rotation", el), track("wWristAct", "rotation", hf)];
+  const sh = [[0, 0], [10, 1.5, E.inOut], [24, -9, E.inOut], [38, 0.5, E.inOut], [52, -9, E.inOut], [66, 0.5, E.inOut], [80, -7, E.inOut], [96, 0, E.inOut], [110, 0, E.inOut]];
+  const tr = [track("wArmLAct", "rotation", sh)];
   // celebrate pose: the raised right arm waves (whole-arm swings), left arm bounces along
   tr.push(track("cArmRAct", "rotation", [[0, 0], [10, -6, E.inOut], [21, 12, E.out], [32, -2, E.inOut], [43, 12, E.inOut], [54, -1, E.inOut], [66, 9, E.inOut], [84, -1.5, E.inOut], [100, 0, E.inOut]]));
   tr.push(track("cArmLAct", "rotation", [[0, 0], [16, -3, E.inOut], [40, 2, E.inOut], [64, -2, E.inOut], [100, 0, E.inOut]]));

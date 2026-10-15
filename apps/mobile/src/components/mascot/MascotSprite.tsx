@@ -27,20 +27,32 @@ type Art = {
   offset: { x: number; y: number };
   blink: readonly { src: number; frame: Frame }[];
   arm?: typeof WAVE.arm;
+  /** Head, ears and scarf, drawn over the arm (the arm swings from behind the face). */
+  front?: typeof WAVE.front;
   /** Where the feet are, as a fraction of height: breathing and squash anchor here. */
   anchorY: number;
 };
 
 const ART: Record<MascotPose, Art> = {
-  wave: { width: WAVE.width, height: WAVE.height, base: WAVE.base, offset: { x: 0, y: 0 }, blink: WAVE.blink, arm: WAVE.arm, anchorY: 0.97 },
+  wave: { width: WAVE.width, height: WAVE.height, base: WAVE.base, offset: { x: 0, y: 0 }, blink: WAVE.blink, arm: WAVE.arm, front: WAVE.front, anchorY: 0.97 },
   celebrate: { width: CELEBRATE.width, height: CELEBRATE.height, base: CELEBRATE.base, offset: { x: 0, y: 0 }, blink: CELEBRATE.blink, anchorY: 0.96 },
   head: { width: HEAD.width, height: HEAD.height, base: HEAD.base, offset: HEAD.offset, blink: WAVE.blink, anchorY: 1 },
 };
 
-/** Clockwise degrees: the raised arm swings in toward the face. */
-const WAVE_IN = 15;
-const WAVE_OUT = 2;
-const swing = { duration: 230, dampingRatio: 0.62 } as const;
+/**
+ * Degrees, clockwise toward the face. The raised arm is one piece swung from the shoulder, from
+ * behind the face; the same arcs as the Rive coach's wave, opening outward and only nudging in.
+ */
+const WAVE_IN = 1.5;
+const WAVE_OUT = -9;
+/** One half-swing: sine in-out timing reads as a relaxed hand, springs here wobbled at each end. */
+const swing = { duration: 230, easing: Easing.inOut(Easing.sin) } as const;
+
+/** `${v}deg` turns tiny values into "1e-7deg", which drops the transform; keep it fixed-point. */
+function deg(v: number) {
+  'worklet';
+  return `${v.toFixed(3)}deg`;
+}
 
 function useAppActive() {
   const [active, setActive] = useState(AppState.currentState !== 'background');
@@ -117,11 +129,12 @@ export const MascotSprite = forwardRef<MascotHandle, MascotProps>(function Masco
     if (reduce) return;
     if (ART[shown].arm) {
       arm.value = withSequence(
-        withSpring(WAVE_IN, swing),
-        withSpring(WAVE_OUT, swing),
-        withSpring(WAVE_IN, swing),
-        withSpring(WAVE_OUT, swing),
-        withSpring(WAVE_IN * 0.8, swing),
+        withTiming(WAVE_IN, { duration: 140, easing: Easing.out(Easing.quad) }),
+        withTiming(WAVE_OUT, swing),
+        withTiming(WAVE_IN, swing),
+        withTiming(WAVE_OUT, swing),
+        withTiming(WAVE_IN, swing),
+        withTiming(WAVE_OUT * 0.75, swing),
         withSpring(0, spring.gentle),
       );
       lean.value = withSequence(withSpring(-1.6, spring.gentle), withDelay(700, withSpring(0, spring.gentle)));
@@ -221,14 +234,21 @@ export const MascotSprite = forwardRef<MascotHandle, MascotProps>(function Masco
       transform: [
         { translateX: shake.value },
         { translateY: lift.value },
-        { rotate: `${lean.value}deg` },
+        { rotate: deg(lean.value) },
         { scaleX: (flip ? -1 : 1) * turnX.value * (1 / Math.sqrt(sq)) * (1 - 0.006 * b) },
         { scaleY: sq * (1 + 0.014 * b) },
       ],
     };
   });
 
-  const armStyle = useAnimatedStyle(() => ({ transform: [{ rotate: `${arm.value}deg` }] }));
+  // Rotate about the shoulder by shifting there and back: an animated rotate on a view with a
+  // transformOrigin made the arm vanish on iOS once it started moving.
+  const armRig = art.arm;
+  const pivotDX = armRig ? (armRig.pivot.x - armRig.frame.x - armRig.frame.w / 2) * s : 0;
+  const pivotDY = armRig ? (armRig.pivot.y - armRig.frame.y - armRig.frame.h / 2) * s : 0;
+  const armStyle = useAnimatedStyle(() => ({
+    transform: [{ translateX: pivotDX }, { translateY: pivotDY }, { rotate: deg(arm.value) }, { translateX: -pivotDX }, { translateY: -pivotDY }],
+  }));
   const f1 = useAnimatedStyle(() => ({ opacity: blink.value > 0.12 && blink.value <= 0.55 ? 1 : 0 }));
   const f2 = useAnimatedStyle(() => ({ opacity: blink.value > 0.55 && blink.value <= 0.9 ? 1 : 0 }));
   const f3 = useAnimatedStyle(() => ({ opacity: blink.value > 0.9 ? 1 : 0 }));
@@ -255,24 +275,21 @@ export const MascotSprite = forwardRef<MascotHandle, MascotProps>(function Masco
       <Animated.View style={[StyleSheet.absoluteFill, { transformOrigin: `50% ${art.anchorY * 100}%` }, body]}>
         <View style={shown === 'head' ? [StyleSheet.absoluteFill, styles.clip] : StyleSheet.absoluteFill}>
           <Image source={art.base} style={{ position: 'absolute', left: 0, top: 0, width: W, height: H }} contentFit="fill" />
+          {art.arm ? (
+            <Animated.View style={[place(art.arm.frame), armStyle]}>
+              <Image source={art.arm.src} style={StyleSheet.absoluteFill} contentFit="fill" />
+            </Animated.View>
+          ) : null}
+          {art.front ? (
+            <View style={place(art.front.frame)}>
+              <Image source={art.front.src} style={StyleSheet.absoluteFill} contentFit="fill" />
+            </View>
+          ) : null}
           {art.blink.map((b, i) => (
             <Animated.View key={i} style={[place(b.frame), frames[i]]}>
               <Image source={b.src} style={StyleSheet.absoluteFill} contentFit="fill" />
             </Animated.View>
           ))}
-          {art.arm ? (
-            <Animated.View
-              style={[
-                place(art.arm.frame),
-                {
-                  transformOrigin: `${(art.arm.pivot.x - art.arm.frame.x) * s}px ${(art.arm.pivot.y - art.arm.frame.y) * s}px`,
-                },
-                armStyle,
-              ]}
-            >
-              <Image source={art.arm.src} style={StyleSheet.absoluteFill} contentFit="fill" />
-            </Animated.View>
-          ) : null}
         </View>
       </Animated.View>
     </View>

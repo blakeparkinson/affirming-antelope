@@ -12,6 +12,7 @@ runtime mask: Expo Go can't clip to arbitrary shapes cheaply, and three-frame
 blinks are the classic 2D-animation read anyway.
 """
 
+import json
 from pathlib import Path
 
 import numpy as np
@@ -163,42 +164,47 @@ def main():
     rig: dict[str, dict] = {}
 
     # ---------------- wave ----------------
+    # Built from the Rive coach's cleaned layers (apps/web/scripts/mascot-coach-layers.py and
+    # mascot_cleanup.py), so both mascots share one cut: the one-piece raised arm, and a face
+    # with its full outline. Back (behind the arm) and front (head, ears, scarf) are separate
+    # images, so the arm sits between them as it does in Rive. Those layers are already deepened.
     W, H = 674, 978
-    L = lambda n: load(SRC / "mascot-layers/wave-rig" / n)
-    comp = load(SRC / "mascot-layers/wave/composite.png")
-    armR = np.asarray(Image.open(SRC / "mascot-wave-arm.png").convert("RGB"))[:, :, 0] / 255.0
-    arm_hard = armR > 0.5
+    coach = ROOT.parent / "web/public"
+    parts = json.loads((coach / "mascot-layers/coach/rig.json").read_text())["wave"]["parts"]
 
-    base = np.zeros((H, W, 4), np.uint8)
-    for n in ["00-body.png", "03-hoof.png", "04-neckerchief.png", "05-head.png", "06-ears.png", "07-eyes.png"]:
-        base = over(base, L(n))
-    # 02-forearm carries the lower half of the left ear (and a copy of the hoof).
-    ear = L("02-forearm.png").copy()
-    ear[380:, :, 3] = 0
-    base = over(base, ear)
-    # stray arm outline left on the head layer, outside the face
-    stray = dilate(arm_hard, 6)
-    stray[:, 100:] = False
-    base[stray, 3] = 0
+    def part(n: str) -> np.ndarray:
+        x0, y0, x1, y1 = parts[n]["bbox"]
+        im = Image.open(coach / parts[n]["file"]).convert("RGBA").resize((x1 - x0, y1 - y0), Image.LANCZOS)
+        out = Image.new("RGBA", (W, H))
+        out.paste(im, (x0, y0))
+        return np.array(out)
 
-    arm = comp.copy()
-    arm[:, :, 3] = (arm[:, :, 3] * np.clip(armR * 1.0, 0, 1)).astype(np.uint8)
-    base = deepen(base)
-    arm = deepen(arm)
+    def stack(names: list[str]) -> np.ndarray:
+        a = np.zeros((H, W, 4), np.uint8)
+        for n in names:
+            a = over(a, part(n))
+        return a
+
+    back = stack(["tail", "body", "armR"])
+    front = stack(["earL", "earR", "head", "eyeLIris", "eyeLLash", "eyeRIris", "eyeRLash", "neck"])
+    arm = part("armL")
+    base = over(back, front)
 
     lids = np.asarray(Image.open(SRC / "mascot-wave-lids.png").convert("RGB"))
     eye_mask = lids[:, :, 0] > 127
     eyes = [dilate(e, 3) for e in components(eye_mask)]
     fur = sample(base, [(300, 300), (380, 300), (340, 250)])
-    ink = sample(base, [(337, 21 + 8)]) if False else (4, 9, 32)
+    ink = (4, 9, 32)
 
-    save(base, "wave-base.png")
+    save(back, "wave-base.png")
+    fbox = save(front, "wave-front.png", bbox(front[:, :, 3] > 4, pad=2))
     abox = save(arm, "wave-arm.png", bbox(arm[:, :, 3] > 4, pad=2))
     rig["wave"] = {
         "width": W,
         "height": H,
         "base": "wave-base.png",
-        "arm": {"box": abox, "pivot": (205, 615)},
+        "front": fbox,
+        "arm": {"box": abox, "pivot": tuple(parts["armL"]["pivot"])},
         "blink": [],
         "feet": (340, 950),
     }
@@ -206,7 +212,7 @@ def main():
         save(f, f"wave-blink-{i + 1}.png")
         rig["wave"]["blink"].append(box)
 
-    # head: the wave base (no arm) cropped to the face
+    # head: the wave drawing without the raised arm, cropped to the face
     hb = (40, 22, 652, 640)
     head = base.copy()
     save(head, "head-base.png", hb)
@@ -263,6 +269,7 @@ def write_ts(rig):
         f"  width: {w['width']},",
         f"  height: {w['height']},",
         "  base: require('../../../assets/mascot/rig/wave-base.png'),",
+        f"  front: {{ src: require('../../../assets/mascot/rig/wave-front.png'), frame: {box(w['front'])} }},",
         f"  arm: {{ src: require('../../../assets/mascot/rig/wave-arm.png'), frame: {box(w['arm']['box'])}, pivot: {{ x: {w['arm']['pivot'][0]}, y: {w['arm']['pivot'][1]} }} }},",
         "  blink: [",
         *[f"    {{ src: require('../../../assets/mascot/rig/wave-blink-{i + 1}.png'), frame: {box(b)} }}," for i, b in enumerate(w["blink"])],
