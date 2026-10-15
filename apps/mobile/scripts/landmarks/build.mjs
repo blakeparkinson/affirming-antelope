@@ -5,6 +5,7 @@
 //   node apps/mobile/scripts/landmarks/build.mjs            # all landmarks
 //   node apps/mobile/scripts/landmarks/build.mjs baobab     # just one
 //   ... --preview                                           # also render 3 frames per landmark
+//   ... --strip                                             # every 0.2 s of the loop, for reviewing motion
 //
 // The art lives in art.mjs as SVG path data in the mascot's style (flat fills, one shade,
 // cream highlights, a thick ink outline). It goes through rive-mcp-server's scene writer, the
@@ -50,7 +51,15 @@ function sceneOf(id, L) {
     const parent = g.parent ?? "root";
     const p = abs.get(parent);
     if (!p) throw new Error(`${id}: group ${g.id} has unknown parent ${parent}`);
-    groups.push({ id: g.id, parent, x: g.at[0] - p[0], y: g.at[1] - p[1] });
+    groups.push({
+      id: g.id,
+      parent,
+      x: g.at[0] - p[0],
+      y: g.at[1] - p[1],
+      // rest values for things that start hidden or small (a falling leaf, a ripple, a peeking bird)
+      ...(g.opacity !== undefined ? { opacity: g.opacity } : {}),
+      ...(g.scale !== undefined ? { scaleX: g.scale, scaleY: g.scale } : {}),
+    });
     abs.set(g.id, g.at);
   }
   const shapes = [];
@@ -65,6 +74,11 @@ function sceneOf(id, L) {
 
   for (const part of L.parts) {
     const g = part.group;
+    if (part.ring) {
+      // a coloured stroke with no fill (a ripple ring)
+      shape(g, part.ring, { stroke: { thickness: part.width ?? 3, color: part.color, cap: "round", join: "round" } });
+      continue;
+    }
     if (part.line) {
       // an open ink line (a crease, a twig): no fill
       shape(g, part.line, { stroke: ink(part.width ?? 5) });
@@ -93,10 +107,11 @@ function sceneOf(id, L) {
     return {
       target: t.target,
       property: prop,
-      keyframes: t.keys.map(([s, v], i) => ({
+      // [seconds, value, easing into this key?]
+      keyframes: t.keys.map(([s, v, ease], i) => ({
         frame: Math.min(frames, Math.round(s * FPS)),
         value: base + v,
-        ...(i ? { easing: t.easing ?? "ease-in-out" } : {}),
+        ...(i ? { easing: ease ?? t.easing ?? "ease-in-out" } : {}),
       })),
     };
   });
@@ -161,9 +176,10 @@ function mcp() {
 // ---------------------------------------------------------------- main
 const only = process.argv.slice(2).filter((a) => !a.startsWith("--"));
 const preview = process.argv.includes("--preview");
+const strip = process.argv.includes("--strip");
 mkdirSync(OUT_RIV, { recursive: true });
 mkdirSync(OUT_PNG, { recursive: true });
-if (preview) mkdirSync(PREVIEW, { recursive: true });
+if (preview || strip) mkdirSync(PREVIEW, { recursive: true });
 
 const ids = Object.keys(LANDMARKS).filter((k) => !only.length || only.includes(k));
 const client = mcp();
@@ -177,6 +193,17 @@ try {
     writeFileSync(riv, writeRiv(objects));
     // the web still: the rest pose, 3x the on-screen width
     await client.tool("riv_render_frame", { path: riv, animation: "idle", time: 0, width: Math.round((L.size[0] + (L.pad?.[0] ?? 0) + (L.pad?.[2] ?? 0)) * 1.2), outPath: join(OUT_PNG, `${id}.png`) });
+    if (strip) {
+      // every 0.2 s through the loop, for reviewing motion frame by frame
+      const dir = join(PREVIEW, id);
+      mkdirSync(dir, { recursive: true });
+      for (let k = 0; k * 0.2 < L.anim.duration; k++) {
+        await client.tool("riv_render_frame", {
+          path: riv, animation: "idle", time: +(k * 0.2).toFixed(2), width: 320, background: "#EEF1FF",
+          outPath: join(dir, `f${String(k).padStart(3, "0")}.png`),
+        });
+      }
+    }
     if (preview) {
       for (const t of [0, L.anim.duration * 0.25, L.anim.duration * 0.5]) {
         await client.tool("riv_render_frame", {

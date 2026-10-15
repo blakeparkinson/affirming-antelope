@@ -40,6 +40,8 @@ const C = {
   cobaltLight: "#AEBBFA",
   ochre: "#E8A638",
   petal: "#F4A9BC",
+  weaver: "#F5C84A",
+  weaverShade: "#D9A62A",
 };
 
 // ---------------------------------------------------------------- helpers
@@ -131,6 +133,51 @@ function wave(a, phase, T) {
   return keys;
 }
 
+// ---------------------------------------------------------------- motion
+//
+// Every landmark loops over the same 6 s. Things breathe on a slow sine (the idle groups),
+// and once a loop a gust of wind crosses from left to right: each swaying part catches it a
+// moment after the one to its left, leans fast, then settles with a damped overshoot. Gust
+// and idle live on nested groups at the same pivot, so their motion adds up and never fights.
+
+export const T = 6;
+const OUT = [0.2, 0.8, 0.35, 1]; // fast start, soft landing (a lean, a dart)
+const SNAP = [0.6, 0, 0.2, 1]; // wind-up then go (anticipation into a hop)
+const GUST_AT = 2.1;
+const GUST_SPEED = 520; // art units per second
+
+/** When the gust reaches art x. */
+const gustAt = (x) => GUST_AT + x / GUST_SPEED;
+
+/** A gust at `at`: rest, a quick lean to `amp`, then a damped sway back to rest. */
+function gust(at, amp, { rise = 0.28, period = 0.62, decay = 0.5, swings = 4 } = {}) {
+  const keys = [[0, 0], [at, 0], [at + rise, amp, OUT]];
+  let t = at + rise;
+  let a = amp;
+  for (let i = 0; i < swings; i++) {
+    t += period / 2;
+    a *= -decay;
+    keys.push([+t.toFixed(3), +a.toFixed(3)]);
+  }
+  keys.push([+(t + period / 2).toFixed(3), 0], [T, 0]);
+  return keys;
+}
+
+/** Nest each named group inside a gust group (`<id>G`) at the same pivot. */
+function withGust(groups, ids) {
+  return groups.flatMap((g) =>
+    ids.includes(g.id) ? [{ id: `${g.id}G`, at: g.at, ...(g.parent ? { parent: g.parent } : {}) }, { ...g, parent: `${g.id}G` }] : [g],
+  );
+}
+
+/** Keys for a fast flutter between a and b (wings), `hz` beats a second over the loop. */
+function flutter(a, b, hz) {
+  const keys = [];
+  const n = Math.round(T * hz) * 2;
+  for (let i = 0; i <= n; i++) keys.push([+((i / n) * T).toFixed(3), i % 2 ? b : a, "linear"]);
+  return keys;
+}
+
 // ---------------------------------------------------------------- baobab
 
 const baobabTips = [
@@ -147,9 +194,12 @@ const baobab = {
   pad: [0, 24, 0, 0],
   ground: 304,
   groups: [
-    ...baobabTips.map(([x, y], i) => ({ id: `leaf${i}`, at: [x, y + 22] })),
-    { id: "tuftL", at: [112, 304] },
-    { id: "tuftR", at: [292, 304] },
+    ...withGust(
+      [...baobabTips.map(([x, y], i) => ({ id: `leaf${i}`, at: [x, y + 22] })), { id: "tuftL", at: [112, 304] }, { id: "tuftR", at: [292, 304] }],
+      [...baobabTips.map((_, i) => `leaf${i}`), "tuftL", "tuftR"],
+    ),
+    // a leaf the gust shakes loose from the fourth clump; it drifts down and fades at the roots
+    { id: "fall", at: [252, 84], opacity: 0 },
   ],
   parts: [
     { flat: ellipse(200, 306, 150, 13), color: C.shadow, opacity: 0.1 },
@@ -187,14 +237,34 @@ const baobab = {
     },
     { group: "tuftL", d: tuft(112, 304, 1.5, -2), fill: C.grass, shades: [{ d: "M90 300 L140 300 L140 320 L90 320 Z", color: C.grassShade }], width: 5 },
     { group: "tuftR", d: tuft(292, 304, 1.3, 2), fill: C.grass, shades: [{ d: "M270 300 L320 300 L320 320 L270 320 Z", color: C.grassShade }], width: 5 },
+    { group: "fall", d: "M244 84 C246 76 256 74 262 78 C260 86 250 90 244 84 Z", fill: C.leaf, shades: [{ d: ellipse(256, 86, 10, 5), color: C.leafShade }], width: 3.5 },
   ],
   anim: {
-    duration: 4.8,
+    duration: T,
     tracks: [
-      ...baobabTips.map((_, i) => ({ target: `leaf${i}`, property: "rotation", keys: wave(i % 2 ? 2.2 : -2.2, i * 0.17, 4.8) })),
-      ...baobabTips.map((_, i) => ({ target: `leaf${i}`, property: "y", keys: wave(1.4, i * 0.17 + 0.25, 4.8) })),
-      { target: "tuftL", property: "rotation", keys: wave(5, 0.1, 4.8) },
-      { target: "tuftR", property: "rotation", keys: wave(-5, 0.35, 4.8) },
+      // breathing: each clump rises and leans a little, out of step with its neighbours
+      ...baobabTips.map((_, i) => ({ target: `leaf${i}`, property: "rotation", keys: wave(i % 2 ? 1.6 : -1.6, i * 0.19, T) })),
+      ...baobabTips.map((_, i) => ({ target: `leaf${i}`, property: "y", keys: wave(1.6, i * 0.19 + 0.25, T) })),
+      // the gust: clumps lean right one after another, the outer ones furthest
+      ...baobabTips.map(([x], i) => ({ target: `leaf${i}G`, property: "rotation", keys: gust(gustAt(x), [5, 4, 3.4, 4.2, 6][i]) })),
+      ...baobabTips.map(([x], i) => ({ target: `leaf${i}G`, property: "x", keys: gust(gustAt(x) + 0.04, [3, 2.4, 2, 2.6, 3.6][i]) })),
+      { target: "tuftL", property: "rotation", keys: wave(3, 0.1, T) },
+      { target: "tuftR", property: "rotation", keys: wave(-3, 0.35, T) },
+      { target: "tuftLG", property: "rotation", keys: gust(gustAt(112), 14, { period: 0.5 }) },
+      { target: "tuftRG", property: "rotation", keys: gust(gustAt(292), 12, { period: 0.5 }) },
+      // the loose leaf: pops out with the gust, see-saws down and fades at the roots
+      { target: "fall", property: "opacity", keys: [[0, 0], [2.68, 0, "hold"], [2.72, 1, "linear"], [5.1, 1], [5.5, 0], [T, 0]] },
+      {
+        target: "fall",
+        property: "x",
+        keys: [[0, 0], [2.7, 0, "hold"], [3.1, 16, OUT], [3.6, 4], [4.1, 22], [4.6, 10], [5.1, 26], [5.5, 18], [T, 0, "hold"]],
+      },
+      { target: "fall", property: "y", keys: [[0, 0], [2.7, 0, "hold"], [5.5, 214, [0.3, 0.1, 0.7, 1]], [T, 0, "hold"]] },
+      {
+        target: "fall",
+        property: "rotation",
+        keys: [[0, 0], [2.7, 0, "hold"], [3.1, 50], [3.6, -30], [4.1, 45], [4.6, -25], [5.1, 40], [5.5, -10], [T, 0, "hold"]],
+      },
     ],
   },
 };
@@ -234,11 +304,19 @@ const kopje = {
   pad: [0, 12, 0, 0],
   ground: 250,
   groups: [
-    { id: "bush", at: [104, 206] },
+    ...withGust(
+      [
+        { id: "bush", at: [104, 206] },
+        { id: "tuft0", at: [36, 250] },
+        { id: "tuft1", at: [176, 250] },
+        { id: "tuft2", at: [246, 250] },
+      ],
+      ["bush", "tuft0", "tuft1", "tuft2"],
+    ),
+    // the bird: hop + squash at the feet, the head pivots at the neck, the tail at its base
     { id: "bird", at: [214, 64] },
-    { id: "tuft0", at: [36, 250] },
-    { id: "tuft1", at: [176, 250] },
-    { id: "tuft2", at: [246, 250] },
+    { id: "birdHead", parent: "bird", at: [208, 42] },
+    { id: "birdTail", parent: "bird", at: [228, 48] },
   ],
   parts: [
     { flat: ellipse(200, 252, 176, 11), color: C.shadow, opacity: 0.1 },
@@ -258,7 +336,7 @@ const kopje = {
     boulder([[256, 250], [262, 220], [292, 198], [330, 204], [348, 232], [346, 250]], true),
     boulder([[170, 106], [172, 80], [198, 62], [232, 66], [248, 88], [240, 108]], true),
     // the bird: a little cobalt sunbird on the top rock, facing left
-    { group: "bird", d: "M227 49 L246 41 L243 55 Z", fill: C.cobaltShade, width: 4 },
+    { group: "birdTail", d: "M227 49 L246 41 L243 55 Z", fill: C.cobaltShade, width: 4 },
     { group: "bird", line: "M210 57 L209 65", width: 3.5 },
     { group: "bird", line: "M219 57 L220 65", width: 3.5 },
     {
@@ -271,27 +349,67 @@ const kopje = {
       ],
       width: 5,
     },
-    { group: "bird", d: "M196 35 L186 38.5 L196 41 Z", fill: C.ochre, width: 3.5 },
-    { group: "bird", d: ellipse(203, 36, 8.5, 8), fill: C.cobalt, width: 5 },
-    { group: "bird", flat: ellipse(201, 34.5, 1.9, 2.3), color: INK },
+    { group: "birdHead", d: "M196 35 L186 38.5 L196 41 Z", fill: C.ochre, width: 3.5 },
+    { group: "birdHead", d: ellipse(203, 36, 8.5, 8), fill: C.cobalt, width: 5 },
+    { group: "birdHead", flat: ellipse(201, 34.5, 1.9, 2.3), color: INK },
     { group: "tuft0", d: tuft(36, 250, 1.2, -1), fill: C.grass, width: 5 },
     { group: "tuft1", d: tuft(176, 250, 1.3, 1), fill: C.grass, width: 5 },
     { group: "tuft2", d: tuft(246, 252, 1.05, 2), fill: C.grass, width: 5 },
   ],
   anim: {
-    duration: 5,
+    duration: T,
     tracks: [
-      { target: "bush", property: "rotation", keys: wave(1.6, 0, 5) },
-      { target: "tuft0", property: "rotation", keys: wave(5, 0.1, 5) },
-      { target: "tuft1", property: "rotation", keys: wave(-4, 0.3, 5) },
-      { target: "tuft2", property: "rotation", keys: wave(4, 0.55, 5) },
-      // the bird pecks twice, hops, then looks around
+      { target: "bush", property: "rotation", keys: wave(1.2, 0, T) },
+      { target: "bushG", property: "rotation", keys: gust(gustAt(104), 4.5) },
+      { target: "tuft0", property: "rotation", keys: wave(3, 0.1, T) },
+      { target: "tuft1", property: "rotation", keys: wave(-3, 0.3, T) },
+      { target: "tuft2", property: "rotation", keys: wave(3, 0.55, T) },
+      { target: "tuft0G", property: "rotation", keys: gust(gustAt(36), 14, { period: 0.5 }) },
+      { target: "tuft1G", property: "rotation", keys: gust(gustAt(176), 13, { period: 0.5 }) },
+      { target: "tuft2G", property: "rotation", keys: gust(gustAt(246), 12, { period: 0.5 }) },
+      // the sunbird: a double tail flick, two pecks, a glance up, a hop, a curious tilt.
+      // Head and tail ride on the body, so the hop carries them and they overlap it.
+      {
+        target: "birdHead",
+        property: "rotation",
+        keys: [
+          [0, 0], [0.9, 0], [1.02, -38, OUT], [1.14, -31], [1.22, -38], [1.38, 0, OUT],
+          [1.5, -36, OUT], [1.62, -30], [1.7, -36], [1.86, 0, OUT],
+          [2.4, 0], [2.56, 14, OUT], [3.0, 14], [3.14, 0],
+          [3.5, 0], [3.66, 8], [3.98, -10], [4.16, 0],
+          [4.7, 0], [4.86, -14, OUT], [5.4, -14], [5.56, 0], [T, 0],
+        ],
+      },
+      {
+        target: "birdTail",
+        property: "rotation",
+        keys: [
+          [0, 0], [0.4, 0], [0.47, -24, OUT], [0.58, 8], [0.67, -16, OUT], [0.8, 0],
+          [3.55, 0], [3.66, -22, OUT], [3.98, 12], [4.14, -4], [4.26, 0],
+          [5.0, 0], [5.07, -20, OUT], [5.2, 0], [T, 0],
+        ],
+      },
       {
         target: "bird",
-        property: "rotation",
-        keys: [[0, 0], [1.0, 0], [1.16, -16], [1.3, 0], [1.46, -16], [1.62, 0], [3.4, 0], [3.6, 6], [4.2, 6], [4.4, 0], [5, 0]],
+        property: "y",
+        keys: [[0, 0], [3.55, 0], [3.82, -18, OUT], [3.98, 0, [0.5, 0, 0.9, 0.5]], [T, 0]],
       },
-      { target: "bird", property: "y", keys: [[0, 0], [2.3, 0], [2.42, -7], [2.56, 0], [2.64, -2], [2.72, 0], [5, 0]] },
+      // squash and stretch at the feet: a dip with each peck, then wind-up, take-off, landing
+      {
+        target: "bird",
+        property: "scaleY",
+        keys: [
+          [0, 1], [0.9, 1], [1.02, 0.94], [1.38, 1], [1.5, 0.94], [1.86, 1],
+          [3.38, 1], [3.55, 0.8, SNAP], [3.66, 1.16, OUT], [3.82, 1.02], [3.98, 0.82, "linear"], [4.12, 1.06, OUT], [4.26, 1], [T, 1],
+        ],
+      },
+      {
+        target: "bird",
+        property: "scaleX",
+        keys: [
+          [0, 1], [3.38, 1], [3.55, 1.14, SNAP], [3.66, 0.88, OUT], [3.82, 0.99], [3.98, 1.12, "linear"], [4.12, 0.96, OUT], [4.26, 1], [T, 1],
+        ],
+      },
     ],
   },
 };
@@ -308,9 +426,21 @@ const pond = {
     { id: "glintA", at: [200, 120] },
     { id: "glintB", at: [250, 136] },
     { id: "pads", at: [300, 128] },
-    { id: "reeds", at: [392, 150] },
-    { id: "reedsB", at: [370, 152] },
-    { id: "tuft0", at: [60, 168] },
+    ...withGust(
+      [
+        { id: "reeds", at: [392, 150] },
+        { id: "reedsB", at: [370, 152] },
+        { id: "tuft0", at: [60, 168] },
+      ],
+      ["reeds", "reedsB", "tuft0"],
+    ),
+    // ripples: rings drawn at full size, grown from small and faded out
+    { id: "ripA", at: [150, 126], opacity: 0, scale: 0.15 },
+    { id: "ripA2", at: [150, 126], opacity: 0, scale: 0.15 },
+    { id: "ripB", at: [262, 144], opacity: 0, scale: 0.15 },
+    // a dragonfly hovering over the water; the wings flutter on their own group
+    { id: "dfly", at: [318, 60] },
+    { id: "dwing", parent: "dfly", at: [320, 57] },
   ],
   parts: [
     {
@@ -327,6 +457,9 @@ const pond = {
       ],
       width: 6,
     },
+    { group: "ripA", ring: ellipse(150, 126, 46, 11), color: C.glint, width: 3 },
+    { group: "ripA2", ring: ellipse(150, 126, 46, 11), color: C.glint, width: 3 },
+    { group: "ripB", ring: ellipse(262, 144, 40, 9.5), color: C.glint, width: 3 },
     { group: "glintA", flat: capsule(170, 118, 48, 6), color: C.glint },
     { group: "glintA", flat: capsule(226, 108, 26, 5), color: C.glint },
     { group: "glintB", flat: capsule(252, 136, 60, 6), color: C.glint },
@@ -351,18 +484,55 @@ const pond = {
     { group: "reeds", d: capsule(405, 52, 10, 28), fill: C.cattail, width: 4.5 },
     { group: "reeds", d: tuft(392, 154, 2.1, 3), fill: C.reed, shades: [{ d: ellipse(400, 160, 30, 16), color: C.reedShade }], width: 5 },
     { group: "tuft0", d: tuft(60, 170, 1.2, -1), fill: C.grass, width: 5 },
+    // dragonfly, facing left: wings behind, then body and head
+    { group: "dwing", d: ellipse(322, 52, 11, 4), fill: C.glint, width: 2.5 },
+    { group: "dwing", d: ellipse(330, 53.5, 10, 3.6), fill: C.glint, width: 2.5 },
+    { group: "dfly", d: capsule(328, 60, 30, 5.5), fill: C.cobalt, width: 3 },
+    { group: "dfly", d: ellipse(312, 59.5, 4.6, 4.2), fill: C.cobaltShade, width: 3 },
   ],
   anim: {
-    duration: 4,
+    duration: T,
     tracks: [
-      { target: "glintA", property: "x", keys: wave(7, 0, 4) },
-      { target: "glintA", property: "opacity", keys: wave(0.3, 0.25, 4).map(([t, v]) => [t, 0.7 + v]) },
-      { target: "glintB", property: "x", keys: wave(-8, 0.2, 4) },
-      { target: "glintB", property: "opacity", keys: wave(0.3, 0.75, 4).map(([t, v]) => [t, 0.7 + v]) },
-      { target: "pads", property: "y", keys: wave(1.6, 0.1, 4) },
-      { target: "reeds", property: "rotation", keys: wave(3.2, 0, 4) },
-      { target: "reedsB", property: "rotation", keys: wave(2.6, 0.3, 4) },
-      { target: "tuft0", property: "rotation", keys: wave(4, 0.6, 4) },
+      { target: "glintA", property: "x", keys: wave(7, 0, T) },
+      { target: "glintA", property: "scaleX", keys: wave(0.18, 0.1, T).map(([t, v]) => [t, 1 + v]) },
+      { target: "glintA", property: "opacity", keys: wave(0.3, 0.25, T).map(([t, v]) => [t, 0.7 + v]) },
+      { target: "glintB", property: "x", keys: wave(-8, 0.2, T) },
+      { target: "glintB", property: "scaleX", keys: wave(0.2, 0.6, T).map(([t, v]) => [t, 1 + v]) },
+      { target: "glintB", property: "opacity", keys: wave(0.3, 0.75, T).map(([t, v]) => [t, 0.7 + v]) },
+      { target: "pads", property: "y", keys: wave(1.6, 0.1, T) },
+      { target: "pads", property: "rotation", keys: gust(gustAt(300), 3, { period: 0.9 }) },
+      { target: "reeds", property: "rotation", keys: wave(2.4, 0, T) },
+      { target: "reedsB", property: "rotation", keys: wave(2, 0.3, T) },
+      { target: "tuft0", property: "rotation", keys: wave(3, 0.6, T) },
+      { target: "reedsG", property: "rotation", keys: gust(gustAt(392), 9, { period: 0.7 }) },
+      { target: "reedsBG", property: "rotation", keys: gust(gustAt(370), 8, { period: 0.7 }) },
+      { target: "tuft0G", property: "rotation", keys: gust(gustAt(60), 13, { period: 0.5 }) },
+      // something rises at the left of the pool (two rings), and later one by the lily pads
+      { target: "ripA", property: "scaleX", keys: [[0, 0.15], [0.8, 0.15, "hold"], [2.4, 1, OUT], [T, 0.15, "hold"]] },
+      { target: "ripA", property: "scaleY", keys: [[0, 0.15], [0.8, 0.15, "hold"], [2.4, 1, OUT], [T, 0.15, "hold"]] },
+      { target: "ripA", property: "opacity", keys: [[0, 0], [0.8, 0, "hold"], [0.95, 1, "linear"], [2.4, 0, "linear"], [T, 0]] },
+      { target: "ripA2", property: "scaleX", keys: [[0, 0.15], [1.2, 0.15, "hold"], [2.8, 0.8, OUT], [T, 0.15, "hold"]] },
+      { target: "ripA2", property: "scaleY", keys: [[0, 0.15], [1.2, 0.15, "hold"], [2.8, 0.8, OUT], [T, 0.15, "hold"]] },
+      { target: "ripA2", property: "opacity", keys: [[0, 0], [1.2, 0, "hold"], [1.35, 0.9, "linear"], [2.8, 0, "linear"], [T, 0]] },
+      { target: "ripB", property: "scaleX", keys: [[0, 0.15], [3.9, 0.15, "hold"], [5.4, 1, OUT], [T, 0.15, "hold"]] },
+      { target: "ripB", property: "scaleY", keys: [[0, 0.15], [3.9, 0.15, "hold"], [5.4, 1, OUT], [T, 0.15, "hold"]] },
+      { target: "ripB", property: "opacity", keys: [[0, 0], [3.9, 0, "hold"], [4.05, 1, "linear"], [5.4, 0, "linear"], [T, 0]] },
+      // the dragonfly hovers, darts left, hovers, darts low over the water, then home
+      {
+        target: "dfly",
+        property: "x",
+        keys: [[0, 0], [0.9, 0], [1.12, -104, OUT], [2.0, -100], [2.2, -168, OUT], [3.1, -166], [3.34, -52, OUT], [4.4, -56], [4.66, 0, OUT], [T, 0]],
+      },
+      {
+        target: "dfly",
+        property: "y",
+        keys: [
+          [0, 0], [0.45, -3], [0.9, 0], [1.12, -16, OUT], [1.55, -12], [2.0, -16], [2.2, 14, OUT], [2.65, 10], [3.1, 14],
+          [3.34, -6, OUT], [3.9, -2], [4.4, -6], [4.66, 0, OUT], [5.3, -3], [T, 0],
+        ],
+      },
+      { target: "dfly", property: "rotation", keys: [[0, 0], [0.9, 0], [1.0, -8], [1.2, 0], [2.0, 0], [2.08, 10], [2.3, 0], [3.1, 0], [3.2, 6], [3.42, 0], [4.4, 0], [4.48, 8], [4.7, 0], [T, 0]] },
+      { target: "dwing", property: "scaleY", keys: flutter(1, 0.35, 14) },
     ],
   },
 };
@@ -394,10 +564,18 @@ const acacia = {
   pad: [0, 10, 0, 0],
   ground: 300,
   groups: [
-    ...nests.map(([x, y], i) => ({ id: `nest${i}`, at: [x, y] })),
-    { id: "canopy", at: [220, 120] },
-    { id: "tuft0", at: [170, 300] },
-    { id: "tuft1", at: [268, 300] },
+    ...withGust(
+      [
+        { id: "canopy", at: [220, 120] },
+        // the nests hang from the canopy, so they ride its sway and then swing on their own
+        ...nests.map(([x, y], i) => ({ id: `nest${i}`, parent: "canopy", at: [x, y] })),
+        { id: "tuft0", at: [170, 300] },
+        { id: "tuft1", at: [268, 300] },
+      ],
+      ["canopy", ...nests.map((_, i) => `nest${i}`), "tuft0", "tuft1"],
+    ),
+    // a weaver peeks out of the middle nest's door
+    { id: "weaver", parent: "nest1", at: [204, 190], scale: 0 },
   ],
   parts: [
     { flat: ellipse(220, 302, 120, 10), color: C.shadow, opacity: 0.1 },
@@ -413,6 +591,11 @@ const acacia = {
       { group: `nest${i}`, ...nest(x, y, len, s) },
       { group: `nest${i}`, flat: ellipse(x, y + len + 31 * s, 4.5 * s, 3.5 * s), color: INK },
     ]),
+    // the weaver: a round yellow head with a dark mask and a stubby beak, facing left
+    { group: "weaver", d: "M196 187 L189 189.5 L196 192 Z", fill: C.rockShade, width: 2.6 },
+    { group: "weaver", d: ellipse(203, 186, 7.5, 7), fill: C.weaver, shades: [{ d: ellipse(206, 191, 7, 3), color: C.weaverShade }], width: 3.5 },
+    { group: "weaver", flat: ellipse(200.5, 185, 3.6, 2.6), color: INK },
+    { group: "weaver", flat: ellipse(200, 184.4, 1, 1), color: C.glint },
     // canopy: a darker back layer, then the flat-bottomed umbrella
     { group: "canopy", d: clump(258, 76, 148, 32, 9, 5), fill: C.leafShade, width: 7 },
     {
@@ -429,13 +612,27 @@ const acacia = {
     { group: "tuft1", d: tuft(268, 300, 1.1, 2), fill: C.grass, width: 5 },
   ],
   anim: {
-    duration: 5.2,
+    duration: T,
     tracks: [
-      ...nests.map((_, i) => ({ target: `nest${i}`, property: "rotation", keys: wave(i === 1 ? 7 : 5, i * 0.3, 5.2) })),
-      { target: "canopy", property: "y", keys: wave(1.2, 0, 5.2) },
-      { target: "canopy", property: "rotation", keys: wave(0.6, 0.2, 5.2) },
-      { target: "tuft0", property: "rotation", keys: wave(4, 0.15, 5.2) },
-      { target: "tuft1", property: "rotation", keys: wave(-4, 0.5, 5.2) },
+      { target: "canopy", property: "y", keys: wave(1.2, 0, T) },
+      { target: "canopy", property: "rotation", keys: wave(0.5, 0.2, T) },
+      { target: "canopyG", property: "rotation", keys: gust(gustAt(220), 1.8, { period: 0.9, decay: 0.4, swings: 3 }) },
+      { target: "canopyG", property: "x", keys: gust(gustAt(220), 4, { period: 0.9, decay: 0.4, swings: 3 }) },
+      // nests: a gentle idle swing, then the gust's swing, a beat later and looser than the canopy
+      ...nests.map((_, i) => ({ target: `nest${i}`, property: "rotation", keys: wave([3, 4, 2.6][i], i * 0.3, T) })),
+      ...nests.map(([x], i) => ({
+        target: `nest${i}G`,
+        property: "rotation",
+        keys: gust(gustAt(x) + 0.14, [13, 10, 15][i], { rise: 0.34, period: 0.84, decay: 0.62, swings: 5 }),
+      })),
+      { target: "tuft0", property: "rotation", keys: wave(3, 0.15, T) },
+      { target: "tuft1", property: "rotation", keys: wave(-3, 0.5, T) },
+      { target: "tuft0G", property: "rotation", keys: gust(gustAt(170), 13, { period: 0.5 }) },
+      { target: "tuft1G", property: "rotation", keys: gust(gustAt(268), 12, { period: 0.5 }) },
+      // the weaver pops out once the nest has settled, looks left and right, and ducks back in
+      { target: "weaver", property: "scaleX", keys: [[0, 0], [4.6, 0, "hold"], [4.74, 1.7, OUT], [4.84, 1.5], [5.66, 1.5], [5.78, 0, SNAP], [T, 0]] },
+      { target: "weaver", property: "scaleY", keys: [[0, 0], [4.6, 0, "hold"], [4.74, 1.7, OUT], [4.84, 1.5], [5.66, 1.5], [5.78, 0, SNAP], [T, 0]] },
+      { target: "weaver", property: "rotation", keys: [[0, 0], [4.9, 0], [5.02, -16, OUT], [5.24, -16], [5.36, 12, OUT], [5.56, 12], [5.66, 0], [T, 0]] },
     ],
   },
 };
