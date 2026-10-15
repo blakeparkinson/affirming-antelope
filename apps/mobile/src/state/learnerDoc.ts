@@ -20,7 +20,7 @@ export {
 /** A stable empty progress for selectors (never mutate). */
 export const EMPTY_PROGRESS: PathwayProgress = Object.freeze({ currentWeek: 1, completedActivityIds: [], pathSeenWeek: 1 }) as PathwayProgress;
 
-type Seeded = Omit<LearnerState, 'practiceLog' | 'sessions' | 'settings' | 'lastGreetedDay'>;
+type Seeded = Omit<LearnerState, 'practiceLog' | 'sessions' | 'settings' | 'lastGreetedDay' | 'freezeNoticeSeen'>;
 
 /** A brand-new learner on a track. `chosenAt` is null until they pick one in the welcome. */
 export function freshSeed(pathwayId: PathwayId, chosenAt: string | null): Seeded {
@@ -42,6 +42,8 @@ export function demoSeed(today: string): Seeded {
     progress: { 'mi-for-leaders': progressFrom(d) },
     skills: structuredClone(d.skills),
     streak: { days: d.streakDays, lastPracticeDay: addDays(today, -1) },
+    // hit last week's goal: holding both freezes
+    freezes: { earnedDays: [addDays(weekStartOf(today), -3)], usedDays: [] },
     weekStart: weekStartOf(today),
     weekDays,
     weeklyGoal: { ...d.weeklyGoal, hitCount: 3 },

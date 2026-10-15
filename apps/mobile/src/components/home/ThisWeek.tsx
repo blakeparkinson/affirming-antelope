@@ -10,7 +10,7 @@ import Animated, {
   withTiming,
 } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
-import { Card, Hoofprint, ProgressRing, Text, color, haptic, radius, space } from '@/design';
+import { Callout, Card, Hoofprint, ProgressRing, SnowflakeIcon, Text, color, haptic, radius, space } from '@/design';
 import { Expand, FADE_MS, RollingNumber, spring, useReduceMotion } from '@/motion';
 import { weekdayIndex } from '@/state/store';
 import { TickSwap, useOnChange } from './motion';
@@ -23,15 +23,22 @@ const DAYS = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
  * When a practice lands (Home passes values only once it's back in view):
  * today's hoofprint stamps into its dot first, the streak rolls and its print
  * thumps, then the ring springs to the new count (ochre + success when the goal is met).
+ *
+ * A day a streak freeze covered shows a cobalt snowflake on a periwinkle face: kept, not
+ * earned, so it never takes the ochre. `freezeNote` says so once, the visit after it happened.
  */
 export function ThisWeek({
   streak,
   goal,
   weekDays,
+  frozenDays,
+  freezeNote,
 }: {
   streak: number;
   goal: { target: number; done: number };
   weekDays: boolean[];
+  frozenDays: boolean[];
+  freezeNote?: string | null;
 }) {
   const reduce = useReduceMotion();
   const todayIdx = weekdayIndex();
@@ -92,9 +99,24 @@ export function ThisWeek({
           </Expand>
         </View>
       </View>
+      <Expand open={!!freezeNote}>
+        {freezeNote ? (
+          <Callout dense align="center" glyph={<SnowflakeIcon size={22} weight="bold" color={color.primary} />} style={styles.note}>
+            <Text variant="bodySmall">{freezeNote}</Text>
+          </Callout>
+        ) : null}
+      </Expand>
       <View style={styles.week} accessibilityElementsHidden importantForAccessibility="no-hide-descendants">
         {DAYS.map((d, i) => (
-          <DayDot key={i} label={d} index={i} done={weekDays[i]} isToday={i === todayIdx} quiet={goal.done === goal.target} />
+          <DayDot
+            key={i}
+            label={d}
+            index={i}
+            done={weekDays[i]}
+            frozen={!weekDays[i] && !!frozenDays[i]}
+            isToday={i === todayIdx}
+            quiet={goal.done === goal.target}
+          />
         ))}
       </View>
     </Card>
@@ -106,7 +128,21 @@ export function ThisWeek({
  * over the empty track and its hoofprint lands with a little twist. Light
  * impact at the stamp unless the ring's success is about to play (`quiet`).
  */
-function DayDot({ label, index, done, isToday, quiet }: { label: string; index: number; done: boolean; isToday: boolean; quiet: boolean }) {
+function DayDot({
+  label,
+  index,
+  done,
+  frozen,
+  isToday,
+  quiet,
+}: {
+  label: string;
+  index: number;
+  done: boolean;
+  frozen: boolean;
+  isToday: boolean;
+  quiet: boolean;
+}) {
   const reduce = useReduceMotion();
   const p = useSharedValue(done ? 1 : 0);
   const tilt = index % 2 ? 10 : -10;
@@ -141,9 +177,15 @@ function DayDot({ label, index, done, isToday, quiet }: { label: string; index: 
   return (
     <View style={styles.day}>
       <View style={styles.dot}>
-        <View style={[styles.track, isToday && styles.trackToday]}>
-          <Hoofprint size={14} tint={isToday ? color.primaryTint : color.line} rotate={tilt} />
-        </View>
+        {frozen ? (
+          <View style={[styles.track, styles.trackFrozen]}>
+            <SnowflakeIcon size={18} weight="bold" color={color.primary} />
+          </View>
+        ) : (
+          <View style={[styles.track, isToday && styles.trackToday]}>
+            <Hoofprint size={14} tint={isToday ? color.primaryTint : color.line} rotate={tilt} />
+          </View>
+        )}
         <Animated.View style={[styles.track, styles.trackDone, styles.overlay, face]}>
           <Animated.View style={print}>
             <Hoofprint size={16} tint={color.navy} rotate={tilt} />
@@ -181,4 +223,6 @@ const styles = StyleSheet.create({
   overlay: { position: 'absolute', left: 0, top: 0 },
   trackDone: { backgroundColor: color.gold, borderColor: color.goldShadow, borderBottomWidth: 4 },
   trackToday: { borderColor: color.primary, borderStyle: 'dashed' },
+  trackFrozen: { backgroundColor: color.soft, borderColor: color.primaryTint, borderBottomWidth: 4 },
+  note: { marginTop: space[4] },
 });

@@ -194,7 +194,7 @@ Actions for the practice loop:
 - `recordPractice({ kind, skill?, refId?, activityId?, minutes })` updates the streak, weekly goal, skill progress and assignment items. When `activityId` is set it also calls `completeActivity`, which advances the path week once every activity in the unit is done. Every record gets a uuid `id` (its `client_id` on the server) and the signed-in user as `ownerId` (unset in guest mode).
 - `recordSession({ kind, refId, skill, transcript, debrief, selfReflection?, startedAt, endedAt, durationSec })`: every drill rep and finished role-play is kept as a practice session (what trainer review shares).
 - `completeActivity(activityId)`, `claimRecords`, `applySynced` (sync only).
-- `SYNCED_KEYS` / `syncedState()`: the slice mirrored to `learner_state` (track, per-pathway progress, streak, goal; not settings, the demo flag or practice history).
+- `SYNCED_KEYS` / `syncedState()`: the slice mirrored to `learner_state` (track, per-pathway progress, streak, freeze ledger, goal; not settings, the demo flag or practice history).
 - Selectors: `useCurrentUnit`, `nextActivity`, `useProgressRows` (`state/selectors.ts`). Process rows and "Opens in week N" come from the active pathway's units.
 
 `src/state/account.ts` (`useAccount`, persisted cache): auth status, profile, cohorts (with trainer names), assignments with progress, submissions, reviews, `onboarded`. The server owns all of it; `sync/cloud.ts` refreshes it. `RATING` maps a review's level to words, `personSeed(name)` gives people a stable avatar (Dr. Rosa Lin keeps the demo face).
@@ -335,6 +335,8 @@ Captures: `docs/screens/clinician-*.jpg`.
 ## Home
 
 Greeting: the account's name when signed in, else just "Good morning" (the demo learner keeps "Amanda"). Today's practice card (`data/today.ts`: the next drill in `dailyDrillOrder(active)` not done yet; chips: skill, then "Drill · ~5 min"), new trainer feedback (`FeedbackCard`, when unseen), This week, From your trainer (`AssignmentCard` over an `AssignmentView`, demo or real: a `Callout` note, a gold `ProgressBar` whose segments fill by fraction for multi-rep items, `ListRow`s with a 24pt `StepBadge` check), Your progress (`ProgressList`: a level `StepBadge`, caption "Level 2 · Respond", `LevelPips` and "Next: Elicit"; no percentages), More practice (the focus skill sits in the header's action slot: "Focus this week: Sustain talk").
+
+Streak freezes: a day a freeze covered shows in This week's strip as a periwinkle face with a cobalt `SnowflakeIcon` (kept, not earned, so never ochre). Home spends freezes on focus (`settleStreak`); the visit after one was spent, a `Callout` in the card says so once ("A streak freeze covered yesterday, so your 12-day streak is safe. You have 1 left."). A freeze that couldn't save the streak gets no note. Me shows the freezes held as two snowflake slots under the stats. Rules: `habit.ts` in core (start with 1, hold up to 2, earn 1 per weekly goal hit).
 
 ## Rules for the practice loop
 

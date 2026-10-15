@@ -15,8 +15,15 @@ import {
   type SkillId,
   type SkillLevelNumber,
   type Turn,
+  addDays,
+  freezesAfterGoalHit,
+  freezesHeld,
   liveStreakDays,
+  MAX_FREEZES,
+  noFreezeHistory,
+  settleFreezes,
   streakAfterPractice,
+  type StreakFreezes,
   weekAfterPractice,
   weekAsOf,
   weekStartOf,
@@ -117,6 +124,8 @@ export interface LearnerState {
   skills: Record<SkillId, DemoSkillProgress>;
   /** The run ending on `lastPracticeDay`, which may be over: show `liveStreak(s)`. */
   streak: { days: number; lastPracticeDay: string | null };
+  /** Streak freezes earned and used. Show the count with `freezesHeld`. */
+  freezes: StreakFreezes;
   /** Monday of the week `weekDays` and `weeklyGoal.done` count. Show `thisWeek(s)`. */
   weekStart: string | null;
   /** Monday-start: which days of `weekStart`'s week had practice. */
@@ -133,6 +142,8 @@ export interface LearnerState {
   settings: Settings;
   /** Day the mascot last waved on Home; it greets once per day. */
   lastGreetedDay: string | null;
+  /** The latest frozen day Home has told the learner about (device-only). */
+  freezeNoticeSeen: string | null;
 }
 
 export interface LearnerActions {
@@ -152,6 +163,12 @@ export interface LearnerActions {
   choosePathway: (id: PathwayId, source: PathwayChoiceSource) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   markGreeted: () => void;
+  /**
+   * Spend freezes on the days missed since the last practice (Home runs it on focus;
+   * practising does it too). Returns the frozen days Home hasn't announced yet, and marks
+   * them announced, so the note shows once.
+   */
+  settleStreak: () => { days: string[]; streakDays: number; held: number } | null;
   /** Path played the unlock for the current week. */
   markPathSeen: () => void;
   /** Dev: rewind `pathSeenWeek` one week so Path replays the latest unlock. */
@@ -184,8 +201,15 @@ export function progressOf(s: Pick<LearnerState, 'progress' | 'activePathwayId'>
 }
 
 /** The streak to show today: 0 once a day has been missed, before the next practice resets it. */
-export function liveStreak(s: Pick<LearnerState, 'streak'>, day = today()): number {
-  return liveStreakDays(s.streak, day);
+export function liveStreak(s: Pick<LearnerState, 'streak' | 'freezes'>, day = today()): number {
+  return liveStreakDays(s.streak, day, s.freezes ?? noFreezeHistory());
+}
+
+/** Which days of this week a freeze covered (Monday-start). */
+export function frozenThisWeek(s: Pick<LearnerState, 'freezes'>, day = today()): boolean[] {
+  const used = new Set(s.freezes?.usedDays ?? []);
+  const monday = weekStartOf(day);
+  return Array.from({ length: 7 }, (_, i) => used.has(addDays(monday, i)));
 }
 
 /** This week's goal and practice days: an empty week once a new Monday-start week begins. */
@@ -199,11 +223,12 @@ export function setRecordOwner(userId: string | undefined) {
   currentOwner = userId;
 }
 
-const LOCAL_DEFAULTS = (): Pick<LearnerState, 'practiceLog' | 'sessions' | 'settings' | 'lastGreetedDay'> => ({
+const LOCAL_DEFAULTS = (): Pick<LearnerState, 'practiceLog' | 'sessions' | 'settings' | 'lastGreetedDay' | 'freezeNoticeSeen'> => ({
   practiceLog: [],
   sessions: [],
   settings: { motion: 'system', haptics: true },
   lastGreetedDay: null,
+  freezeNoticeSeen: null,
 });
 
 /** A new install: a fresh learner who picks a track in the welcome (MI for Leaders, the default, until then or if they skip it). */
@@ -259,6 +284,9 @@ export const useLearner = create<LearnerState & LearnerActions>()(
         const record: PracticeRecord = { ...input, id: uuid(), at: input.at ?? new Date().toISOString(), ownerId: currentOwner };
         const before = get();
         const day = today();
+        const practised = streakAfterPractice(before.streak, day, before.freezes ?? noFreezeHistory());
+        const goalHit = weekAfterPractice(before, day).justHit;
+        const freezes = goalHit ? freezesAfterGoalHit(practised.freezes, day) : practised.freezes;
         set((s) => {
           const { weekStart, weekDays, weeklyGoal } = weekAfterPractice(s, day);
           const assignment = s.assignment && {
@@ -267,7 +295,8 @@ export const useLearner = create<LearnerState & LearnerActions>()(
           };
           return {
             practiceLog: [record, ...s.practiceLog].slice(0, 200),
-            streak: streakAfterPractice(s.streak, day),
+            streak: practised.streak,
+            freezes,
             weekStart,
             weekDays,
             weeklyGoal,
@@ -288,6 +317,17 @@ export const useLearner = create<LearnerState & LearnerActions>()(
           pathway_id: before.activePathwayId,
         });
         const after = get();
+        if (practised.used.length) {
+          track('streak_freeze_used', {
+            freezes_used: practised.used.length,
+            freezes_held: freezesHeld(practised.freezes),
+            streak_days: before.streak.days,
+            saved: practised.streak.days === before.streak.days + 1,
+          });
+        }
+        if (freezes !== practised.freezes) {
+          track('streak_freeze_earned', { freezes_held: freezesHeld(freezes), at_cap: freezesHeld(practised.freezes) >= MAX_FREEZES });
+        }
         if (after.streak.days > liveStreak(before, day)) track('streak_extended', { streak_days: after.streak.days });
         const goalBefore = thisWeek(before, day).weeklyGoal;
         if (after.weeklyGoal.done === after.weeklyGoal.target && goalBefore.done !== goalBefore.target) {
@@ -339,6 +379,28 @@ export const useLearner = create<LearnerState & LearnerActions>()(
 
       setSetting: (key, value) => set((s) => ({ settings: { ...s.settings, [key]: value } })),
       markGreeted: () => set({ lastGreetedDay: today() }),
+      settleStreak: () => {
+        const s = get();
+        const day = today();
+        const settled = settleFreezes(s.streak, s.freezes ?? noFreezeHistory(), day);
+        if (settled.used.length) {
+          set({ freezes: settled.freezes });
+          track('streak_freeze_used', {
+            freezes_used: settled.used.length,
+            freezes_held: freezesHeld(settled.freezes),
+            streak_days: s.streak.days,
+            saved: settled.alive,
+          });
+        }
+        // frozen days from the past week not yet announced here, including ones another device spent
+        const since = [s.freezeNoticeSeen ?? '', addDays(day, -8)].sort()[1];
+        const unseen = settled.freezes.usedDays.filter((d) => d > since && d < day);
+        if (!unseen.length) return null;
+        set({ freezeNoticeSeen: unseen[unseen.length - 1] });
+        // a freeze that couldn't save the streak isn't news: the streak at 0 says enough
+        if (!settled.alive) return null;
+        return { days: unseen, streakDays: s.streak.days, held: freezesHeld(settled.freezes) };
+      },
       markPathSeen: () =>
         set((s) => {
           const p = progressOf(s);
@@ -383,7 +445,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
     {
       name: LEARNER_KEY,
       storage: createJSONStorage(() => AsyncStorage),
-      version: 4,
+      version: 5,
       migrate: (persisted, from) => {
         const s = (persisted ?? {}) as Record<string, unknown> & Partial<LearnerState> & { reviews?: unknown };
         // v2 (accounts): every record gets a uuid client id; sessions replace the local-only review queue.
@@ -412,6 +474,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
             sessions: s.sessions ?? [],
             settings: s.settings ?? LOCAL_DEFAULTS().settings,
             lastGreetedDay: untouched ? null : (s.lastGreetedDay ?? null),
+            freezeNoticeSeen: null,
           };
           return next as LearnerState & LearnerActions;
         }
@@ -419,6 +482,11 @@ export const useLearner = create<LearnerState & LearnerActions>()(
         if (from < 4) {
           const last = s.streak?.lastPracticeDay;
           s.weekStart = last ? weekStartOf(last) : null;
+        }
+        // v5 (streak freezes): no ledger yet, so the learner holds the starting freeze
+        if (from < 5) {
+          s.freezes ??= noFreezeHistory();
+          s.freezeNoticeSeen ??= null;
         }
         return s as unknown as LearnerState & LearnerActions;
       },

@@ -115,6 +115,10 @@ export interface AnalyticsEvents {
   };
   streak_extended: { streak_days: number };
   weekly_goal_hit: { target: number };
+  /** A freeze covered missed days. `saved`: false when a later missed day broke the streak anyway. */
+  streak_freeze_used: { freezes_used: number; freezes_held: number; streak_days: number; saved: boolean };
+  /** Hitting the weekly goal earned a freeze. `at_cap`: already holding 2, so it was wasted. */
+  streak_freeze_earned: { freezes_held: number; at_cap: boolean };
   /** The completion screen offered practice reminders (`ask` 1 after the first practice, 2 after the third). */
   reminder_prompt_shown: { ask: number };
   reminder_opt_in: { source: ReminderSource; hour: number; minute: number };

@@ -1,4 +1,4 @@
-import { planReminders, type ReminderPrefs, type ReminderSource } from '@antelope/core';
+import { noFreezeHistory, planReminders, type ReminderPrefs, type ReminderSource } from '@antelope/core';
 import { useEffect, useState } from 'react';
 import { AppState } from 'react-native';
 import { track } from '@/lib/analytics';
@@ -27,7 +27,7 @@ export function syncReminders(): Promise<void> {
       const s = useLearner.getState();
       const prefs = s.settings.reminders;
       // with permission revoked in Settings, clear what's left instead of scheduling into the void
-      const plan = prefs?.on && (await notifier.permission()) === 'granted' ? planReminders({ prefs, streak: s.streak }) : [];
+      const plan = prefs?.on && (await notifier.permission()) === 'granted' ? planReminders({ prefs, streak: s.streak, freezes: s.freezes ?? noFreezeHistory() }) : [];
       await notifier.replaceAll(plan);
     })
     .catch(() => {});
@@ -37,7 +37,8 @@ export function syncReminders(): Promise<void> {
 /** What the plan reads, as one comparable key. */
 function inputsKey(s: LearnerState): string {
   const r = s.settings.reminders;
-  return [s.streak.lastPracticeDay, s.streak.days, r?.on, r?.hour, r?.minute].join('|');
+  const f = s.freezes ?? noFreezeHistory();
+  return [s.streak.lastPracticeDay, s.streak.days, f.earnedDays.join(','), f.usedDays.join(','), r?.on, r?.hour, r?.minute].join('|');
 }
 
 let started = false;

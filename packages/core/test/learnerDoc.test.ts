@@ -3,6 +3,7 @@ process.env.TZ = "UTC";
 
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
+import { freezesHeld, liveStreakDays } from "../src/habit";
 import { freshSyncedDoc, mergeGuestIntoAccount, mergeSynced, normalizeSynced, upgradeDoc, type SyncedDoc } from "../src/learnerDoc";
 
 const doc = (over: Partial<SyncedDoc>): SyncedDoc => ({ ...freshSyncedDoc("mi-for-leaders", "2026-09-01T00:00:00.000Z"), ...over });
@@ -76,5 +77,53 @@ describe("mergeGuestIntoAccount", () => {
     assert.deepEqual(merged.streak, fresh.streak);
     assert.equal(merged.weekStart, "2026-10-12");
     assert.equal(merged.weeklyGoal.done, 2);
+  });
+});
+
+describe("streak freezes in the synced document", () => {
+  // The learner practised through Monday on a 12-day streak and missed Tuesday. The phone
+  // opened Wednesday and spent the starting freeze on Tuesday; the tablet last synced Monday.
+  const tablet = doc({ streak: { days: 12, lastPracticeDay: "2026-10-12" } });
+  const phone = doc({ streak: { days: 12, lastPracticeDay: "2026-10-12" }, freezes: { earnedDays: [], usedDays: ["2026-10-13"] } });
+
+  it("keeps the spent freeze spent, whichever side is stale", () => {
+    for (const [local, remote] of [[tablet, phone], [phone, tablet]]) {
+      const m = mergeSynced(local, remote);
+      assert.deepEqual(m.freezes, { earnedDays: [], usedDays: ["2026-10-13"] });
+      assert.equal(freezesHeld(m.freezes), 0);
+      assert.equal(liveStreakDays(m.streak, "2026-10-14", m.freezes), 12);
+    }
+  });
+
+  it("joins a run the other device bridged with a freeze", () => {
+    const later = doc({ streak: { days: 1, lastPracticeDay: "2026-10-14" }, freezes: { earnedDays: [], usedDays: ["2026-10-13"] } });
+    assert.deepEqual(mergeSynced(tablet, later).streak, { days: 13, lastPracticeDay: "2026-10-14" });
+    assert.deepEqual(mergeSynced(later, tablet).streak, { days: 13, lastPracticeDay: "2026-10-14" });
+  });
+
+  it("refunds a freeze spent on a day the other device practised", () => {
+    // the phone practised Tuesday; the tablet opened Wednesday before that synced and froze Tuesday
+    const phoneTue = doc({ streak: { days: 13, lastPracticeDay: "2026-10-13" }, weekStart: "2026-10-12", weekDays: [true, true, false, false, false, false, false], weeklyGoal: { target: 3, done: 2, hitCount: 0 } });
+    for (const [local, remote] of [[phone, phoneTue], [phoneTue, phone]]) {
+      const m = mergeSynced(local, remote);
+      assert.deepEqual(m.freezes.usedDays, []);
+      assert.equal(freezesHeld(m.freezes), 1);
+      assert.deepEqual(m.streak, { days: 13, lastPracticeDay: "2026-10-13" });
+    }
+  });
+
+  it("gives a document from before freezes the starting freeze", () => {
+    const { freezes: _drop, ...old } = tablet;
+    const n = normalizeSynced(old, freshSyncedDoc());
+    assert.deepEqual(n.freezes, { earnedDays: [], usedDays: [] });
+    assert.equal(freezesHeld(n.freezes), 1);
+    // the guest merge on the server fills it the same way
+    const stored = mergeGuestIntoAccount(old, { ...old }) as unknown as SyncedDoc;
+    assert.equal(freezesHeld(stored.freezes), 1);
+  });
+
+  it("drops malformed ledger entries", () => {
+    const up = upgradeDoc({ freezes: { earnedDays: ["2026-10-05", 3, "soon"], usedDays: null } });
+    assert.deepEqual(up.freezes, { earnedDays: ["2026-10-05"], usedDays: [] });
   });
 });

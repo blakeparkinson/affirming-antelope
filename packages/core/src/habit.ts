@@ -69,32 +69,147 @@ export function daysBetween(a: DayKey, b: DayKey): number {
 const emptyWeekDays = () => Array.from({ length: 7 }, () => false);
 
 // ---------------------------------------------------------------------------
+// Streak freezes
+// ---------------------------------------------------------------------------
+
+/** Most freezes a learner can hold. Earning one at the cap is wasted. */
+export const MAX_FREEZES = 2;
+/** Every learner starts holding one. */
+export const START_FREEZES = 1;
+
+/**
+ * The freeze ledger. The count held is never stored: it is replayed from these days
+ * (`freezesHeld`), so two devices' ledgers merge by union and a merge can neither spend
+ * the same freeze twice nor hand a spent one back.
+ */
+export interface StreakFreezes {
+  /** Days the weekly goal was hit, each earning a freeze. At most one per week counts. */
+  earnedDays: DayKey[];
+  /** Missed days a freeze covered. */
+  usedDays: DayKey[];
+}
+
+export const noFreezeHistory = (): StreakFreezes => ({ earnedDays: [], usedDays: [] });
+
+/** The ledger with duplicates dropped and days sorted; only a week's first earn counts. */
+function tidyFreezes(f: StreakFreezes): StreakFreezes {
+  const weeks = new Set<DayKey>();
+  const earnedDays: DayKey[] = [];
+  for (const d of [...new Set(f.earnedDays)].sort()) {
+    const w = weekStartOf(d);
+    if (weeks.has(w)) continue;
+    weeks.add(w);
+    earnedDays.push(d);
+  }
+  return { earnedDays, usedDays: [...new Set(f.usedDays)].sort() };
+}
+
+/** Freezes held: start with 1, then every earn (capped at 2) and use, in day order. */
+export function freezesHeld(f: StreakFreezes): number {
+  const t = tidyFreezes(f);
+  // a use sorts before an earn on the same day (it can't happen: an earn needs practice)
+  const events = [...t.usedDays.map((d) => [d, 0] as const), ...t.earnedDays.map((d) => [d, 1] as const)].sort((a, b) =>
+    a[0] === b[0] ? a[1] - b[1] : a[0] < b[0] ? -1 : 1,
+  );
+  let held = START_FREEZES;
+  for (const [, earn] of events) held = earn ? Math.min(MAX_FREEZES, held + 1) : Math.max(0, held - 1);
+  return held;
+}
+
+/** The ledger after hitting the weekly goal on `today`. Hitting it again the same week earns nothing. */
+export function freezesAfterGoalHit(f: StreakFreezes, today: DayKey): StreakFreezes {
+  const week = weekStartOf(today);
+  if (f.earnedDays.some((d) => weekStartOf(d) === week)) return f;
+  return { ...f, earnedDays: [...f.earnedDays, today] };
+}
+
+/** Two devices' ledgers: every earn and every use either one saw. Commutative. */
+export function mergeFreezes(a: StreakFreezes, b: StreakFreezes): StreakFreezes {
+  return tidyFreezes({ earnedDays: [...a.earnedDays, ...b.earnedDays], usedDays: [...a.usedDays, ...b.usedDays] });
+}
+
+// ---------------------------------------------------------------------------
 // Streak
 // ---------------------------------------------------------------------------
 
-/** The streak to show on `today`: 0 once a whole day has passed without practice. */
-export function liveStreakDays(streak: Streak, today: DayKey): number {
+/**
+ * Covers the days missed since the last practice, one at a time and oldest first, with
+ * the freezes held. Days already frozen stay frozen. The first day with no freeze left
+ * breaks the streak; a freeze spent before that stays spent, as it would have been had
+ * the app been opened that day. So the result doesn't depend on when the app is opened.
+ * `used` lists the days frozen by this call.
+ */
+export function settleFreezes(
+  streak: Streak,
+  freezes: StreakFreezes,
+  today: DayKey,
+): { alive: boolean; freezes: StreakFreezes; used: DayKey[] } {
   const last = streak.lastPracticeDay;
-  if (!last || streak.days <= 0) return 0;
-  return last === today || last === addDays(today, -1) ? streak.days : 0;
+  if (!last || streak.days <= 0) return { alive: false, freezes, used: [] };
+  const frozen = new Set(freezes.usedDays);
+  let held = freezesHeld(freezes);
+  const used: DayKey[] = [];
+  let alive = true;
+  for (let d = addDays(last, 1); d < today; d = addDays(d, 1)) {
+    if (frozen.has(d)) continue;
+    if (held === 0) {
+      alive = false;
+      break;
+    }
+    held--;
+    used.push(d);
+  }
+  return { alive, freezes: used.length ? { ...freezes, usedDays: [...freezes.usedDays, ...used] } : freezes, used };
 }
 
-/** The streak after practising on `today`: same day keeps it, the day after extends it, a gap restarts it. */
-export function streakAfterPractice(streak: Streak, today: DayKey): Streak {
-  const last = streak.lastPracticeDay;
-  if (last === today && streak.days > 0) return streak;
-  const days = liveStreakDays(streak, today) > 0 ? streak.days + 1 : 1;
-  return { days, lastPracticeDay: today };
+/** The streak to show on `today`: 0 once a whole day has passed without practice or a freeze to cover it. */
+export function liveStreakDays(streak: Streak, today: DayKey, freezes: StreakFreezes): number {
+  return settleFreezes(streak, freezes, today).alive ? streak.days : 0;
 }
 
 /**
- * Two devices' streaks for the same learner. Each is a run of consecutive practice days
- * ending on its `lastPracticeDay`. Runs that overlap or touch join into one (a device
- * that restarted at 1 without seeing the other's practice yesterday gets the full run);
- * otherwise the later run wins, so a stale copy never brings a broken streak back.
- * Commutative, and needs no clock.
+ * The streak after practising on `today`: same day keeps it, the day after extends it,
+ * a gap the freezes cover extends it (frozen days don't add to the count), any other gap
+ * restarts it. Returns the ledger with the frozen days recorded.
  */
-export function mergeStreaks(a: Streak, b: Streak): Streak {
+export function streakAfterPractice(
+  streak: Streak,
+  today: DayKey,
+  freezes: StreakFreezes,
+): { streak: Streak; freezes: StreakFreezes; used: DayKey[] } {
+  const last = streak.lastPracticeDay;
+  if (last === today && streak.days > 0) return { streak, freezes, used: [] };
+  const settled = settleFreezes(streak, freezes, today);
+  const days = settled.alive ? streak.days + 1 : 1;
+  return { streak: { days, lastPracticeDay: today }, freezes: settled.freezes, used: settled.used };
+}
+
+/** The first practice day of the run ending on `lastPracticeDay`, stepping over frozen days. */
+function runStart(s: Streak, frozen: Set<DayKey>): DayKey {
+  let d = s.lastPracticeDay!;
+  for (let left = s.days - 1; left > 0; ) {
+    d = addDays(d, -1);
+    if (!frozen.has(d)) left--;
+  }
+  return d;
+}
+
+/** The last day the run covers: its last practice, plus the frozen days straight after it. */
+function coveredThrough(s: Streak, frozen: Set<DayKey>): DayKey {
+  let d = s.lastPracticeDay!;
+  while (frozen.has(addDays(d, 1))) d = addDays(d, 1);
+  return d;
+}
+
+/**
+ * Two devices' streaks for the same learner. Each is a run of practice days ending on
+ * its `lastPracticeDay`, with `frozenDays` (the merged ledger's used days) bridging the
+ * days a freeze covered. Runs that overlap or touch join into one (a device that
+ * restarted at 1 without seeing the other's practice yesterday gets the full run);
+ * otherwise the later run wins, so a stale copy never brings a broken streak back.
+ * Frozen days don't count toward `days`. Commutative, and needs no clock.
+ */
+export function mergeStreaks(a: Streak, b: Streak, frozenDays: readonly DayKey[] = []): Streak {
   const aRun = a.lastPracticeDay && a.days > 0;
   const bRun = b.lastPracticeDay && b.days > 0;
   if (!aRun || !bRun) {
@@ -102,12 +217,16 @@ export function mergeStreaks(a: Streak, b: Streak): Streak {
     if (bRun) return b;
     return (a.lastPracticeDay ?? "") >= (b.lastPracticeDay ?? "") ? a : b;
   }
+  const frozen = new Set(frozenDays);
   const [early, late] = a.lastPracticeDay! <= b.lastPracticeDay! ? [a, b] : [b, a];
-  const lateStart = addDays(late.lastPracticeDay!, -(late.days - 1));
-  if (early.lastPracticeDay! < addDays(lateStart, -1)) return late;
-  const earlyStart = addDays(early.lastPracticeDay!, -(early.days - 1));
+  const lateStart = runStart(late, frozen);
+  if (coveredThrough(early, frozen) < addDays(lateStart, -1)) return late;
+  const earlyStart = runStart(early, frozen);
   const start = earlyStart < lateStart ? earlyStart : lateStart;
-  return { days: daysBetween(start, late.lastPracticeDay!) + 1, lastPracticeDay: late.lastPracticeDay };
+  const end = late.lastPracticeDay!;
+  let frozenInRun = 0;
+  for (const d of frozen) if (d > start && d < end) frozenInRun++;
+  return { days: daysBetween(start, end) + 1 - frozenInRun, lastPracticeDay: end };
 }
 
 // ---------------------------------------------------------------------------
