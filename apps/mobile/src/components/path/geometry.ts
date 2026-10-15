@@ -28,6 +28,9 @@ export interface TrailLayout {
   lens: number[];
   start: Pt;
   finish: Pt;
+  /** The trail as a dense polyline, with the path length at each point. */
+  poly: Pt[];
+  polyLen: number[];
 }
 
 export const NODE = 72;
@@ -108,12 +111,16 @@ export function layoutTrail(width: number, count: number, top: number): TrailLay
   const nodeLen: number[] = [];
   const ys: number[] = [start.y];
   const lens: number[] = [0];
+  const poly: Pt[] = [start];
+  const polyLen: number[] = [0];
   segs.forEach((s, si) => {
     let prev = s[0];
     for (let k = 1; k <= 24; k++) {
       const p = at(s, k / 24);
       length += Math.hypot(p.x - prev.x, p.y - prev.y);
       prev = p;
+      poly.push(p);
+      polyLen.push(length);
       if (p.y > ys[ys.length - 1]) {
         ys.push(p.y);
         lens.push(length);
@@ -122,7 +129,52 @@ export function layoutTrail(width: number, count: number, top: number): TrailLay
     if (si < count) nodeLen.push(length); // end of segment si is node si
   });
 
-  return { width, height: finish.y + FINISH_TAIL, step, amp, nodes, d, length, nodeLen, ys, lens, start, finish };
+  return { width, height: finish.y + FINISH_TAIL, step, amp, nodes, d, length, nodeLen, ys, lens, start, finish, poly, polyLen };
+}
+
+/** The point at path length `len` along the trail. */
+export function trailPoint(trail: TrailLayout, len: number): Pt {
+  const { poly, polyLen } = trail;
+  if (len <= 0) return poly[0];
+  if (len >= trail.length) return poly[poly.length - 1];
+  let lo = 0;
+  let hi = polyLen.length - 1;
+  while (hi - lo > 1) {
+    const mid = (lo + hi) >> 1;
+    if (polyLen[mid] < len) lo = mid;
+    else hi = mid;
+  }
+  const u = (len - polyLen[lo]) / Math.max(1e-6, polyLen[hi] - polyLen[lo]);
+  return { x: poly[lo].x + (poly[hi].x - poly[lo].x) * u, y: poly[lo].y + (poly[hi].y - poly[lo].y) * u };
+}
+
+/**
+ * The coach's route between two weeks: along the trail from `a` to `b` (path lengths). Its feet
+ * step off the spot beside the first node (`fromOff`, relative to the trail at `a`) onto the
+ * trail within the first 30%, run along the trail through the middle, nudged by `dodge` to the
+ * side away from each node's caption (the trail can run close past one), and step out to the spot beside the second node
+ * (`toOff`, relative to the trail at `b`) over the last 30%.
+ */
+export function trailRoute(
+  trail: TrailLayout,
+  a: number,
+  b: number,
+  fromOff: Pt,
+  toOff: Pt,
+  /** Sideways shift (pt) on the trail near the first and second node: away from their captions. */
+  dodge: [number, number] = [0, 0],
+  samples = 48,
+): Pt[] {
+  return Array.from({ length: samples + 1 }, (_, i) => {
+    const u = i / samples;
+    const p = trailPoint(trail, a + (b - a) * u);
+    const off = Math.max(0, 1 - u / 0.3);
+    const on = Math.min(1, Math.max(0, (u - 0.7) / 0.3));
+    const wFrom = off * off * (3 - 2 * off);
+    const wTo = on * on * (3 - 2 * on);
+    const side = (1 - wFrom - wTo) * (dodge[0] + (dodge[1] - dodge[0]) * u);
+    return { x: p.x + fromOff.x * wFrom + toOff.x * wTo + side, y: p.y + fromOff.y * wFrom + toOff.y * wTo };
+  });
 }
 
 // ---------------------------------------------------------------- landmarks
