@@ -174,7 +174,10 @@ for (const p of POSES) {
     const bot = y1 - e.center[1];
     const up = { w: ew * 2.3, h: eh * 1.6 };
     const lo = { w: ew * 2.1, h: eh * 1.3 };
-    const lid = `#${e.lid.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+    // upper lid: fur; lower lid: the cream cheek (only rises for the nod/cheer squint)
+    const hex = (rgb) => `#${rgb.map((v) => v.toString(16).padStart(2, "0")).join("")}`;
+    const lid = hex(e.lid);
+    const cheek = hex(e.lidLo);
     const info = {
       upOpen: top - 6 - up.h / 2,
       upClosed: bot + 6 - up.h / 2,
@@ -186,7 +189,7 @@ for (const p of POSES) {
     eyeInfo[`${p}${side}`] = info;
     shapes.push({
       id: `${p}LidLo${side}`, type: "ellipse", parent: lidRot, x: 0, y: +info.loOpen.toFixed(2), width: +lo.w.toFixed(1), height: +lo.h.toFixed(1),
-      fill: { color: lid }, stroke: { color: INK, thickness: 6 }, z: z++,
+      fill: { color: cheek }, stroke: { color: INK, thickness: 6 }, z: z++,
     });
     shapes.push({
       id: `${p}LidUp${side}`, type: "ellipse", parent: lidRot, x: 0, y: +info.upOpen.toFixed(2), width: +up.w.toFixed(1), height: +up.h.toFixed(1),
@@ -365,7 +368,8 @@ function blinkTracks(at, dbl, dur) {
       const s = f(t);
       if (s > 0) y.push([s, e.upOpen]);
       y.push([s + 6, e.upClosed, E.in], [s + 9, e.upClosed], [s + 19, e.upOpen, E.out]);
-      o.push([s + 4, 0], [s + 6, 1, E.hold], [s + 10, 1], [s + 12, 0, E.lin]);
+      // the curve cuts out as the lid starts up (fading it while the lid rose ghosted it over the iris)
+      o.push([s + 4, 0], [s + 6, 1, E.hold], [s + 9, 0, E.hold]);
     };
     one(at);
     if (dbl) one(at + 0.42);
