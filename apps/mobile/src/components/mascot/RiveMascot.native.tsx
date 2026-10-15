@@ -7,6 +7,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withSequence, withS
 import { scheduleOnRN } from 'react-native-worklets';
 import { spring } from '@/motion/springs';
 import { useReduceMotion } from '@/motion/useMotionPrefs';
+import { runPronk, runShiver } from './choreo';
 import { COACH, COACH_VM } from './coach.generated';
 import { MascotSprite } from './MascotSprite';
 import type { MascotHandle, MascotMood, MascotPose, MascotProps } from './types';
@@ -55,6 +56,10 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
   const [shown, setShown] = useState<MascotPose>(pose);
   const squash = useSharedValue(1);
   const turnX = useSharedValue(1);
+  // whole-body moves the rig has no trigger for (pronk, shiver) run on the wrapper
+  const lift = useSharedValue(0);
+  const shake = useSharedValue(0);
+  const fade = useSharedValue(1);
 
   const setNumber = useCallback((name: 'pose' | 'mood', value: number) => {
     const p = vm.current?.numberProperty(name);
@@ -109,11 +114,26 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
     setTimeout(() => fire('wave'), 170);
   }, [reduce, turnX, fire]);
 
+  const doPronk = useCallback(
+    (opts?: { onLand?: () => void }) => runPronk({ lift, squash, shake, fade }, size, reduce, opts?.onLand),
+    [size, reduce, lift, squash, shake, fade],
+  );
+  const doShiver = useCallback(() => runShiver({ lift, squash, shake, fade }, size, reduce), [size, reduce, lift, squash, shake, fade]);
+
   // `fire` is not part of MascotHandle; the dev playground uses it to reach every trigger
   useImperativeHandle(
     ref,
-    () => ({ wave: () => act('wave'), hop: () => act('hop'), turn: doTurn, nod: () => act('nod'), cheer: () => act('cheer'), fire: act }),
-    [act, doTurn],
+    () => ({
+      wave: () => act('wave'),
+      hop: () => act('hop'),
+      turn: doTurn,
+      nod: () => act('nod'),
+      cheer: () => act('cheer'),
+      pronk: doPronk,
+      shiver: doShiver,
+      fire: act,
+    }),
+    [act, doTurn, doPronk, doShiver],
   );
 
   // ---- greet once, after the view is up
@@ -134,7 +154,13 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
   }, []);
 
   const wrap = useAnimatedStyle(() => ({
-    transform: [{ scaleX: (flip ? -1 : 1) * turnX.value * (1 / Math.sqrt(squash.value)) }, { scaleY: squash.value }],
+    opacity: fade.value,
+    transform: [
+      { translateX: shake.value },
+      { translateY: lift.value },
+      { scaleX: (flip ? -1 : 1) * turnX.value * (1 / Math.sqrt(squash.value)) },
+      { scaleY: squash.value },
+    ],
   }));
 
   if (fileError || failed) return <MascotSprite {...props} ref={ref} />;
@@ -168,13 +194,12 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
         // in; still, so a sprite hop can't be cut off mid-air when Rive takes over
         <MascotSprite {...props} ref={undefined} greet={false} paused mood="idle" style={StyleSheet.absoluteFill} />
       ) : null}
-      <Animated.View style={[StyleSheet.absoluteFill, { transformOrigin: '50% 96%' }, wrap, { opacity: ready ? 1 : 0 }]}>
+      <Animated.View style={[StyleSheet.absoluteFill, { transformOrigin: '50% 96%' }, wrap]}>
         <View
-          style={
-            clip
-              ? { position: 'absolute', left: -pad, right: -pad, top: -rect.y * s, bottom: 0, overflow: 'hidden' }
-              : StyleSheet.absoluteFill
-          }
+          style={[
+            clip ? { position: 'absolute', left: -pad, right: -pad, top: -rect.y * s, bottom: 0, overflow: 'hidden' } : StyleSheet.absoluteFill,
+            !ready && styles.hidden,
+          ]}
         >
           {riveFile && instance ? (
             <RiveView
@@ -194,3 +219,5 @@ export const RiveMascot = forwardRef<MascotHandle, MascotProps>(function RiveMas
     </View>
   );
 });
+
+const styles = StyleSheet.create({ hidden: { opacity: 0 } });

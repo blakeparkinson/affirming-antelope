@@ -15,6 +15,7 @@ import Animated, {
 import { scheduleOnRN } from 'react-native-worklets';
 import { spring } from '@/motion/springs';
 import { useReduceMotion } from '@/motion/useMotionPrefs';
+import { runPronk, runShiver } from './choreo';
 import { CELEBRATE, HEAD, WAVE, type Frame } from './rig.generated';
 import type { MascotHandle, MascotPose, MascotProps } from './types';
 
@@ -71,6 +72,7 @@ export const MascotSprite = forwardRef<MascotHandle, MascotProps>(function Masco
   const lean = useSharedValue(0);
   const turnX = useSharedValue(1);
   const fade = useSharedValue(1);
+  const shake = useSharedValue(0);
 
   // ---- breathing: a slow sine, anchored at the feet. Paused off-screen.
   useEffect(() => {
@@ -156,7 +158,17 @@ export const MascotSprite = forwardRef<MascotHandle, MascotProps>(function Masco
     squash.value = withSequence(withTiming(0.96, { duration: 140, easing: Easing.inOut(Easing.quad) }), withSpring(1, spring.bouncy));
   }, [reduce, squash]);
 
-  useImperativeHandle(ref, () => ({ wave: doWave, hop: doHop, turn: doTurn, nod: doNod, cheer: doHop }), [doWave, doHop, doTurn, doNod]);
+  const doPronk = useCallback(
+    (opts?: { onLand?: () => void }) => runPronk({ lift, squash, shake, fade }, size, reduce, opts?.onLand),
+    [size, reduce, lift, squash, shake, fade],
+  );
+  const doShiver = useCallback(() => runShiver({ lift, squash, shake, fade }, size, reduce), [size, reduce, lift, squash, shake, fade]);
+
+  useImperativeHandle(
+    ref,
+    () => ({ wave: doWave, hop: doHop, turn: doTurn, nod: doNod, cheer: doHop, pronk: doPronk, shiver: doShiver }),
+    [doWave, doHop, doTurn, doNod, doPronk, doShiver],
+  );
 
   // ---- greet once on mount
   const greeted = useRef(false);
@@ -207,6 +219,7 @@ export const MascotSprite = forwardRef<MascotHandle, MascotProps>(function Masco
     return {
       opacity: fade.value,
       transform: [
+        { translateX: shake.value },
         { translateY: lift.value },
         { rotate: `${lean.value}deg` },
         { scaleX: (flip ? -1 : 1) * turnX.value * (1 / Math.sqrt(sq)) * (1 - 0.006 * b) },

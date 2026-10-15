@@ -44,6 +44,7 @@ export function demoSeed(today: string): Seeded {
     streak: { days: d.streakDays, lastPracticeDay: addDays(today, -1) },
     // hit last week's goal: holding both freezes
     freezes: { earnedDays: [addDays(weekStartOf(today), -3)], usedDays: [] },
+    milestones: [{ days: 14, day: addDays(today, -4) }],
     weekStart: weekStartOf(today),
     weekDays,
     weeklyGoal: { ...d.weeklyGoal, hitCount: 3 },

@@ -194,6 +194,12 @@ function runStart(s: Streak, frozen: Set<DayKey>): DayKey {
   return d;
 }
 
+/** The first day of the run ending on `lastPracticeDay` (frozen days bridge it). null with no run. */
+export function streakRunStart(s: Streak, frozenDays: readonly DayKey[] = []): DayKey | null {
+  if (!s.lastPracticeDay || s.days <= 0) return null;
+  return runStart(s, new Set(frozenDays));
+}
+
 /** The last day the run covers: its last practice, plus the frozen days straight after it. */
 function coveredThrough(s: Streak, frozen: Set<DayKey>): DayKey {
   let d = s.lastPracticeDay!;
@@ -227,6 +233,38 @@ export function mergeStreaks(a: Streak, b: Streak, frozenDays: readonly DayKey[]
   let frozenInRun = 0;
   for (const d of frozen) if (d > start && d < end) frozenInRun++;
   return { days: daysBetween(start, end) + 1 - frozenInRun, lastPracticeDay: end };
+}
+
+/**
+ * Opening the app: spend freezes on the days missed (`settleFreezes`), then pick out the
+ * frozen days this device hasn't shown the learner yet. That's the past week's frozen days
+ * after `seenThrough` (the latest one already shown here), including ones another device
+ * spent. `seenThrough` moves past them whether or not they're shown: a freeze that couldn't
+ * save the streak isn't news (the streak at 0 says enough), so `reveal` is null then.
+ * `reveal.pips` marks the days of today's week (Monday-start) whose pip plays the ice reveal;
+ * a frozen day in last week only gets the note.
+ */
+export function freezeReveal(
+  streak: Streak,
+  freezes: StreakFreezes,
+  seenThrough: DayKey | null,
+  today: DayKey,
+): {
+  settled: ReturnType<typeof settleFreezes>;
+  seenThrough: DayKey | null;
+  reveal: { days: DayKey[]; pips: boolean[]; held: number } | null;
+} {
+  const settled = settleFreezes(streak, freezes, today);
+  const since = [seenThrough ?? "", addDays(today, -8)].sort()[1];
+  const days = [...new Set(settled.freezes.usedDays)].filter((d) => d > since && d < today).sort();
+  if (!days.length) return { settled, seenThrough, reveal: null };
+  const monday = weekStartOf(today);
+  const pips = Array.from({ length: 7 }, (_, i) => days.includes(addDays(monday, i)));
+  return {
+    settled,
+    seenThrough: days[days.length - 1],
+    reveal: settled.alive ? { days, pips, held: freezesHeld(settled.freezes) } : null,
+  };
 }
 
 // ---------------------------------------------------------------------------

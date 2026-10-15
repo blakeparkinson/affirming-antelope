@@ -116,6 +116,8 @@ export interface AnalyticsEvents {
     pathway_id: PathwayId;
   };
   streak_extended: { streak_days: number };
+  /** A practice took the streak across a milestone (3, 7, 14, 30, 50, 100) and the full-screen moment queued. Once per milestone per run, across devices. */
+  streak_milestone_reached: { milestone: number; streak_days: number };
   weekly_goal_hit: { target: number };
   /** A freeze covered missed days. `saved`: false when a later missed day broke the streak anyway. */
   streak_freeze_used: { freezes_used: number; freezes_held: number; streak_days: number; saved: boolean };

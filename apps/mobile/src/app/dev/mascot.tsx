@@ -1,6 +1,6 @@
 // Dev-only mascot playground (renders nothing in release builds).
 //   antelope://dev/mascot?pose=wave&mood=idle&size=300&fire=wave&at=1200&every=0&impl=rive
-// `fire` is a ref method or trigger (wave | hop | turn | cheer | nod | blink); `every` repeats it (ms);
+// `fire` is a ref method or trigger (wave | hop | turn | cheer | nod | pronk | shiver | blink); `every` repeats it (ms);
 // change `n` to re-run the same `fire` from a new deep link. `chrome=0` hides the controls (captures).
 import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useRef, useState, type ComponentType, type RefAttributes } from 'react';
@@ -16,7 +16,7 @@ const RiveImpl: Impl | null = riveAvailable ? require('@/components/mascot/RiveM
 
 const POSES: MascotPose[] = ['wave', 'celebrate', 'head'];
 const MOODS: MascotMood[] = ['idle', 'listening', 'thinking', 'cheer'];
-const ACTIONS = ['wave', 'hop', 'turn', 'cheer', 'nod', 'blink'] as const;
+const ACTIONS = ['wave', 'hop', 'turn', 'cheer', 'nod', 'pronk', 'shiver', 'blink'] as const;
 type Action = (typeof ACTIONS)[number];
 
 function Chip({ label, on, onPress }: { label: string; on?: boolean; onPress: () => void }) {

@@ -7,6 +7,7 @@ export * from "./scenarios";
 export * from "./prompts";
 export * from "./demo";
 export * from "./habit";
+export * from "./milestones";
 export * from "./reminders";
 export * from "./dailyRep";
 export * from "./learnerDoc";

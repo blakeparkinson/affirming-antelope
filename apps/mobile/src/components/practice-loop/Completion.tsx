@@ -9,6 +9,7 @@ import { ReminderOffer } from '@/components/reminders/ReminderOffer';
 import { CheckIcon, Chip, Hoofprint, ProgressRing, Raised, SealCheckIcon, Text, color, haptic, space } from '@/design';
 import { Burst, Enter, FADE_MS, RollingNumber, spring, useReduceMotion, type BurstHandle } from '@/motion';
 import { useStreakDays, useThisWeek } from '@/state/selectors';
+import { useMoments } from '@/state/moments';
 import { liveStreak, thisWeek, useLearner } from '@/state/store';
 
 export interface PracticeSnapshot {
@@ -53,6 +54,8 @@ export function useLivePractice(): PracticeSnapshot {
  *              - "Weekly goal hit" ochre chip pops in place of the label
  *              - haptic.success (the only success haptic in the sequence)
  *              - `onGoalHit()` (the completion screen hops the antelope)
+ *   t 660+   If this practice crossed a streak milestone, its full-screen moment
+ *            opens 450ms after the ring lands (StreakMilestone), once the ticks have read.
  *
  * Nothing here blocks input: the actions are live the moment they enter.
  * Reduced motion: the stamp fades in (no drop, no squash), numbers and ring
@@ -72,6 +75,8 @@ const RING_AFTER = 150;
  * rest, so the land beat is scheduled on the UI thread rather than waiting for it.
  */
 const RING_LAND_MS = 340;
+/** A streak milestone's moment opens this long after the ring lands. */
+const MILESTONE_AFTER = 450;
 
 /** Achievement palette: ochre leads, a little cobalt and white so it reads on white cards. */
 const STAMP_COLORS = [color.gold, color.gold, color.goldShadow, color.gold, color.primaryTint];
@@ -125,6 +130,8 @@ export function PracticeTicks({
   const stage = useSharedValue(0);
   const beat = useSharedValue(0);
   const ran = useRef(false);
+  const milestoneAfter = useRef<ReturnType<typeof setTimeout>>(undefined);
+  useEffect(() => () => clearTimeout(milestoneAfter.current), []);
 
   const onContact = useCallback(() => {
     haptic.thud();
@@ -133,6 +140,7 @@ export function PracticeTicks({
   }, []);
   const onRingLand = useCallback(() => {
     setPhase(2);
+    milestoneAfter.current = setTimeout(() => useMoments.getState().release(), MILESTONE_AFTER);
     if (!justHit) return;
     haptic.success();
     goalBurst.current?.fire();
