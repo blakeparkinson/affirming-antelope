@@ -1,4 +1,4 @@
-import { isStance, type Stance, type Turn } from '@antelope/core';
+import { isLearnerMove, isStance, type LearnerMove, type Stance, type Turn } from '@antelope/core';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { friendlyError, withTimeout, type FriendlyError } from '@/components/practice-loop/errors';
 import { postStream } from '@/lib/api';
@@ -13,6 +13,14 @@ export interface PendingReply {
 }
 
 const TICK = 33;
+
+/** The role-player's private read, which arrives with the reply's headers, before any words. */
+export interface ReplyRead {
+  /** How the learner's last line read (liveMoves.ts). */
+  move?: LearnerMove;
+  /** The stance the reply is played in. */
+  stance?: Stance;
+}
 
 /** Optional listener for the raw reply stream (Talk mode speaks it sentence by sentence). */
 export interface ReplyStreamSink {
@@ -35,7 +43,7 @@ export function useEmployeeReply(scenarioId: string) {
   useEffect(() => () => live.current?.stop(), []);
 
   const request = useCallback(
-    (turns: Turn[], replyId: string, onDone: (text: string, stance?: Stance) => void, sink?: ReplyStreamSink) => {
+    (turns: Turn[], replyId: string, onDone: (text: string, stance?: Stance) => void, sink?: ReplyStreamSink, onRead?: (read: ReplyRead) => void) => {
       live.current?.stop();
       setError(null);
       const lastLearner = [...turns].reverse().find((t) => t.speaker === 'learner')?.text ?? '';
@@ -107,6 +115,8 @@ export function useEmployeeReply(scenarioId: string) {
         (headers) => {
           const s = headers.get('x-stance');
           if (isStance(s)) stance = s;
+          const m = headers.get('x-move');
+          if (!stopped) onRead?.({ move: isLearnerMove(m) ? m : undefined, stance });
         },
       )
         .then((full) => {

@@ -1,4 +1,4 @@
-import { parseStanceTag, rolePlayerMessages, rolePlayerSystemPrompt, type ScenarioSpec, type Stance, type Turn } from "@antelope/core";
+import { parseStanceTag, rolePlayerMessages, rolePlayerSystemPrompt, type LearnerMove, type ScenarioSpec, type Stance, type Turn } from "@antelope/core";
 import { ApiError } from "./http";
 import { logUsage, resolveRole } from "./providers";
 
@@ -7,11 +7,11 @@ const encoder = new TextEncoder();
 
 /**
  * Streams the employee's next line as UTF-8 text deltas, with the stance it was
- * played in.
+ * played in and how the role-player read the learner's last move.
  *
- * The reply opens with a private stance tag ("[change] ..."). It is read off
- * before returning and never streamed, so the learner only ever gets the words;
- * the stance goes back as a header. Waiting for it also means failures that
+ * The reply opens with private tags ("[complex-reflection] [change] ..."). They are
+ * read off before returning and never streamed, so the learner only ever gets the
+ * words; the stance and move go back as headers. Waiting for it also means failures that
  * happen before any output (bad key, rate limit, refusal, timeout) can still
  * become a clean JSON error with a real status code instead of a broken 200 stream.
  */
@@ -19,7 +19,7 @@ export async function streamEmployeeReply(
   spec: ScenarioSpec,
   turns: Turn[],
   signal: AbortSignal,
-): Promise<{ stance?: Stance; body: ReadableStream<Uint8Array> }> {
+): Promise<{ stance?: Stance; move?: LearnerMove; body: ReadableStream<Uint8Array> }> {
   const { provider, model } = resolveRole("rolePlayer");
   const started = Date.now();
   const log = async (label: string, ttfbMs?: number) =>
@@ -91,7 +91,7 @@ export async function streamEmployeeReply(
       stream.abort();
     },
   });
-  return { stance: tag.done ? tag.stance : undefined, body };
+  return { stance: tag.done ? tag.stance : undefined, move: tag.done ? tag.move : undefined, body };
 }
 
 function errName(err: unknown): string {

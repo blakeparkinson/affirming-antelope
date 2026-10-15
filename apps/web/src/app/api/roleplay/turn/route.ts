@@ -1,7 +1,7 @@
-import { getScenario, scenarioFrame, type Stance } from "@antelope/core";
+import { getScenario, scenarioFrame, type LearnerMove, type Stance } from "@antelope/core";
 import { ApiError, errorResponse, optionsResponse, readJson, streamResponse, requireAi } from "@/lib/ai/http";
 import { authenticate, chargeQuota } from "@/lib/ai/auth";
-import { mockEmployeeReply, mockStream } from "@/lib/ai/mock";
+import { classifyMove, mockEmployeeReply, mockStream } from "@/lib/ai/mock";
 import { streamEmployeeReply } from "@/lib/ai/roleplay";
 import { parseScenarioId, parseTurns } from "@/lib/ai/validate";
 
@@ -14,7 +14,8 @@ export function OPTIONS(req: Request) {
 
 /**
  * POST /api/roleplay/turn -> text/plain stream of the employee's reply, with the
- * stance it was played in as `X-Stance` (absent when the role-player didn't say).
+ * stance it was played in as `X-Stance` and the learner's last move as the
+ * role-player read it as `X-Move` (each absent when the role-player didn't say).
  */
 export async function POST(req: Request) {
   try {
@@ -29,15 +30,16 @@ export async function POST(req: Request) {
 
     if (mode === "mock") {
       const reply = mockEmployeeReply(turns, scenarioFrame(spec));
-      return streamResponse(req, mockStream(reply.text, req.signal), { ...quota, ...stanceHeader(reply.stance) });
+      const move = classifyMove(turns[turns.length - 1].text);
+      return streamResponse(req, mockStream(reply.text, req.signal), { ...quota, ...readHeaders(reply.stance, move) });
     }
-    const { stance, body } = await streamEmployeeReply(spec, turns, req.signal);
-    return streamResponse(req, body, { ...quota, ...stanceHeader(stance) });
+    const { stance, move, body } = await streamEmployeeReply(spec, turns, req.signal);
+    return streamResponse(req, body, { ...quota, ...readHeaders(stance, move) });
   } catch (err) {
     return errorResponse(req, err);
   }
 }
 
-function stanceHeader(stance?: Stance): Record<string, string> {
-  return stance ? { "X-Stance": stance } : {};
+function readHeaders(stance?: Stance, move?: LearnerMove): Record<string, string> {
+  return { ...(stance ? { "X-Stance": stance } : {}), ...(move ? { "X-Move": move } : {}) };
 }

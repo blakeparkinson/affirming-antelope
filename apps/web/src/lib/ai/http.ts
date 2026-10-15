@@ -81,7 +81,7 @@ export function corsHeaders(req: Request): Record<string, string> {
     "Access-Control-Allow-Methods": "POST, OPTIONS",
     // TODO(2026-10-25): drop x-antelope-key with the legacy app token path (auth.ts).
     "Access-Control-Allow-Headers": "Content-Type, Authorization, x-antelope-key",
-    "Access-Control-Expose-Headers": "Retry-After, X-Quota-Limit, X-Quota-Remaining, X-Stance",
+    "Access-Control-Expose-Headers": "Retry-After, X-Quota-Limit, X-Quota-Remaining, X-Stance, X-Move",
     "Access-Control-Max-Age": "86400",
     Vary: "Origin",
   };

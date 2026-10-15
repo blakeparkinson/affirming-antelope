@@ -1,10 +1,11 @@
-import type { Stance, Turn, TurnAnnotation } from "./types";
+import { isLearnerMove } from "./liveMoves";
+import type { LearnerMove, Stance, Turn, TurnAnnotation } from "./types";
 
 /*
  * The counterpart's emotional temperature, turn by turn.
  *
- * The role-player opens every reply with a private stance tag ("[change] I mean..."),
- * which the API strips and sends as a header. The app turns that stance into how the
+ * The role-player opens every reply with private tags ("[open-question] [change] I mean..."),
+ * which the API strips and sends as headers. The app turns that stance into how the
  * portrait sits and how warm the conversation's thread glows. The learner never sees
  * a stance name or an MI term while they talk: only the person opening up or closing down.
  */
@@ -15,31 +16,49 @@ export function isStance(x: unknown): x is Stance {
   return typeof x === "string" && (STANCES as readonly string[]).includes(x);
 }
 
-/** Longest leading tag worth waiting for ("[ambivalent]" is 12). */
-const MAX_TAG = 16;
+/** Longest leading tag worth waiting for ("[advice-without-permission]" is 27). */
+const MAX_TAG = 30;
+/** The role-player writes a move tag, then a stance tag; anything past two is the reply. */
+const MAX_TAGS = 2;
+const TAG = /^\[\s*([A-Za-z][A-Za-z _-]{0,27}?)\s*\]\s*/;
 
 export type StanceTagParse =
   /** Too little text yet to tell whether a tag is coming: keep buffering. */
   | { done: false }
-  /** `text` is everything after the tag (or all of it, if there was none). */
-  | { done: true; stance?: Stance; text: string };
+  /**
+   * `text` is everything after the tags (or all of it, if there were none).
+   * `move` is the role-player's private read of the learner's last line (liveMoves.ts),
+   * present only when it wrote one.
+   */
+  | { done: true; stance?: Stance; move?: LearnerMove; text: string };
 
 /**
- * Reads the private stance tag off the front of a reply as it streams in.
- * Any leading single-word bracket tag is stripped, known or not, so a stray
- * "[neutral]" never reaches the learner; only the four stances count.
+ * Reads the private tags off the front of a reply as it streams in: the learner's
+ * move, then the stance ("[complex-reflection] [change] I mean..."), either one alone,
+ * in either order. Any leading single-word bracket tag is stripped, known or not, so a
+ * stray "[neutral]" never reaches the learner; only real stances and moves count.
  */
 export function parseStanceTag(head: string, final = false): StanceTagParse {
-  const lead = head.trimStart();
-  const m = /^\[\s*([A-Za-z-]{1,14})\s*\]\s*/.exec(lead);
-  if (m) {
-    const word = m[1].toLowerCase();
-    return { done: true, stance: isStance(word) ? word : undefined, text: lead.slice(m[0].length) };
+  let rest = head.trimStart();
+  let stance: Stance | undefined;
+  let move: LearnerMove | undefined;
+  let tags = 0;
+  let m: RegExpExecArray | null;
+  while (tags < MAX_TAGS && (m = TAG.exec(rest))) {
+    // "[Complex Reflection]" and "[open_question]" are the same tag as "[complex-reflection]"
+    const word = m[1].toLowerCase().replace(/[\s_]+/g, "-");
+    // a several-word bracket counts only when it names a real tag: "[I know] ..." is the reply
+    if (/[\s_]/.test(m[1]) && !isStance(word) && !isLearnerMove(word)) break;
+    if (isStance(word)) stance = word;
+    else if (isLearnerMove(word)) move = word;
+    rest = rest.slice(m[0].length);
+    tags++;
   }
   // could still become a tag: "", "[", "[chan"
-  const partial = lead === "" || (lead.startsWith("[") && !lead.includes("]") && lead.length <= MAX_TAG && /^\[\s*[A-Za-z-]*\s*$/.test(lead));
-  if (partial && !final) return { done: false };
-  return { done: true, text: partial ? "" : head };
+  const partial = tags < MAX_TAGS && (rest === "" || (rest.startsWith("[") && !rest.includes("]") && rest.length <= MAX_TAG && /^\[\s*[A-Za-z _-]*$/.test(rest)));
+  if (partial && !final && !(tags > 0 && rest === "")) return { done: false };
+  if (!tags) return { done: true, text: partial ? "" : head };
+  return { done: true, stance, ...(move ? { move } : {}), text: partial ? "" : rest };
 }
 
 /** The tag the role-player wrote, for replaying a past reply back to it. */

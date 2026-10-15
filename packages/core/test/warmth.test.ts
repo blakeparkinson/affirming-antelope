@@ -77,8 +77,37 @@ describe("parseStanceTag", () => {
     assert.deepEqual(parseStanceTag("", true), { done: true, text: "" });
   });
 
+  it("reads a move tag before the stance tag, in either order", () => {
+    assert.deepEqual(parseStanceTag("[complex-reflection] [change] Yeah."), { done: true, stance: "change", move: "complex-reflection", text: "Yeah." });
+    assert.deepEqual(parseStanceTag("[sustain][Open-Question] No."), { done: true, stance: "sustain", move: "open-question", text: "No." });
+    assert.deepEqual(parseStanceTag("[advice-without-permission] Hm."), { done: true, stance: undefined, move: "advice-without-permission", text: "Hm." });
+  });
+
+  it("waits for the stance tag after a move tag", () => {
+    assert.deepEqual(parseStanceTag("[open-question] [amb"), { done: false });
+    // no words yet: done, and the caller keeps reading until there are some
+    assert.deepEqual(parseStanceTag("[open-question] "), { done: true, stance: undefined, move: "open-question", text: "" });
+    assert.deepEqual(parseStanceTag("[open-question] [amb", true), { done: true, stance: undefined, move: "open-question", text: "" });
+  });
+
+  it("reads a tag written with spaces, capitals or underscores", () => {
+    assert.deepEqual(parseStanceTag("[Complex Reflection] [Change] Yeah."), { done: true, stance: "change", move: "complex-reflection", text: "Yeah." });
+    assert.deepEqual(parseStanceTag("[open_question] [sustain] No."), { done: true, stance: "sustain", move: "open-question", text: "No." });
+    // still waiting while a spaced tag streams in
+    assert.deepEqual(parseStanceTag("[Complex Ref"), { done: false });
+  });
+
+  it("leaves a bracketed phrase that isn't a tag in the reply", () => {
+    assert.deepEqual(parseStanceTag("[I know] it's late."), { done: true, text: "[I know] it's late." });
+    assert.deepEqual(parseStanceTag("[open-question] [I know] it's late."), { done: true, stance: undefined, move: "open-question", text: "[I know] it's late." });
+  });
+
+  it("strips no more than two tags", () => {
+    assert.deepEqual(parseStanceTag("[summary] [change] [laughs] Okay."), { done: true, stance: "change", move: "summary", text: "[laughs] Okay." });
+  });
+
   it("treats a long bracket run as text, not a tag", () => {
-    const head = "[aaaaaaaaaaaaaaaaaaaa";
+    const head = "[aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
     assert.deepEqual(parseStanceTag(head), { done: true, text: head });
   });
 });
@@ -128,6 +157,26 @@ describe("rolePlayerMessages", () => {
       { role: "assistant", content: "[sustain] Hm." },
       { role: "user", content: "Okay." },
       { role: "assistant", content: "Untagged." },
+    ]);
+  });
+
+  it("replays the move each reply answered before its stance", () => {
+    const msgs = rolePlayerMessages([
+      { speaker: "employee", text: "Opening.", stance: "sustain" },
+      { speaker: "learner", text: "Sounds hard.", move: "complex-reflection" },
+      { speaker: "employee", text: "It is.", stance: "ambivalent" },
+      { speaker: "learner", text: "Okay?", move: "closed-question" },
+      { speaker: "employee", text: "Untagged." },
+      { speaker: "learner", text: "Hm." },
+      { speaker: "employee", text: "Sure.", stance: "sustain" },
+    ]);
+    assert.deepEqual(msgs, [
+      { role: "user", content: "Sounds hard." },
+      { role: "assistant", content: "[complex-reflection] [ambivalent] It is." },
+      { role: "user", content: "Okay?" },
+      { role: "assistant", content: "Untagged." },
+      { role: "user", content: "Hm." },
+      { role: "assistant", content: "[sustain] Sure." },
     ]);
   });
 });

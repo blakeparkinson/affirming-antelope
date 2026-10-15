@@ -180,6 +180,11 @@ export interface Turn {
    * line in (warmth.ts). Drives the portrait and the warmth thread; never shown as a label.
    */
   stance?: Stance;
+  /**
+   * Learner lines in a live role-play: how the role-player read the move (liveMoves.ts).
+   * Pops the move's marker onto the bubble; the debrief does its own coding.
+   */
+  move?: LearnerMove;
 }
 
 /** MITI-informed behavior codes for learner turns. */
