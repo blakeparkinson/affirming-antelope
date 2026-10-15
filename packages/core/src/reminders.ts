@@ -1,4 +1,4 @@
-import { addDays, dayAt, dayKey, daysBetween, liveStreakDays, type DayKey, type Streak, type StreakFreezes } from "./habit";
+import { addDays, dayAt, dayKey, daysBetween, isDayKey, liveStreakDays, weekdayOf, type DayKey, type PracticeWeek, type Streak, type StreakFreezes } from "./habit";
 
 /**
  * Practice reminders, planned on the device (no server). The app cancels everything
@@ -17,9 +17,13 @@ import { addDays, dayAt, dayKey, daysBetween, liveStreakDays, type DayKey, type 
  *   after that      nothing until they practice again (pinging someone who left gets
  *                   notifications turned off)
  * Never practiced: nothing (the offer comes after the first practice).
+ *
+ * Mondays: "Your week in review is ready" at 09:00, when the week before had practice and
+ * the recap hasn't been seen yet. It takes the place of that day's daily or lapse reminder
+ * (one ping), but not a streak nudge or last call.
  */
 
-export type ReminderKind = "daily" | "streak" | "last_call" | "lapse";
+export type ReminderKind = "daily" | "streak" | "last_call" | "lapse" | "recap";
 
 export interface ReminderPrefs {
   on: boolean;
@@ -40,6 +44,9 @@ export interface PlannedReminder {
 
 export const DEFAULT_REMINDER_TIME = { hour: 19, minute: 0 } as const;
 export const LAST_CALL = { hour: 20, minute: 30 } as const;
+/** Monday morning: the weekly recap is ready. */
+export const RECAP_REMINDER = { hour: 9, minute: 0 } as const;
+const RECAP_LINE: Line = { title: "Your week in review is ready", body: "See how last week went, and pick this week's focus." };
 /** A last call only when the learner's own reminder is at least two hours before it. */
 const LAST_CALL_LATEST_OWN = 18 * 60 + 30;
 /** Days after the last practice that still get the daily reminder; the next gets the lapse. */
@@ -106,6 +113,7 @@ export function planReminders({
   freezes,
   now = new Date(),
   horizonDays = 7,
+  recap,
 }: {
   prefs: ReminderPrefs | undefined;
   streak: Streak;
@@ -113,6 +121,12 @@ export function planReminders({
   freezes: StreakFreezes;
   now?: Date;
   horizonDays?: number;
+  /**
+   * Plan the Monday recap reminder. `week`: the stored practice week (synced), so it knows
+   * whether the week before had practice. `seenWeek`: Monday of the week the recap was last
+   * seen in (synced), so a week already seen gets none. Unset: no recap reminder.
+   */
+  recap?: { week?: Pick<PracticeWeek, "weekStart" | "weekDays">; seenWeek?: DayKey | null };
 }): PlannedReminder[] {
   if (!prefs?.on || !validTime(prefs)) return [];
   const today = dayKey(now);
@@ -149,7 +163,40 @@ export function planReminders({
       add("last_call", day, dayAt(day, LAST_CALL.hour, LAST_CALL.minute), pick(LAST_CALL_LINES, day, "last_call")(streak.days));
     }
   }
-  return out;
+
+  const monday = recap ? recapReminderDay({ today, horizonDays, last, week: recap.week, recapSeenWeek: recap.seenWeek }) : null;
+  const recapAt = monday ? dayAt(monday, RECAP_REMINDER.hour, RECAP_REMINDER.minute) : null;
+  if (!monday || !recapAt || recapAt.getTime() <= now.getTime()) return out;
+  const kept = out.filter((r) => !(r.day === monday && (r.kind === "daily" || r.kind === "lapse")));
+  kept.push({ id: `${REMINDER_ID_PREFIX}:recap:${monday}`, kind: "recap", day: monday, at: recapAt, ...RECAP_LINE });
+  return kept.sort((a, b) => a.at.getTime() - b.at.getTime());
+}
+
+/**
+ * The Monday within the horizon whose recap gets a reminder, or null: the week before it
+ * had practice (the stored week's days, or the last practice falling in it) and its recap
+ * hasn't been seen on any device.
+ */
+function recapReminderDay({
+  today,
+  horizonDays,
+  last,
+  week,
+  recapSeenWeek,
+}: {
+  today: DayKey;
+  horizonDays: number;
+  last: DayKey;
+  week?: Pick<PracticeWeek, "weekStart" | "weekDays">;
+  recapSeenWeek?: DayKey | null;
+}): DayKey | null {
+  let monday: DayKey | null = null;
+  for (let i = 0; i < horizonDays && !monday; i++) if (weekdayOf(addDays(today, i)) === 0) monday = addDays(today, i);
+  if (!monday) return null;
+  if (isDayKey(recapSeenWeek) && recapSeenWeek >= monday) return null;
+  const before = addDays(monday, -7);
+  const practiced = (week?.weekStart === before && week.weekDays.some(Boolean)) || (last >= before && last < monday);
+  return practiced ? monday : null;
 }
 
 /** "7 pm", "12:30 pm": the reminder time as the Me row shows it. */

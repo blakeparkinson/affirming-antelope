@@ -134,6 +134,8 @@ export interface LearnerState {
   weekDays: boolean[];
   weeklyGoal: { target: number; done: number; hitCount: number };
   scenariosCompleted: number;
+  /** Monday of the week the weekly recap was last shown in, on any device (so it shows once a week). */
+  recapSeenWeek: string | null;
   /** The sample trainer assignment. Demo learner only; real learners get theirs from a cohort. */
   assignment: DemoTrainerAssignment | null;
   /** Me › Demo › "Demo learner" (dev builds): Amanda's seeded state, for demos. Never synced. */
@@ -181,6 +183,8 @@ export interface LearnerActions {
   choosePathway: (id: PathwayId, source: PathwayChoiceSource) => void;
   setSetting: <K extends keyof Settings>(key: K, value: Settings[K]) => void;
   markGreeted: () => void;
+  /** The weekly recap was shown in the week starting `week` (synced: another device won't show it). */
+  markRecapSeen: (week: string) => void;
   pinDailyRep: (pin: DailyRepPin) => void;
   /**
    * Spend freezes on the days missed since the last practice (Home runs it on focus;
@@ -434,6 +438,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
 
       setSetting: (key, value) => set((s) => ({ settings: { ...s.settings, [key]: value } })),
       markGreeted: () => set({ lastGreetedDay: dayKey() }),
+      markRecapSeen: (week) => set((s) => (s.recapSeenWeek && s.recapSeenWeek >= week ? s : { recapSeenWeek: week })),
       pinDailyRep: (pin) => set({ dailyRep: pin }),
       settleStreak: () => {
         const s = get();
@@ -513,7 +518,7 @@ export const useLearner = create<LearnerState & LearnerActions>()(
     {
       name: LEARNER_KEY,
       storage: createJSONStorage(() => AsyncStorage),
-      version: 7,
+      version: 8,
       migrate: (persisted, from) => {
         const s = (persisted ?? {}) as Record<string, unknown> & Partial<LearnerState> & { reviews?: unknown };
         // v2 (accounts): every record gets a uuid client id; sessions replace the local-only review queue.
@@ -563,6 +568,8 @@ export const useLearner = create<LearnerState & LearnerActions>()(
         // v7 (spaced review): each skill's last practice, from the log this device kept. Skills with
         // no record here stay unset (never faded) until they're practised or another device's time syncs.
         if (from < 7 && s.skills) s.skills = backfillPracticedAt(s.skills, s.practiceLog ?? []);
+        // v8 (weekly recap): never shown. The next new week shows it, for a learner who practised before it.
+        if (from < 8) s.recapSeenWeek ??= null;
         return s as unknown as LearnerState & LearnerActions;
       },
     },

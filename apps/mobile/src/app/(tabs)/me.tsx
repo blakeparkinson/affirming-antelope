@@ -37,6 +37,7 @@ import {
 import { Enter, RollingNumber, usePressScale } from '@/motion';
 import { pathwaySkills, useActivePathway, useFreezesHeld, useCurrentWeek, weekLabel as weekOf } from '@/state/selectors';
 import { liveStreak, useLearner } from '@/state/store';
+import { previewRecap } from '@/data/recap';
 
 export default function Me() {
   const s = useLearner();
@@ -256,6 +257,7 @@ export default function Me() {
                   }}
                 />
               ) : null}
+              {__DEV__ ? <LinkRow title="Preview weekly recap" onPress={previewRecap} /> : null}
               {__DEV__ ? (
                 <LinkRow
                   title="Replay the streak freeze reveal"

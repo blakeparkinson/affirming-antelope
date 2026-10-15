@@ -1,5 +1,6 @@
 import { noFreezeHistory, planReminders, type ReminderPrefs, type ReminderSource } from '@antelope/core';
 import { useEffect, useRef, useState } from 'react';
+import { router } from 'expo-router';
 import { AppState } from 'react-native';
 import { currentDailyRep, startDailyRep } from '@/data/dailyRep';
 import { track } from '@/lib/analytics';
@@ -28,7 +29,15 @@ export function syncReminders(): Promise<void> {
       const s = useLearner.getState();
       const prefs = s.settings.reminders;
       // with permission revoked in Settings, clear what's left instead of scheduling into the void
-      const plan = prefs?.on && (await notifier.permission()) === 'granted' ? planReminders({ prefs, streak: s.streak, freezes: s.freezes ?? noFreezeHistory() }) : [];
+      const plan =
+        prefs?.on && (await notifier.permission()) === 'granted'
+          ? planReminders({
+              prefs,
+              streak: s.streak,
+              freezes: s.freezes ?? noFreezeHistory(),
+              recap: { week: { weekStart: s.weekStart, weekDays: s.weekDays }, seenWeek: s.recapSeenWeek },
+            })
+          : [];
       await notifier.replaceAll(plan);
     })
     .catch(() => {});
@@ -39,7 +48,7 @@ export function syncReminders(): Promise<void> {
 function inputsKey(s: LearnerState): string {
   const r = s.settings.reminders;
   const f = s.freezes ?? noFreezeHistory();
-  return [s.streak.lastPracticeDay, s.streak.days, f.earnedDays.join(','), f.usedDays.join(','), r?.on, r?.hour, r?.minute].join('|');
+  return [s.streak.lastPracticeDay, s.streak.days, f.earnedDays.join(','), f.usedDays.join(','), r?.on, r?.hour, r?.minute, s.weekStart, s.weekDays.join(','), s.recapSeenWeek].join('|');
 }
 
 let started = false;
@@ -89,7 +98,8 @@ export function onReminderOpened(listener?: (open: ReminderOpen) => void): () =>
  * Root layout: a tapped reminder opens today's rep, once the app can navigate (`canRoute`:
  * hydrated, onboarded, splash gone). Only from a tab screen: a tap that lands mid-session
  * just brings the app back to that session. Once today's rep is done there's nothing to
- * open, so the app stays where it was.
+ * open, so the app stays where it was. The Monday recap reminder opens Home instead, where
+ * the recap shows (its "Start this week" then opens the rep).
  */
 export function useReminderTaps(canRoute: boolean, onTabs: boolean): void {
   const onTabsRef = useRef(onTabs);
@@ -98,15 +108,17 @@ export function useReminderTaps(canRoute: boolean, onTabs: boolean): void {
   }, [onTabs]);
   useEffect(() => {
     if (!canRoute) return;
-    const route = () => {
+    const route = (open: ReminderOpen) => {
       if (!onTabsRef.current) return;
+      if (open.kind === 'recap') return router.navigate('/');
       const rep = currentDailyRep();
       if (rep && !rep.done) startDailyRep(rep, rep.drillId, 'reminder');
     };
     deliver = route;
     if (pending) {
+      const open = pending;
       pending = null;
-      route();
+      route(open);
     }
     return () => {
       deliver = null;
