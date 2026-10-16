@@ -61,6 +61,7 @@ track). Set on sign-in / when they change (`pathway_id` also when a track is pic
 | `sign_in_started` | `reason` (`welcome`, `cohort`, `review`, `me`, `quota`: a guest at today's free AI limit) |
 | `sign_in_completed` | `is_new_user`, `migrated_guest_data` (conversion: always the same uid; existing account: merge-anonymous moved rows) |
 | `signed_out` | — |
+| `guest_started_over` | — |
 | `practice_started` | `kind` (`drill`, `roleplay`, `lesson`), `ref_id`, `skill?`, `level?`, `source` (`today`: the daily rep, `assignment`, `path`, `practice_tab`, `challenge`, `guide`, `review_recommendation`, `next_step`, `refresh`: Home's Keep it sharp card), `pathway_id`, `mode` (`text`, `voice`: role-play Talk mode; drills and lessons are `text`). Role-play sends it when the conversation starts (the brief's START), since that's where Talk or Type is picked |
 | `drill_answered` | `drill_id`, `skill`, `level`, `format` (`choice`, `text`), `hit_target` |
 | `drill_feedback_received` | `drill_id`, `latency_ms`, `move`, `hit_target` |

@@ -389,14 +389,37 @@ export function resetDevice(): Promise<void> {
   accountLive = false;
   wiping = (async () => {
     track('signed_out');
-    stopSyncing();
-    useLearner.getState().wipe();
-    useOutbox.getState().clear();
-    useAccount.getState().resetAll();
-    resetAnalytics();
-    // the stores persist on every change; drop the stored copies of the two that would otherwise
-    // keep the old person's data until the next write (the account store keeps `onboarded: false`)
-    await Promise.all([useLearner.persist.clearStorage(), useOutbox.persist.clearStorage()]).catch(() => {});
+    await wipeDevice();
+  })().finally(() => {
+    wiping = null;
+  });
+  return wiping;
+}
+
+/** Everything `resetDevice` forgets, for an account or a guest. */
+async function wipeDevice() {
+  stopSyncing();
+  useLearner.getState().wipe();
+  useOutbox.getState().clear();
+  useAccount.getState().resetAll();
+  resetAnalytics();
+  // the stores persist on every change; drop the stored copies of the two that would otherwise
+  // keep the old person's data until the next write (the account store keeps `onboarded: false`)
+  await Promise.all([useLearner.persist.clearStorage(), useOutbox.persist.clearStorage()]).catch(() => {});
+}
+
+/**
+ * A guest starting over (Me › Account): back to the welcome as a brand-new guest. Wipe first,
+ * then drop the anonymous session: a lost guest session otherwise hands its practice to the
+ * next guest (`signedOut`), and the new anonymous user must start empty. The old guest's
+ * server row is left behind, unreachable.
+ */
+export async function startOverAsGuest(): Promise<void> {
+  if (wiping) return wiping;
+  wiping = (async () => {
+    track('guest_started_over');
+    await wipeDevice();
+    if (supabaseConfigured) await supabase.auth.signOut({ scope: 'local' }).catch(() => {});
   })().finally(() => {
     wiping = null;
   });

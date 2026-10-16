@@ -82,6 +82,7 @@ export interface AnalyticsEvents {
   sign_in_started: { reason: SignInReason };
   sign_in_completed: { is_new_user: boolean; migrated_guest_data: boolean };
   signed_out: undefined;
+  guest_started_over: undefined;
   practice_started: {
     kind: PracticeKind;
     ref_id: string;

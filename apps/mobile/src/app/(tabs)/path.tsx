@@ -635,7 +635,9 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
           paddingBottom: insets.bottom + layout.tabBarHeight,
         }}
       >
-        <View style={{ width, height: trail.height }}>
+        {/* clipped like a phone screen: landmarks peek in from past the edge, and on a wide
+            window (web, iPad) the column's edge is that edge, not the window's */}
+        <View style={{ width, height: trail.height, overflow: 'hidden' }}>
           <SkyBackdrop light={light} width={width} />
           <Landscape
             bands={bands}
