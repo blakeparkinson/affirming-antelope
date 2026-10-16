@@ -6,7 +6,8 @@ artwork's *linearised* values straight to the screen. That gives the fur a
 deeper, richer brown than the source PNGs, and it's the look we ship. This
 script bakes the identical transform into the flat images used everywhere
 else (the wave still shown before WebGL is ready and under reduced motion, the
-logo mark, the app icons) so every antelope on the page is the same brown.
+logo mark, the app icons, the guides / scenarios / trainer art, the link-preview
+images and the learner app's icons) so every antelope is the same brown.
 
     python3 scripts/mascot-deepen.py
 """
@@ -22,7 +23,19 @@ PUBLIC = ROOT / "public"
 
 SOURCES = [
     "brand-mascot-wave-cartoon.png",
+    "brand-mascot-celebrate-cartoon.png",
 ]
+
+# Link-preview (Open Graph) art, read by src/lib/og.tsx from assets/og under fixed names,
+# deepened from the caramel originals in assets/og-source (kept out of the bundled og folder).
+OG = ROOT / "assets/og"
+OG_SOURCE = ROOT / "assets/og-source"
+OG_NAMES = ["mascot-wave", "mascot-celebrate", "logo"]
+
+# The learner app's icons (Expo reads them by the paths in apps/mobile/app.json). Generated from
+# untouched caramel copies next to them, so running this again never deepens twice.
+MOBILE_ICONS = ROOT.parent / "mobile/assets/images"
+MOBILE_ICON_NAMES = ["icon", "android-icon-foreground", "favicon"]
 
 
 def srgb_to_linear(c: np.ndarray) -> np.ndarray:
@@ -108,6 +121,12 @@ def main() -> None:
     icon = Image.open(app / "icon.png").convert("RGBA")
     icon.save(app / "favicon.ico", sizes=[(16, 16), (32, 32), (48, 48)])
     print("favicon.ico rebuilt from icon.png")
+
+    for name in OG_NAMES:
+        deepen(OG_SOURCE / f"{name}.png", OG / f"{name}.png")
+
+    for name in MOBILE_ICON_NAMES:
+        deepen(MOBILE_ICONS / f"{name}-source.png", MOBILE_ICONS / f"{name}.png")
 
 
 if __name__ == "__main__":

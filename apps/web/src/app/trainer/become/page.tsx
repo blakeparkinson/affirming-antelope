@@ -108,7 +108,7 @@ export default async function BecomeTrainerPage() {
               your trainer shared.
             </p>
           </div>
-          <Image src="/brand-mascot-wave-cartoon.png" alt="" width={674} height={978} className="hidden h-72 w-auto md:block" />
+          <Image src="/brand-mascot-wave-cartoon-deep.png" alt="" width={674} height={978} className="hidden h-72 w-auto md:block" />
         </div>
       </main>
     </div>

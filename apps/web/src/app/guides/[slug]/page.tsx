@@ -151,7 +151,7 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
               </div>
               <div className="hidden justify-end md:col-span-3 md:flex">
                 <Image
-                  src="/brand-mascot-wave-cartoon.png"
+                  src="/brand-mascot-wave-cartoon-deep.png"
                   alt=""
                   width={674}
                   height={978}
@@ -213,7 +213,7 @@ export default async function GuidePage({ params }: PageProps<"/guides/[slug]">)
             >
               <div className="flex items-start gap-5">
                 <Image
-                  src="/brand-mascot-celebrate-cartoon.png"
+                  src="/brand-mascot-celebrate-cartoon-deep.png"
                   alt=""
                   width={703}
                   height={914}
