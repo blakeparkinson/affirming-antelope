@@ -4,6 +4,7 @@ import { Fragment, useCallback, useEffect, useLayoutEffect, useMemo, useRef, use
 import { StyleSheet, View, useWindowDimensions, type StyleProp, type ViewStyle } from 'react-native';
 import Animated, {
   Easing,
+  ReduceMotion,
   cancelAnimation,
   interpolate,
   scrollTo,
@@ -234,22 +235,33 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
     },
   });
 
-  // and again once mounted, for platforms that ignore contentOffset
+  // and again once mounted: on iOS the contentOffset is clamped before the trail has laid out,
+  // so the first frame painted near the top and the trail jumped a node down on the next one.
+  // The trail stays hidden until this scroll has landed, then fades in where it belongs.
   const mountedAt = useRef(Date.now());
   const didScroll = useRef(false);
+  const placed = useSharedValue(complete && !pending ? 1 : 0);
   useEffect(() => {
-    if (didScroll.current || (complete && !pending)) return;
-    didScroll.current = true;
+    if (didScroll.current) return;
+    // nothing to place (or the unlock finished, e.g. reduced motion, before the timer ran): show it as is
+    if (complete && !pending) {
+      placed.value = 1;
+      return;
+    }
     const y = pending ? segTarget : nodeTarget(currentWeek);
     const t = setTimeout(() => {
+      didScroll.current = true;
       scheduleOnUI(() => {
         'worklet';
         scrollTo(scrollRef, 0, y, false);
+        placed.value = withTiming(1, { duration: 140, reduceMotion: ReduceMotion.Never });
       });
     }, 30);
+    // a re-render inside the 30ms (the header measuring) reschedules with the settled target
     return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [complete, pending, segTarget, scrollRef]);
+  const placedStyle = useAnimatedStyle(() => ({ opacity: placed.value }));
 
   // ---- the clock ---------------------------------------------------------
   // 0 = the run starts (held there before it plays), REST = at rest (final state).
@@ -604,6 +616,7 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
     <View style={styles.root}>
       <Animated.ScrollView
         ref={scrollRef}
+        style={placedStyle}
         contentOffset={{ x: 0, y: openY }}
         onScroll={onScroll}
         scrollEventThrottle={16}
