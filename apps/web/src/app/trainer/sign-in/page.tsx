@@ -45,7 +45,7 @@ export default async function SignInPage({ searchParams }: PageProps<"/trainer/s
               “I lost him around the time-blocking question. How would you have handled that moment?”
             </p>
           </div>
-          <Image src="/brand-mascot-wave-cartoon.png" alt="" width={674} height={978} className="h-[22rem] w-auto" priority />
+          <Image src="/brand-mascot-wave-cartoon-deep.png" alt="" width={674} height={978} className="h-[22rem] w-auto" priority />
         </div>
       </aside>
     </div>

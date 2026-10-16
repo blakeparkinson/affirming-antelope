@@ -77,7 +77,7 @@ export default function ScenariosIndex() {
             </div>
             <div className="hidden justify-end md:col-span-4 md:flex">
               <Image
-                src="/brand-mascot-wave-cartoon.png"
+                src="/brand-mascot-wave-cartoon-deep.png"
                 alt=""
                 width={674}
                 height={978}
