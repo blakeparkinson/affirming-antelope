@@ -27,12 +27,13 @@ import {
 import { usePressScale, useTickSwap } from '@/motion';
 import { signOut } from '@/sync/auth';
 import { leaveCohort, renameSelf } from '@/sync/cloud';
-import { flushBeforeSignOut, syncNow } from '@/sync/engine';
+import { flushBeforeSignOut, startOverAsGuest, syncNow } from '@/sync/engine';
 import { useOutbox } from '@/sync/outbox';
 import { personSeed, useAccount, type Cohort } from '@/state/account';
 
 /**
- * Me › Account. Guests get one card that says what signing in unlocks. Signed in:
+ * Me › Account. Guests get one card that says what signing in unlocks, and a way to start
+ * over as a new guest (back to the welcome; nothing else returns there once onboarded). Signed in:
  * email, display name (rename in a sheet), cohorts (leave), sync status, sign out.
  */
 export function AccountSection() {
@@ -42,21 +43,40 @@ export function AccountSection() {
 }
 
 function GuestCard() {
+  const [restart, setRestart] = useState(false);
+  const [busy, setBusy] = useState(false);
   return (
-    <Raised contentStyle={styles.guest}>
-      <Text variant="subheading">You’re practicing as a guest</Text>
-      <Text variant="body" color={color.muted}>
-        Everything stays on this phone. Sign in to join your cohort and share role-plays with your trainer. Your practice so far comes with you.
-      </Text>
-      <Button
-        variant="secondary"
-        size="md"
-        label="Sign in"
-        fullWidth
-        onPress={() => router.push({ pathname: '/sign-in', params: { reason: 'me' } })}
-        style={styles.guestBtn}
+    <>
+      <Raised contentStyle={styles.guest}>
+        <Text variant="subheading">You’re practicing as a guest</Text>
+        <Text variant="body" color={color.muted}>
+          Everything stays on this phone. Sign in to join your cohort and share role-plays with your trainer. Your practice so far comes with you.
+        </Text>
+        <Button
+          variant="secondary"
+          size="md"
+          label="Sign in"
+          fullWidth
+          onPress={() => router.push({ pathname: '/sign-in', params: { reason: 'me' } })}
+          style={styles.guestBtn}
+        />
+        <TextLink label="Start over as a new guest" onPress={() => setRestart(true)} style={styles.restart} />
+      </Raised>
+      <ConfirmSheet
+        open={restart}
+        onClose={() => setRestart(false)}
+        title="Start over?"
+        body="This clears your practice, streak and track on this device and takes you back to the welcome. It can’t be undone. To keep your practice, sign in instead."
+        stay="Keep my practice"
+        leave="Start over"
+        busy={busy}
+        onLeave={async () => {
+          setBusy(true);
+          // the welcome takes over as soon as the wipe lands (the root layout's onboarding guard)
+          await startOverAsGuest();
+        }}
       />
-    </Raised>
+    </>
   );
 }
 
@@ -315,6 +335,7 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   guest: { padding: space[5], gap: space[2] },
   guestBtn: { marginTop: space[3] },
+  restart: { alignSelf: 'center', marginTop: space[2] },
   list: { paddingHorizontal: space[4] },
   row: {
     flexDirection: 'row',
