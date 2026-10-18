@@ -137,7 +137,7 @@ export function EmptyState({
   return (
     <div className={`flex flex-col items-center gap-5 px-6 py-10 text-center sm:flex-row sm:text-left ${className}`}>
       <Image
-        src={pose === "wave" ? "/brand-mascot-wave-cartoon.png" : "/brand-mascot-celebrate-cartoon.png"}
+        src={pose === "wave" ? "/brand-mascot-wave-cartoon-deep.png" : "/brand-mascot-celebrate-cartoon-deep.png"}
         alt=""
         width={674}
         height={978}
