@@ -31,8 +31,8 @@ import { maybeShowRecap } from '@/data/recap';
 import { firstNameOf, unseenReviews, useAccount } from '@/state/account';
 import { syncNow } from '@/sync/engine';
 import { Mascot, type MascotHandle } from '@/components/mascot';
-import { PRONK_MS } from '@/components/mascot/choreo';
-import { ChatsCircleIcon, haptic, Hoofprint, LightningIcon, Screen, ShuffleIcon, SparkleIcon, Text, border, color, layout, space } from '@/design';
+import { usePronkGate, usePullToPronk } from '@/components/home/usePullToPronk';
+import { ChatsCircleIcon, Hoofprint, LightningIcon, Screen, ShuffleIcon, SparkleIcon, Text, border, color, layout, space } from '@/design';
 import { openDrill, openRoleplay, pickDrill, pickScenario } from '@/data/routes';
 import { Enter, FADE_MS, RollingNumber, useListLayout, useReduceMotion } from '@/motion';
 import { useActivePathway, useCurrentUnit, useCurrentWeek, useFrozenThisWeek, useProgressRows, useStreakDays, useThisWeek, weekLabel } from '@/state/selectors';
@@ -78,11 +78,6 @@ export default function Home() {
   const hello = firstName ? `${greeting()}, ${firstName}` : greeting();
   const unseen = useMemo(() => unseenReviews(reviews), [reviews]);
   const [refreshing, setRefreshing] = useState(false);
-  const onRefresh = useCallback(async () => {
-    setRefreshing(true);
-    await syncNow();
-    setRefreshing(false);
-  }, []);
   const streak = useStreakDays();
   const { weeklyGoal: goal, weekDays } = useThisWeek();
   const frozenDays = useFrozenThisWeek();
@@ -116,7 +111,8 @@ export default function Home() {
   );
   const coach = useRef<MascotHandle>(null);
   const shiver = useCallback(() => coach.current?.shiver(), []);
-  const onCoachTap = usePronkTaps(coach);
+  const pronk = usePronkGate(coach);
+  const onCoachTap = usePronkTaps(pronk);
   const assignment = useLearner((s) => s.assignment);
   const skills = useLearner((s) => s.skills);
   const currentWeek = useCurrentWeek();
@@ -160,10 +156,21 @@ export default function Home() {
 
   // Header handoff: the big greeting leaves under a compact title bar.
   const scrollY = useSharedValue(0);
+  // pull Home down and the antelope pronks (and a signed-in pull also syncs)
+  const { crouch, released, onRefreshPronk } = usePullToPronk(scrollY, pronk, reduce);
+  const onRefresh = useCallback(async () => {
+    onRefreshPronk();
+    setRefreshing(true);
+    await syncNow();
+    setRefreshing(false);
+  }, [onRefreshPronk]);
   const greetH = useSharedValue(GREET_H);
   const onScroll = useAnimatedScrollHandler({
     onScroll: (e) => {
       scrollY.value = e.contentOffset.y;
+    },
+    onEndDrag: (e) => {
+      released(e.contentOffset.y);
     },
   });
   // the waving coach rests once it has scrolled away
@@ -215,11 +222,11 @@ export default function Home() {
             )}
           </Text>
         </Animated.View>
-        <View style={styles.mascot}>
+        <Animated.View style={[styles.mascot, { transformOrigin: 'bottom' }, crouch]}>
           <Mascot ref={coach} pose="wave" size={124} greet={greet} paused={!focused || coachAway} accessibilityLabel="The antelope coach, waving" />
           {/* easter egg: three quick taps and it pronks. On top, not around: the Rive canvas would take the touch */}
           <Pressable onPressIn={onCoachTap} accessible={false} style={StyleSheet.absoluteFill} />
-        </View>
+        </Animated.View>
       </Enter>
 
       <Enter index={1} style={styles.heroWrap}>
@@ -345,21 +352,20 @@ const TAP_GAP_MS = 450;
 
 /**
  * Three quick taps on Home's antelope and it pronks, with a thud on each landing. Taps
- * during a pronk don't queue another; the count starts over after a pause.
+ * during a pronk don't queue another (the gate is shared with pull-to-pronk); the count
+ * starts over after a pause.
  */
-function usePronkTaps(coach: RefObject<MascotHandle | null>) {
-  const taps = useRef<{ n: number; at: number; busyUntil: number }>({ n: 0, at: 0, busyUntil: 0 });
+function usePronkTaps(pronk: () => boolean) {
+  const taps = useRef<{ n: number; at: number }>({ n: 0, at: 0 });
   return useCallback(() => {
     const now = Date.now();
     const t = taps.current;
-    if (now < t.busyUntil) return;
     t.n = now - t.at <= TAP_GAP_MS ? t.n + 1 : 1;
     t.at = now;
     if (t.n < 3) return;
     t.n = 0;
-    t.busyUntil = now + PRONK_MS;
-    coach.current?.pronk({ onLand: haptic.thud });
-  }, [coach]);
+    pronk();
+  }, [pronk]);
 }
 
 /** Fallback greeting height until it's measured (date + two title lines + padding). */
