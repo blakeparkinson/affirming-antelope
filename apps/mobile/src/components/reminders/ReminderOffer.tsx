@@ -5,6 +5,7 @@ import { BottomSheet, Button, SegmentedControl, Text, TextLink, color, space } f
 import { track } from '@/lib/analytics';
 import { openNotificationSettings, remindersSupported, turnOnReminders } from '@/lib/reminders';
 import { useMoments } from '@/state/moments';
+import { AlarmClock } from './AlarmClock';
 import { useLearner } from '@/state/store';
 
 type Phase = 'ask' | 'busy' | 'on' | 'blocked';
@@ -82,6 +83,10 @@ export function ReminderOffer({ ready = true }: { ready?: boolean }) {
 
   return (
     <BottomSheet open={open} onClose={close} accessibilityLabel="Practice reminders">
+      {/* hands on the picked time; it rings once when reminders turn on */}
+      <View style={styles.clock}>
+        <AlarmClock hour={time.hour} minute={time.minute} ringing={phase === 'on'} />
+      </View>
       {phase === 'on' ? (
         <View accessibilityLiveRegion="polite">
           <Text variant="heading" accessibilityRole="header">
@@ -133,6 +138,7 @@ export function ReminderOffer({ ready = true }: { ready?: boolean }) {
 }
 
 const styles = StyleSheet.create({
+  clock: { alignSelf: 'center', marginBottom: space[3] },
   lede: { marginTop: space[2], marginBottom: space[5] },
   primary: { marginTop: space[5] },
   link: { alignSelf: 'center', marginTop: space[2] },
