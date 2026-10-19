@@ -36,13 +36,39 @@ uses the same vocabulary. Snake_case, `object_verb` past tense.
 ## Super properties (on every event)
 
 `surface`: `'website' | 'app' | 'trainer'`, `platform`: `'web' | 'ios' | 'android'`,
-`app_version`, `signed_in`: boolean (true only for permanent users; an anonymous session is `false`).
+`app_version`, `signed_in`: boolean (true only for permanent users; an anonymous session is `false`),
+`internal`: boolean (app only, see [Internal traffic](#internal-traffic)).
 
 ## Person properties (signed-in only)
 
 `role`: `'learner' | 'trainer'`, `is_trainer`: boolean, `cohort_count`: number,
 `signed_up_at`: ISO date, `pathway_id`: `'mi-for-leaders' | 'mi-for-clinicians'` (the active
 track). Set on sign-in / when they change (`pathway_id` also when a track is picked).
+
+`internal`: `true`, set on internal devices only (never `false`), including anonymous ones.
+It's the one person property an anonymous user can get, so a team member's website visits,
+joined to the app by the CTA bridge, drop out of funnels with the rest of their events.
+
+## Internal traffic
+
+The app marks team, test and preview traffic `internal: true` (`isInternalTraffic` in
+`packages/core/src/analytics.ts`):
+
+- development builds (`__DEV__`), wherever they run
+- simulators and emulators (`expo-device` `isDevice` is false)
+- any web host other than `app.affirmingantelope.com`: Vercel PR previews (they share the
+  production key), localhost
+- a device someone on the team marked: open the app once with `?internal=1` (web:
+  `https://app.affirmingantelope.com/?internal=1`; iOS/Android: `antelope://?internal=1`).
+  The flag is stored on the device and survives restarts, sign-out and "Start over";
+  `?internal=0` clears it. The param is stripped from the address bar.
+
+The website can't remember a device (it's cookieless), so a team member's landing visits only
+drop out once their app opens (the bridge joins them to the same person).
+
+**In PostHog:** Project settings › Product analytics › "Filter out internal and test users":
+add the person property filter `internal` *is not set*. Then tick "Filter out internal and test
+users" on every funnel and dashboard below (it's the default for new insights once set).
 
 ## Website events
 
@@ -112,7 +138,8 @@ track). Set on sign-in / when they change (`pathway_id` also when a track is pic
 
 1. **Acquisition funnel:** `$pageview` (website) → `cta_clicked` → `app_opened` →
    `practice_completed` (first) → `sign_in_completed` → `cohort_joined`. Breakdown by UTM
-   source, landing page, `audience`.
+   source, landing page, `audience`. Internal and test users filtered out. Day-2 return:
+   a retention insight on `app_opened` → `practice_completed`, daily, first 7 days.
 2. **Activation:** % of `app_opened` with a `practice_completed` within the session.
 3. **Retention:** weekly retention on `practice_completed`.
 4. **Practice loop health:** `roleplay_ended.ended_early` rate, `debrief_viewed.latency_ms` p50/p90,

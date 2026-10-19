@@ -1,3 +1,4 @@
+import { INTERNAL_PARAM, internalParam } from '@antelope/core';
 import posthog from 'posthog-js';
 import type { AnalyticsClient, LaunchContext, Props } from './analyticsTypes';
 
@@ -15,29 +16,32 @@ function optedOut(): boolean {
   return nav.globalPrivacyControl === true || nav.doNotTrack === '1' || nav.doNotTrack === 'yes' || win.doNotTrack === '1' || nav.msDoNotTrack === '1';
 }
 
-/** Reads `ph_did`, `ph_sid`, `src` once, removes the first two from the address bar. */
-function readBridge(): { did?: string; sid?: string; src?: string } {
+/** Reads `ph_did`, `ph_sid`, `src`, `internal` once, removes all but `src` from the address bar. */
+function readBridge(): { did?: string; sid?: string; src?: string; internal?: '1' | '0' } {
   const url = new URL(window.location.href);
   const did = url.searchParams.get('ph_did') ?? undefined;
   const sid = url.searchParams.get('ph_sid') ?? undefined;
   const src = url.searchParams.get('src') ?? undefined;
-  if (did || sid) {
+  const internal = internalParam(url.searchParams.get(INTERNAL_PARAM));
+  if (did || sid || url.searchParams.has(INTERNAL_PARAM)) {
     url.searchParams.delete('ph_did');
     url.searchParams.delete('ph_sid');
+    url.searchParams.delete(INTERNAL_PARAM);
     window.history.replaceState(window.history.state, '', `${url.pathname}${url.search}${url.hash}`);
   }
   // Only accept sane values: id-shaped strings, short slugs.
   const safe = (v: string | undefined, re: RegExp) => (v && re.test(v) ? v : undefined);
-  return { did: safe(did, /^[0-9a-zA-Z_-]{8,64}$/), sid: safe(sid, /^[0-9a-fA-F-]{8,64}$/), src: safe(src, /^[a-z0-9_-]{1,64}$/i) };
+  return { did: safe(did, /^[0-9a-zA-Z_-]{8,64}$/), sid: safe(sid, /^[0-9a-fA-F-]{8,64}$/), src: safe(src, /^[a-z0-9_-]{1,64}$/i), internal };
 }
 
-function entryFor(b: { did?: string; src?: string }): LaunchContext {
+function entryFor(b: { did?: string; src?: string; internal?: '1' | '0' }): LaunchContext {
   const src = b.src;
-  if (src?.startsWith('guide_')) return { entry: 'guide', src };
-  if (b.did || src) return { entry: 'website_cta', ...(src ? { src } : {}) };
+  const internal = b.internal ? { internal: b.internal } : {};
+  if (src?.startsWith('guide_')) return { entry: 'guide', src, ...internal };
+  if (b.did || src) return { entry: 'website_cta', ...(src ? { src } : {}), ...internal };
   // Landed somewhere other than the front door: a shared link into a screen.
   const path = window.location.pathname;
-  return { entry: path !== '/' && path !== '' ? 'deep_link' : 'direct' };
+  return { entry: path !== '/' && path !== '' ? 'deep_link' : 'direct', ...internal };
 }
 
 export const client: AnalyticsClient = {

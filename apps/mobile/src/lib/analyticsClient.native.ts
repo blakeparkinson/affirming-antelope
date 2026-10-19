@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as Linking from 'expo-linking';
+import { INTERNAL_PARAM, internalParam } from '@antelope/core';
 import PostHog from 'posthog-react-native';
 import type { AnalyticsClient, LaunchContext } from './analyticsTypes';
 
@@ -37,9 +38,11 @@ export const client: AnalyticsClient = {
       const parsed = Linking.parse(url);
       const raw = parsed.queryParams?.src;
       const src = typeof raw === 'string' && /^[a-z0-9_-]{1,64}$/i.test(raw) ? raw : undefined;
-      if (src?.startsWith('guide_')) return { entry: 'guide', src };
-      if (src) return { entry: 'website_cta', src };
-      return { entry: parsed.path ? 'deep_link' : 'direct' };
+      const flag = internalParam(parsed.queryParams?.[INTERNAL_PARAM]);
+      const internal = flag ? { internal: flag } : {};
+      if (src?.startsWith('guide_')) return { entry: 'guide', src, ...internal };
+      if (src) return { entry: 'website_cta', src, ...internal };
+      return { entry: parsed.path ? 'deep_link' : 'direct', ...internal };
     } catch {
       return { entry: 'direct' };
     }

@@ -198,6 +198,8 @@ export interface AnalyticsSuperProps {
   platform: AnalyticsPlatform;
   app_version?: string;
   signed_in?: boolean;
+  /** Team, test or preview traffic (see `isInternalTraffic`); PostHog's test-account filter drops it. */
+  internal?: boolean;
 }
 
 /** Set on the identified person (signed-in only). The distinct id is the Supabase user uuid. */
@@ -209,6 +211,11 @@ export interface AnalyticsPersonProps {
   signed_up_at?: string;
   /** The learner's active track. */
   pathway_id?: PathwayId;
+  /**
+   * Set (true) only on internal devices, so a person's website visits, joined to the app by
+   * the CTA bridge, drop out with the rest of their events. Never set to false.
+   */
+  internal?: boolean;
 }
 
 /** Query params a CTA appends so the app can continue the visitor's anonymous identity. */
@@ -216,6 +223,25 @@ export const ANALYTICS_BRIDGE_PARAMS = { distinctId: "ph_did", sessionId: "ph_si
 
 /** Origin of the learner app; links to it get the bridge params. */
 export const APP_ORIGIN = "https://app.affirmingantelope.com";
+
+/** URL param that marks (`1`) or unmarks (`0`) this device as internal: `?internal=1`, `antelope://?internal=1`. */
+export const INTERNAL_PARAM = "internal";
+
+/** Reads the internal opt-in param: "1" marks the device, "0" unmarks it, anything else is ignored. */
+export function internalParam(raw: unknown): "1" | "0" | undefined {
+  return raw === "1" || raw === "0" ? raw : undefined;
+}
+
+/**
+ * Whether this traffic is ours rather than a real learner's: a development build, a
+ * simulator or emulator, any web host other than the production one (Vercel previews,
+ * localhost), or a device someone on the team marked with `?internal=1` (`stored`).
+ */
+export function isInternalTraffic(o: { dev: boolean; web: boolean; host?: string; productionHost: string; onDevice: boolean; stored: boolean }): boolean {
+  if (o.dev || o.stored) return true;
+  if (o.web) return o.host !== o.productionHost;
+  return !o.onDevice;
+}
 
 /** Default first-party ingest host for the app (the website proxies it to PostHog). */
 export const DEFAULT_APP_INGEST_HOST = "https://affirmingantelope.com/ingest";

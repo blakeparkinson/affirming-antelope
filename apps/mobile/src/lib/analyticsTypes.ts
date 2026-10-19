@@ -7,6 +7,8 @@ export type Props = Record<string, PropValue>;
 export interface LaunchContext {
   entry: AppEntry;
   src?: string;
+  /** `?internal=1` marks this device as internal, `?internal=0` unmarks it (see `isInternalTraffic`). */
+  internal?: '1' | '0';
 }
 
 /**
