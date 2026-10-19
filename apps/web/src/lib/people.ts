@@ -54,7 +54,16 @@ export const BLAKE: Person = {
   slug: "blake-parkinson",
   name: "Blake Parkinson",
   displayName: "Blake Parkinson",
-  sameAs: [],
+  jobTitle: "Head of Engineering",
+  employer: { name: "Big Leap Health" },
+  page: "/about/blake-parkinson",
+  photo: {
+    src: "/team/blake-parkinson-headshot.jpg",
+    width: 400,
+    height: 400,
+    alt: "Portrait of Blake Parkinson",
+  },
+  sameAs: ["https://www.linkedin.com/in/bparky", "https://github.com/blakeparkinson", "https://www.yourbuddyblake.com"],
 };
 
 const PEOPLE: Person[] = [AMANDA, BLAKE];
@@ -78,6 +87,23 @@ export function amandaBio(): string[] {
     "Across roles at Vital Decisions, Vida Health, and Calm, Amanda has built a reputation for fostering a culture of learning and continuous improvement\u2014empowering clinicians, coaches, and leaders to achieve their highest potential. A recognized expert in Motivational Interviewing, Amanda has designed and scaled training programs that enhance provider communication, engagement, and performance organization-wide.",
   ];
 }
+
+/**
+ * Blake's bio, from his own site (yourbuddyblake.com/about) plus what he told us
+ * directly (2026-10-19): his Big Leap Health role, Prime Menagerie LLC, and the Erie
+ * Parks and Recreation Hall of Fame. Only facts he has given us.
+ */
+export function blakeBio(): string[] {
+  return [
+    "Blake Parkinson is Head of Engineering at Big Leap Health and a cofounder of Prime Menagerie LLC. He has written software for more than 20 years. Before Big Leap he ran engineering at Two Chairs, where his team built AI products that had to work under HIPAA.",
+    "At Edmodo he built core infrastructure while the platform grew from 1 million users to 50 million, and learned several times that not everything that works at the first number works at the second. As CTO of Backbone PLM, he grew engineering from 3 people to more than 30. At four companies he has hired junior engineers and grown them to staff, and the good ones still email him about what they're working on.",
+    "On Affirming Antelope, he builds the app and this site from Amanda's MI for Leaders program. He studied computer science and political science at the University of San Francisco, because he couldn't pick one. He once coached a soccer team through an undefeated season, was elected to the Erie Parks and Recreation Hall of Fame for it, and retired into the sunset.",
+  ];
+}
+
+/** Blake's own words, from his site. */
+export const BLAKE_QUOTE =
+  "AI that has to work in production, in front of real users, in a regulated industry. The fun is making it boringly reliable.";
 
 /**
  * Drafted for Amanda and approved by her (2026-10-13). Renders only when non-empty.
