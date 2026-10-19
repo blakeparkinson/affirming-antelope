@@ -28,6 +28,7 @@ const columns = [
     links: [
       { href: "/about", label: "About us" },
       { href: "/about/amanda-roth", label: "Amanda Roth" },
+      { href: "/about/blake-parkinson", label: "Blake Parkinson" },
     ],
   },
 ];

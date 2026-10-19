@@ -4,7 +4,6 @@ import Image from "next/image";
 import Link from "next/link";
 import { PilotCta } from "@/components/get-the-app";
 import { Reveal } from "@/components/reveal";
-import { PersonaDisc } from "@/components/scenarios/bits";
 import { SiteFooter } from "@/components/site-footer";
 import { SiteNav } from "@/components/site-nav";
 import { scenarioCount } from "@/lib/audiences";
@@ -107,17 +106,30 @@ export default function AboutPage() {
               <Reveal delay={0.06}>
                 <article className="flex h-full flex-col rounded-[1.5rem] border-2 border-line bg-white p-6 shadow-[0_5px_0_var(--shadow)] md:p-7">
                   <div className="flex items-center gap-5">
-                    <span className="grid size-24 shrink-0 place-items-center">
-                      <PersonaDisc name={BLAKE.name} size="lg" />
-                    </span>
+                    <Image
+                      src={BLAKE.photo!.src}
+                      alt={BLAKE.photo!.alt}
+                      width={BLAKE.photo!.width}
+                      height={BLAKE.photo!.height}
+                      sizes="96px"
+                      className="size-24 shrink-0 rounded-full border-4 border-white object-cover shadow-[0_4px_0_var(--shadow)]"
+                    />
                     <div>
                       <h3 className="font-display text-2xl font-bold leading-tight text-ink">{BLAKE.displayName}</h3>
+                      <p className="mt-1 text-sm font-extrabold leading-snug text-primary-shadow">
+                        {BLAKE.jobTitle} at {BLAKE.employer!.name}
+                      </p>
                       <p className="mt-1 font-semibold leading-snug text-muted">Builds Affirming Antelope</p>
                     </div>
                   </div>
                   <p className="mt-5 flex-1 text-lg font-semibold leading-relaxed text-ink/80">
-                    Blake builds the app and this site. He turns Amanda&apos;s program into practice you can open
-                    in a browser.
+                    Blake cofounded Prime Menagerie LLC and has written software for more than 20 years. He builds
+                    the app and this site from Amanda&apos;s program.
+                  </p>
+                  <p className="mt-4">
+                    <Link href={BLAKE.page!} className={linkClass}>
+                      More about Blake
+                    </Link>
                   </p>
                 </article>
               </Reveal>

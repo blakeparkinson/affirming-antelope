@@ -1,6 +1,6 @@
 import type { MetadataRoute } from "next";
 import { AUDIENCE_SLUGS } from "@/lib/audiences";
-import { AMANDA } from "@/lib/people";
+import { AMANDA, BLAKE } from "@/lib/people";
 import { getAllGuides } from "@/lib/guides";
 import { getAllScenarios } from "@/lib/scenarios";
 import { SITE_URL } from "@/lib/site";
@@ -39,6 +39,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
     { url: `${SITE_URL}/faq`, lastModified: built, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}/about`, lastModified: built, changeFrequency: "monthly", priority: 0.6 },
     { url: `${SITE_URL}${AMANDA.page}`, lastModified: built, changeFrequency: "monthly", priority: 0.5 },
+    { url: `${SITE_URL}${BLAKE.page}`, lastModified: built, changeFrequency: "monthly", priority: 0.5 },
     ...guides.map((g) => ({
       url: `${SITE_URL}/guides/${g.slug}`,
       lastModified: new Date(g.updated),
