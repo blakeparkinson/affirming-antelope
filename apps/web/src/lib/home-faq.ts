@@ -5,7 +5,7 @@ import { PRICING_LINE } from "./site";
 export const HOME_FAQ: { q: string; a: string }[] = [
   {
     q: "Is what I say private?",
-    a: "The scenarios are fictional, so leave out real names and identifying details. What you type or say becomes a transcript in your account, and the app doesn't store voice audio. If you join a cohort, your trainer sees what you've completed and reads only the sessions you choose to share.",
+    a: "The scenarios are fictional, so leave out real names and identifying details. What you type or say becomes a transcript in your account, and the app doesn't store voice audio. If you join a cohort, your trainer sees what you've completed and reads only the sessions you choose to share. The full privacy policy is at primemenagerie.com/privacy.",
   },
   {
     q: "Do I need MI training first?",

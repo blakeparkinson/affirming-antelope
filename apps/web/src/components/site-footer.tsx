@@ -5,6 +5,10 @@ import { appHref, ctaTrack, pilotLink, TRAINER_PATH } from "@/lib/site";
 const linkClass =
   "font-bold text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded";
 
+// Affirming Antelope is a Prime Menagerie app; the studio site holds the
+// privacy policy and support page that cover it.
+const STUDIO = "https://primemenagerie.com";
+
 const columns = [
   {
     heading: "Who it's for",
@@ -87,9 +91,14 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="border-t-2 border-soft">
-        <p className="mx-auto max-w-6xl px-5 py-5 text-sm font-semibold text-muted md:px-8">
-          © {new Date().getFullYear()} Affirming Antelope. Practice scenarios are fictional.
-        </p>
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-5 text-sm font-semibold text-muted md:px-8">
+          <p>© {new Date().getFullYear()} Affirming Antelope. Practice scenarios are fictional.</p>
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
+            <a href={`${STUDIO}/privacy#affirming-antelope`} className={linkClass}>Privacy</a>
+            <a href={`${STUDIO}/support#affirming-antelope`} className={linkClass}>Support</a>
+            <a href={STUDIO} className={linkClass}>A Prime Menagerie app</a>
+          </nav>
+        </div>
       </div>
     </footer>
   );
