@@ -75,4 +75,12 @@ describe('a pathway without a process', () => {
     assert.equal(row(rows, 'planning').opensWeek, null);
     assert.equal(row(rows, 'planning').status, 'locked');
   });
+
+  it('still shows the level of a skill practiced anyway (from the Practice tab), with no week', () => {
+    const p = getPathway('mi-for-leaders');
+    const noPlanning: Pathway = { ...p, units: p.units.map((u) => (u.process === 'planning' ? { ...u, process: undefined } : u)) };
+    const r = row(progressRows(noPlanning, 12, { planning: { status: 'in-progress' } }), 'planning');
+    assert.equal(r.status, 'in-progress');
+    assert.equal(r.opensWeek, null);
+  });
 });
