@@ -47,13 +47,13 @@ export default function AmandaRothPage() {
             <nav aria-label="Breadcrumb">
               <ol className="flex flex-wrap items-center gap-1.5 text-sm font-bold text-ink/80">
                 <li>
-                  <Link href="/" className="hover:text-ink">
+                  <Link href="/" className="-my-3 inline-block py-3 hover:text-ink">
                     Home
                   </Link>
                 </li>
                 <li aria-hidden>/</li>
                 <li>
-                  <Link href="/about" className="hover:text-ink">
+                  <Link href="/about" className="-my-3 inline-block py-3 hover:text-ink">
                     About
                   </Link>
                 </li>

@@ -11,8 +11,9 @@ const links = [
   { href: "/guides", label: "Guides" },
 ];
 
+// Display is set per link (some only show from sm or md up), so it stays out of here.
 const linkClass =
-  "rounded-lg px-1 text-[15px] font-extrabold text-ink/80 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
+  "min-h-11 items-center rounded-lg px-1 text-[15px] font-extrabold text-ink/80 hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary";
 
 export function SiteNav() {
   return (
@@ -21,7 +22,7 @@ export function SiteNav() {
         <Link
           href="/"
           aria-label="Affirming Antelope home"
-          className="flex min-w-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+          className="flex min-h-11 min-w-0 items-center rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
         >
           <Image
             src="/brand-lockup-horizontal-deep.svg"
@@ -36,19 +37,19 @@ export function SiteNav() {
           <ul className="hidden items-center gap-5 lg:flex">
             {links.map((link) => (
               <li key={link.href}>
-                <Link href={link.href} className={linkClass}>
+                <Link href={link.href} className={`${linkClass} inline-flex`}>
                   {link.label}
                 </Link>
               </li>
             ))}
           </ul>
-          <Link href="/about" className={`${linkClass} hidden sm:inline lg:hidden`}>
+          <Link href="/about" className={`${linkClass} hidden sm:inline-flex lg:hidden`}>
             About
           </Link>
-          <Link href="/faq" className={`${linkClass} hidden md:inline lg:hidden`}>
+          <Link href="/faq" className={`${linkClass} hidden md:inline-flex lg:hidden`}>
             FAQ
           </Link>
-          <a {...pilotLink("nav")} className={`${linkClass} hidden whitespace-nowrap sm:inline`}>
+          <a {...pilotLink("nav")} className={`${linkClass} hidden whitespace-nowrap sm:inline-flex`}>
             Book a call
             <span className="sr-only"> about a pilot (opens in a new tab)</span>
           </a>
