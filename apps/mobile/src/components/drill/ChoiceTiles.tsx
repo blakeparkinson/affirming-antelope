@@ -167,7 +167,7 @@ function Tile({
         radius={radius.surface}
         accessibilityRole={multi ? 'checkbox' : 'radio'}
         accessibilityState={multi ? { checked: selected, disabled: revealed } : { selected, disabled: revealed }}
-        accessibilityLabel={`${LETTERS[i]}. ${choice.text}${revealed ? (choice.isTarget ? '. What the drill asked for.' : miss ? `. Your pick, not quite: the drill asked for ${askedFor}.` : '') + ' ' + choice.explanation : ''}`}
+        accessibilityLabel={`${LETTERS[i]}. ${choice.text}${revealed ? (choice.isTarget ? '. What the drill asked for.' : miss ? `. Your pick, not quite${askedFor ? `: the drill asked for ${askedFor}` : ''}.` : '') + ' ' + choice.explanation : ''}`}
         contentStyle={styles.face}
       >
         <View style={styles.row}>
@@ -185,11 +185,11 @@ function Tile({
               {target ? (
                 <Text variant="overline" color={color.goldInk} style={styles.tag}>
                   {/* the letter, since its badge now shows a check and a "not quite" names it */}
-                  {selected ? 'Your pick · what the drill asked for' : `${LETTERS[i]} · what the drill asked for`}
+                  {`${LETTERS[i]} · ${selected ? 'your pick, ' : ''}what the drill asked for`}
                 </Text>
               ) : miss ? (
                 <Text variant="overline" color={color.missInk} style={styles.tag}>
-                  {`Your pick · not quite. The drill asked for ${askedFor}.`}
+                  {askedFor ? `Your pick · not quite. The drill asked for ${askedFor}.` : 'Your pick · not quite'}
                 </Text>
               ) : null}
               <Text variant="bodySmall" color={color.ink}>
