@@ -675,7 +675,7 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
             const status = statusOf(u.week);
             const labelLeft = p.x > width / 2;
             const isCurrent = status === 'current';
-            const gap = captionGap(isCurrent);
+            const gap = captionGap(p, width, isCurrent);
             const room = captionRoom(p, width, gap);
             const coachHere = coachCaptionWeek === u.week;
             const below = coachHere && spotNow.sideRight === !labelLeft;

@@ -302,7 +302,7 @@ export function captionBox(
   current = false,
 ): Rect {
   const labelLeft = p.x > width / 2;
-  const gap = captionGap(current);
+  const gap = captionGap(p, width, current);
   const top = below ? p.y + NODE / 2 + 14 : p.y - 26;
   const pad = onSky(top) ? SKY_LABEL_PAD : { x: 0, y: 0 };
   // the backing's padding comes out of the room, so it keeps the 12pt screen margin
@@ -319,11 +319,14 @@ export function captionBox(
 }
 
 /**
- * Space between a node and its caption. The current node's ring breathes out to 1.55× (23pt
- * past the node's edge); by 20pt it has faded to almost nothing, so its caption starts there.
+ * Space between a node and its caption: 14pt. The current node's ring breathes out to 1.55×
+ * (23pt past the node's edge) and has faded to almost nothing by 20pt, so its caption starts
+ * there, unless that would squeeze the caption under 110pt on a narrow screen.
  */
-export function captionGap(current: boolean): number {
-  return current ? 20 : 14;
+export function captionGap(p: Pt, width: number, current: boolean): number {
+  if (!current) return 14;
+  const side = p.x > width / 2 ? p.x - NODE / 2 : width - p.x - NODE / 2;
+  return Math.max(14, Math.min(20, side - 12 - 110));
 }
 
 /** How wide a caption may run, between the node's gap and a 12pt screen margin. */
@@ -337,13 +340,13 @@ export const SKY_LABEL_PAD = { x: 8, y: 4 };
 
 /**
  * Whether a caption starting at `top` (content space) can sit on the sky. Below
- * `FIRST_RIDGE + HILL_SWING + 2.25·PARALLAX_DEPTH` the first ridge always covers it: its
+ * `FIRST_RIDGE + HILL_SWING + MAX_RIDGE_LAG` the first ridge always covers it: its
  * crest line, the hill's swing, and the most a ridge lags (`ridgeLag`). Above that the
  * caption may be on the sky, which is navy at night, where the dark caption text can't be
  * read, so it gets a white backing.
  */
 export function onSky(top: number): boolean {
-  return top < FIRST_RIDGE + HILL_SWING + 2.25 * PARALLAX_DEPTH;
+  return top < FIRST_RIDGE + HILL_SWING + MAX_RIDGE_LAG;
 }
 
 /** Landscape bands: wavy ridgelines down the canvas. */
@@ -381,8 +384,9 @@ const GAP_MAX = 360;
 export const BAND_DEPTH = BAND_GAP * 2.4;
 /** First ridge crest, pt from the top of the canvas (just under the sun). */
 const FIRST_RIDGE = 210;
-/** How far a ridge's hills rise and dip around its crest line (the `hill` curve in `layoutBands`: 26 + 14). */
-const HILL_SWING = 40;
+/** The two waves in a ridge's hills (`hill` in `layoutBands`), and how far they rise and dip together. */
+const HILL_WAVES = [26, 14] as const;
+export const HILL_SWING = HILL_WAVES[0] + HILL_WAVES[1];
 /** The destination ridge crests this far above the finish flag, so the flag stands in its meadow. */
 const DEST_ABOVE = 64;
 /** How far (pt) a ridge lags behind the trail by the time it reaches the top of the viewport. */
@@ -411,6 +415,9 @@ export function ridgeLag(bandY: number, scrollY: number, viewportH: number): num
   const q = (1.2 - p) / 1.2;
   return PARALLAX_DEPTH * q * q;
 }
+
+/** The most `ridgeLag` returns: its screen position clamps at -0.6, so (1.8 / 1.2)² = 2.25 × the depth. */
+export const MAX_RIDGE_LAG = 2.25 * PARALLAX_DEPTH;
 
 /** Ridge fills per motif: a pale horizon, alternating cool and earth tints, and the warm meadow at the finish. */
 export interface BandPalette {
@@ -441,7 +448,7 @@ export function layoutBands(width: number, finishY: number, palette: BandPalette
     const y = FIRST_RIDGE + i * gap;
     const destination = i === n;
     const phase = (i * 1.7) % 3;
-    const hill = (x: number) => 26 * Math.sin((x / width) * Math.PI * 1.6 + phase) + 14 * Math.sin((x / width) * Math.PI * 3.3 + phase * 2);
+    const hill = (x: number) => HILL_WAVES[0] * Math.sin((x / width) * Math.PI * 1.6 + phase) + HILL_WAVES[1] * Math.sin((x / width) * Math.PI * 3.3 + phase * 2);
     let d = `M0 ${hill(0).toFixed(1)}`;
     const steps = 12;
     for (let k = 1; k <= steps; k++) {
