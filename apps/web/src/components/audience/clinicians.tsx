@@ -22,7 +22,7 @@ function JoanneScene() {
             <blockquote className="font-display text-2xl font-semibold leading-snug text-ink md:text-[2rem] md:leading-[1.2]">
               “{joanne.openingLine}”
             </blockquote>
-            <figcaption className="mt-4 font-semibold text-muted">
+            <figcaption className="mt-4 font-semibold text-ink/80">
               <span className="font-display font-bold text-ink">{joanne.persona.name}</span>,{" "}
               {joanne.persona.role.toLowerCase()}
             </figcaption>
