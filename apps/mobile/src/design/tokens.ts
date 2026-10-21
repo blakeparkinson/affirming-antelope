@@ -17,6 +17,10 @@ export const color = {
   goldShadow: '#B97914',
   goldTint: '#FBEBCB',
   goldInk: '#8A5A0B', // text and glyphs on goldTint / white (5.7:1); never on ochre
+  // terracotta: a drill pick that isn't what the drill asked. Information, never red (the moveColor hue)
+  miss: '#C46A3F', // edges and rings (3.8:1 on white)
+  missTint: '#FBEFE8',
+  missInk: '#9A4A26', // text, glyphs and bottom shadow (5.5:1 on missTint, 6.2:1 on white)
   soft: SOFT, // pale periwinkle learning surfaces
   rule: SOFT, // in-card dividers (chrome rules, e.g. dock and tab bar, stay `line`)
   softDeep: '#E2E7FC', // second periwinkle band (landscape, pressed soft surfaces)
