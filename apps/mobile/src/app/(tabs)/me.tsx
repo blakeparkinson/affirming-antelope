@@ -152,7 +152,7 @@ export default function Me() {
           </View>
           <View style={styles.flex}>
             <Text variant="bodyStrong">{trackName(pathway.id)}</Text>
-            <Text variant="caption" color={color.muted} numberOfLines={1}>
+            <Text variant="caption" color={color.muted} numberOfLines={2}>
               {pathway.title} · {weekOf(pathway, currentWeek)}
             </Text>
           </View>

@@ -16,7 +16,7 @@ Read this before you build a screen. It covers the system the drill, role-play, 
 | Token | Use |
 |---|---|
 | `color.primary` #4F6BED / `primaryShadow` #374FBF | actions, active states / pressed + bottom shadow of cobalt |
-| `color.onPrimaryMuted` #DCE2FF / `onPrimaryBody` #F0F3FF / `onPrimaryChip` #6A82F0 | overlines, body copy and chip faces on a cobalt surface (never `rgba(255,255,255,…)`) |
+| `color.onPrimaryMuted` #DCE2FF / `onPrimaryBody` #FFFFFF / `onPrimaryChip` #6A82F0 | overlines, body copy and chip faces on a cobalt surface (never `rgba(255,255,255,…)`) |
 | `color.gold` #E8A638 / `goldShadow` #B97914 / `goldTint` | achievement only. Glyphs on ochre are **navy** (`tone.gold.ink`): white on ochre is 2.1:1 |
 | `color.goldInk` #8A5A0B | text and glyphs on `goldTint` or white (a gold chip's label, "Done", the seal check). Never hard-code the hex |
 | `color.soft` #EEF1FF, `softDeep` | learning surfaces, selected states, tracks |
@@ -133,6 +133,7 @@ Brief → conversation ("walking into the meeting")
 
 - Home: the big greeting fades, scales and drifts with parallax as the compact sticky title rises in (a clear handoff; at no point are both fully visible, or neither).
 - Path: depth-based parallax (lag capped so no gaps open). The "Week N" pill appears only when the current node is off screen and smooth-scrolls it back to centre.
+- The tab bar's white and top rule run edge to edge, but its tabs keep to `layout.maxWidth` (520), so on a wide screen they sit under the content column.
 - Tab icons each have their own gesture: Home squashes onto its base, Path takes two steps along its curve, Practice punches in with one ring ripple, Me nods. Bold → fill cross-fades in 160ms.
 
 ### Do
