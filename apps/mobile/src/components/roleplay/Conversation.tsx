@@ -144,8 +144,9 @@ export function Conversation({
   const popped = useRef(new Set(Object.keys(stamps)));
 
   const learnerCount = turns.filter((t) => t.speaker === 'learner').length;
-  // only exchanges they answered: a line that failed to send hasn't been heard
-  const answered = answeredExchanges(turns);
+  // only exchanges they answered (a line that failed to send hasn't been heard), counting a
+  // reply on screen now, since ending keeps it
+  const answered = answeredExchanges(pending && !pending.typing && pending.text ? [...turns, { id: pending.id, speaker: 'employee', text: pending.text }] : turns);
   const ready = answered >= MIN_TURNS;
   const status = pending?.typing && voice.state !== 'speaking' ? 'typing…' : talk && voice.state === 'speaking' ? 'talking…' : learnerCount ? `${learnerCount} ${learnerCount === 1 ? 'reply' : 'replies'} from you` : p.role;
   // one list, so the pending reply and the turn it settles into are the same element (dots morph into words)
@@ -163,7 +164,7 @@ export function Conversation({
 
   const send = () => {
     const text = draft.trim();
-    if (!text || pending || busy()) return;
+    if (!text || pending) return;
     // after a failed reply, a new line goes out with the unanswered one (both stay in the thread)
     sendTurn(text, false);
     setDraft('');

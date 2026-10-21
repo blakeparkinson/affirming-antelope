@@ -1,7 +1,7 @@
 /** Just what the 401 recovery reads from a Supabase session. */
 export interface SessionLike {
   access_token: string;
-  user: { is_anonymous?: boolean };
+  user: { id: string; is_anonymous?: boolean };
 }
 
 export interface AuthRecovery {
@@ -12,8 +12,11 @@ export interface AuthRecovery {
    * the auth server turned the refresh token down, false when it couldn't be reached.
    */
   refresh(): Promise<{ session: SessionLike | null; rejected: boolean }>;
-  /** Drop the dead session, if there is one, and start a new anonymous one (null when that fails too). */
-  freshGuest(): Promise<SessionLike | null>;
+  /**
+   * Drop the dead session (`dead`, null when there was none) and start a new anonymous one;
+   * null when that fails too. If another session has taken its place meanwhile, use that one.
+   */
+  freshGuest(dead: SessionLike | null): Promise<SessionLike | null>;
 }
 
 /**
@@ -35,5 +38,5 @@ export async function tokenAfter401(r: AuthRecovery): Promise<string | null> {
   if (session) return session.access_token;
   if (before && !before.user.is_anonymous) return null;
   if (before && !rejected) return null;
-  return (await r.freshGuest())?.access_token ?? null;
+  return (await r.freshGuest(before))?.access_token ?? null;
 }

@@ -1,6 +1,6 @@
 import Constants from 'expo-constants';
 import { fetch as expoFetch } from 'expo/fetch';
-import { isAuthRetryableFetchError } from '@supabase/supabase-js';
+import { isAuthApiError, isAuthSessionMissingError } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import type { AiEndpoint } from '@antelope/core';
 import { track } from './analytics';
@@ -53,16 +53,29 @@ async function retryHeaders(): Promise<Record<string, string> | null> {
     current: currentSession,
     refresh: async () => {
       const { data, error } = await supabase.auth.refreshSession().catch((e: unknown) => ({ data: { session: null }, error: e }));
-      return { session: data.session, rejected: !data.session && !!error && !isAuthRetryableFetchError(error) };
+      return { session: data.session, rejected: !data.session && refreshTurnedDown(error) };
     },
-    freshGuest: async () => {
+    freshGuest: async (dead) => {
+      const now = currentSession();
+      // another request's recovery, or a sign-in, got there first: keep it
+      if (now && now.user.id !== dead?.user.id) return now;
       // the dead guest session goes first (the auth listener keeps its practice for the next guest)
-      if (currentSession()) await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      if (now) await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
       setCurrentSession(null);
       return sessionWithin(4000);
     },
   });
   return token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : null;
+}
+
+/**
+ * The auth server answered and refused: no session to refresh, or the refresh token is
+ * invalid, used or its user gone (4xx). Not a network failure, a 5xx or a rate limit (429),
+ * which say nothing about whether the guest still exists.
+ */
+function refreshTurnedDown(error: unknown): boolean {
+  if (isAuthSessionMissingError(error)) return true;
+  return isAuthApiError(error) && error.status >= 400 && error.status < 500 && error.status !== 429;
 }
 
 export function apiUrl(path: string): string {

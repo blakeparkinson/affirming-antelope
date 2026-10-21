@@ -7,15 +7,15 @@ import { answeredExchanges, createReplyGate, endSheetBody, failedTurnLine } from
 import { ApiError } from '../src/lib/apiError';
 import { tokenAfter401, type AuthRecovery, type SessionLike } from '../src/lib/authRetry';
 
-const guest = (token: string): SessionLike => ({ access_token: token, user: { is_anonymous: true } });
-const account = (token: string): SessionLike => ({ access_token: token, user: { is_anonymous: false } });
+const guest = (token: string): SessionLike => ({ access_token: token, user: { id: `guest-${token}`, is_anonymous: true } });
+const account = (token: string): SessionLike => ({ access_token: token, user: { id: `acct-${token}`, is_anonymous: false } });
 
 function recovery(o: { current?: SessionLike | null; refreshed?: SessionLike | null; rejected?: boolean; fresh?: SessionLike | null }) {
-  const calls = { refresh: 0, freshGuest: 0 };
+  const calls = { refresh: 0, freshGuest: 0, dead: undefined as SessionLike | null | undefined };
   const r: AuthRecovery = {
     current: () => o.current ?? null,
     refresh: async () => (calls.refresh++, { session: o.refreshed ?? null, rejected: o.rejected ?? true }),
-    freshGuest: async () => (calls.freshGuest++, o.fresh ?? null),
+    freshGuest: async (dead) => (calls.freshGuest++, (calls.dead = dead), o.fresh ?? null),
   };
   return { r, calls };
 }
@@ -33,6 +33,8 @@ describe('a 401 from the coach', () => {
     const { r, calls } = recovery({ current: guest('old'), refreshed: null, rejected: true, fresh: guest('fresh') });
     assert.equal(await tokenAfter401(r), 'fresh');
     assert.equal(calls.freshGuest, 1);
+    // it names the dead session, so a session that replaced it meanwhile isn't signed out
+    assert.equal(calls.dead?.access_token, 'old');
   });
 
   it('starts a guest when the request went without any session (auth_required)', async () => {
