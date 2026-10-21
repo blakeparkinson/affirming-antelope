@@ -80,7 +80,8 @@ function Digit({
       <Text variant={variant} style={[{ lineHeight: lh, opacity: 0 }, style]} maxScale={1}>
         {digit}
       </Text>
-      <Animated.View style={[StyleSheet.absoluteFill, strip]}>
+      {/* the strip is decoration: the ghost digit above is what a screen reader hears */}
+      <Animated.View style={[StyleSheet.absoluteFill, strip]} aria-hidden>
         {DIGITS.map((n) => (
           <Text key={n} variant={variant} style={[{ lineHeight: lh, height: lh, color: tint }, style]} maxScale={1}>
             {n}

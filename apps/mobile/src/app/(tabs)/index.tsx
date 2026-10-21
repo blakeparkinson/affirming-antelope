@@ -225,7 +225,7 @@ export default function Home() {
         <Animated.View style={[styles.mascot, { transformOrigin: 'bottom' }, crouch]}>
           <Mascot ref={coach} pose="wave" size={124} greet={greet} paused={!focused || coachAway} accessibilityLabel="The antelope coach, waving" />
           {/* easter egg: three quick taps and it pronks. On top, not around: the Rive canvas would take the touch */}
-          <Pressable onPressIn={onCoachTap} accessible={false} style={StyleSheet.absoluteFill} />
+          <Pressable onPressIn={onCoachTap} accessible={false} aria-hidden style={StyleSheet.absoluteFill} />
         </Animated.View>
       </Enter>
 
