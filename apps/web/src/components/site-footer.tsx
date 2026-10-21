@@ -2,8 +2,9 @@ import Image from "next/image";
 import Link from "next/link";
 import { appHref, ctaTrack, pilotLink, TRAINER_PATH } from "@/lib/site";
 
+// min-h-11: every footer link is a 44 px tap target.
 const linkClass =
-  "font-bold text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded";
+  "inline-flex min-h-11 items-center font-bold text-muted hover:text-ink focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary rounded";
 
 // Affirming Antelope is a Prime Menagerie app; the studio site holds the
 // privacy policy and support page that cover it.
@@ -57,7 +58,7 @@ export function SiteFooter() {
         {columns.map((col) => (
           <nav key={col.heading} aria-label={col.heading} className="md:col-span-2">
             <p className="font-display font-bold text-ink">{col.heading}</p>
-            <ul className="mt-3 space-y-2">
+            <ul className="mt-0.5">
               {col.links.map((link) => (
                 <li key={link.href}>
                   <Link href={link.href} className={linkClass}>
@@ -70,7 +71,7 @@ export function SiteFooter() {
         ))}
         <nav aria-label="Get started" className="md:col-span-2">
           <p className="font-display font-bold text-ink">Get started</p>
-          <ul className="mt-3 space-y-2">
+          <ul className="mt-0.5">
             <li>
               <a href={appHref("footer")} {...ctaTrack("footer", "app")} className={linkClass}>
                 Start practicing free
@@ -91,12 +92,19 @@ export function SiteFooter() {
         </nav>
       </div>
       <div className="border-t-2 border-soft">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-2 px-5 py-5 text-sm font-semibold text-muted md:px-8">
+        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-x-6 gap-y-1 px-5 py-2.5 text-sm font-semibold text-muted md:px-8">
           <p>© {new Date().getFullYear()} Affirming Antelope. Practice scenarios are fictional.</p>
-          <nav aria-label="Legal" className="flex flex-wrap gap-x-5 gap-y-2">
+          <nav aria-label="Legal" className="flex flex-wrap gap-x-5">
             <a href={`${STUDIO}/privacy#affirming-antelope`} className={linkClass}>Privacy</a>
             <a href={`${STUDIO}/support#affirming-antelope`} className={linkClass}>Support</a>
-            <a href={STUDIO} className={linkClass}>A Prime Menagerie app</a>
+            <a href={STUDIO} className={`${linkClass} gap-1.5`}>
+              {/* The studio's elephant, painted in the link colour through a mask. */}
+              <span
+                aria-hidden
+                className="inline-block h-[1.1em] w-[1.55em] bg-current [mask:url(/studio-mark.png)_center/contain_no-repeat]"
+              />
+              A Prime Menagerie app
+            </a>
           </nav>
         </div>
       </div>

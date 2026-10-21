@@ -81,7 +81,7 @@ export function Method() {
                 </Link>
               </p>
               <p className="mt-0.5 text-sm font-extrabold leading-snug text-primary-shadow">{AMANDA.credentialLine}</p>
-              <p className="mt-0.5 font-semibold leading-snug text-muted">{METHOD_LEAD.role}</p>
+              <p className="mt-0.5 font-semibold leading-snug text-ink/80">{METHOD_LEAD.role}</p>
             </div>
           </div>
         </Reveal>

@@ -37,7 +37,7 @@
   --faint: #a3aac2;
   --scrim: rgba(10, 40, 78, 0.42);
   --on-primary-muted: #dce2ff;
-  --on-primary-body: #f0f3ff;
+  --on-primary-body: #ffffff; /* white is the only body colour that clears 4.5:1 on cobalt (4.51) */
   --on-primary-chip: #6a82f0;
 
   /* Learner-move families (drill feedback, debrief chart) */
@@ -54,7 +54,7 @@
   --zone-change: #eef1ff;
   --zone-mixed: #ffffff;
   --zone-hold: #f5f1e8;
-  --zone-hold-ink: #8a7b5c;
+  --zone-hold-ink: #7a6c50; /* 5.1:1 on white, 4.6:1 on --zone-hold */
 
   /* Shape and depth. Not in @theme, so Tailwind's rounded-* utilities are untouched. */
   --radius-sm: 12px;

@@ -7,7 +7,8 @@ type Size = "sm" | "md" | "lg";
 type Variant = "primary" | "secondary";
 
 const sizes: Record<Size, string> = {
-  sm: "px-4 py-2 text-[13px] active:translate-y-1",
+  // 36 px tall; the invisible ::before grows the tap target to 44 px.
+  sm: "relative px-4 py-2 text-[13px] active:translate-y-1 before:absolute before:inset-x-0 before:-inset-y-1 before:content-['']",
   md: "px-5 py-3 text-[15px] active:translate-y-1.5",
   lg: "px-6 py-4 text-base active:translate-y-1.5",
 };
@@ -26,7 +27,7 @@ const variants: Record<Variant, Record<Size, string>> = {
 };
 
 export const buttonBase =
-  "inline-flex shrink-0 items-center justify-center rounded-2xl font-extrabold uppercase tracking-wide transition-[transform,filter,box-shadow,border-color] duration-75 ease-out";
+  "inline-flex max-w-full shrink-0 items-center justify-center rounded-2xl text-center font-extrabold uppercase tracking-wide transition-[transform,filter,box-shadow,border-color] duration-75 ease-out";
 
 const focus =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";
