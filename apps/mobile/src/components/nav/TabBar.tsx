@@ -89,36 +89,39 @@ export function TabBar({ state, navigation }: TabBarProps) {
   }));
 
   return (
-    <View
-      style={[styles.bar, { paddingBottom: insets.bottom, height: layout.tabBarHeight + insets.bottom }]}
-      onLayout={(e) => {
-        const next = e.nativeEvent.layout.width;
-        if (next !== w) placed.current = false;
-        setW(next);
-      }}
-      accessibilityRole="tablist"
-    >
-      {tabW > 0 && <Animated.View pointerEvents="none" style={[styles.pill, pill]} />}
-      {state.routes.map((route, i) => {
-        const meta = META[route.name] ?? { label: route.name, Icon: HouseIcon, kind: 'home' as const };
-        const focused = state.index === i;
-        return (
-          <Tab
-            key={route.key}
-            label={meta.label}
-            Icon={meta.Icon}
-            kind={meta.kind}
-            focused={focused}
-            onPress={() => {
-              const e = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
-              if (!focused && !e.defaultPrevented) {
-                haptic.tick();
-                navigation.navigate(route.name, route.params);
-              }
-            }}
-          />
-        );
-      })}
+    <View style={[styles.bar, { paddingBottom: insets.bottom, height: layout.tabBarHeight + insets.bottom }]}>
+      {/* The bar's rule and white run edge to edge; the tabs keep to the content column, so on a wide screen they sit under it. */}
+      <View
+        style={styles.tabs}
+        onLayout={(e) => {
+          const next = e.nativeEvent.layout.width;
+          if (next !== w) placed.current = false;
+          setW(next);
+        }}
+        accessibilityRole="tablist"
+      >
+        {tabW > 0 && <Animated.View pointerEvents="none" style={[styles.pill, pill]} />}
+        {state.routes.map((route, i) => {
+          const meta = META[route.name] ?? { label: route.name, Icon: HouseIcon, kind: 'home' as const };
+          const focused = state.index === i;
+          return (
+            <Tab
+              key={route.key}
+              label={meta.label}
+              Icon={meta.Icon}
+              kind={meta.kind}
+              focused={focused}
+              onPress={() => {
+                const e = navigation.emit({ type: 'tabPress', target: route.key, canPreventDefault: true });
+                if (!focused && !e.defaultPrevented) {
+                  haptic.tick();
+                  navigation.navigate(route.name, route.params);
+                }
+              }}
+            />
+          );
+        })}
+      </View>
     </View>
   );
 }
@@ -271,11 +274,11 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    flexDirection: 'row',
     backgroundColor: color.white,
     borderTopWidth: border,
     borderTopColor: color.line,
   },
+  tabs: { flex: 1, flexDirection: 'row', width: '100%', maxWidth: layout.maxWidth, alignSelf: 'center' },
   pill: {
     position: 'absolute',
     top: 7,
