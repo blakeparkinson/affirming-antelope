@@ -11,6 +11,7 @@ import { remindersSupported } from '@/lib/reminders';
 import { FreezeSlot } from '@/components/me/FreezeSlot';
 import { useMoments } from '@/state/moments';
 import { SkillLadder } from '@/components/me/SkillLadder';
+import { StudioCredit } from '@/components/me/StudioCredit';
 import { TrainerInbox } from '@/components/me/TrainerInbox';
 import { isSimulatedOffline, setSimulatedOffline, supabaseConfigured } from '@/lib/supabase';
 import { syncNow } from '@/sync/engine';
@@ -283,6 +284,9 @@ export default function Me() {
             </Raised>
           </>
         )}
+      </Enter>
+      <Enter index={6}>
+        <StudioCredit />
       </Enter>
       <TrackSwitchSheet
         open={switchOpen}
