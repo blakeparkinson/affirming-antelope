@@ -29,7 +29,7 @@ export const color = {
   scrim: 'rgba(10, 40, 78, 0.42)', // navy backdrop for sheets
   // text and chip faces on a cobalt surface (these were white at 82% / 90% / 16%)
   onPrimaryMuted: '#DCE2FF', // overlines on cobalt
-  onPrimaryBody: '#F0F3FF', // body copy on cobalt
+  onPrimaryBody: '#FFFFFF', // body copy on cobalt: only white clears 4.5:1 there (4.51)
   onPrimaryChip: '#6A82F0', // chip face on cobalt
   // system notices (a code that didn't work, offline). Warm, never red; never on a learner's practice
   notice: '#B4562B', // text, borders (4.9:1 on white)
@@ -73,7 +73,7 @@ export const zone = {
   change: color.soft,
   mixed: color.white,
   hold: '#F5F1E8', // warm sand
-  holdInk: '#8A7B5C',
+  holdInk: '#7A6C50', // 5.1:1 on white, 4.6:1 on hold
 } as const;
 
 /**
