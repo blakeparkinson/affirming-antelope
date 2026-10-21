@@ -97,7 +97,14 @@ export function SiteFooter() {
           <nav aria-label="Legal" className="flex flex-wrap gap-x-5">
             <a href={`${STUDIO}/privacy#affirming-antelope`} className={linkClass}>Privacy</a>
             <a href={`${STUDIO}/support#affirming-antelope`} className={linkClass}>Support</a>
-            <a href={STUDIO} className={linkClass}>A Prime Menagerie app</a>
+            <a href={STUDIO} className={`${linkClass} gap-1.5`}>
+              {/* The studio's elephant, painted in the link colour through a mask. */}
+              <span
+                aria-hidden
+                className="inline-block h-[1.1em] w-[1.55em] bg-current [mask:url(/studio-mark.png)_center/contain_no-repeat]"
+              />
+              A Prime Menagerie app
+            </a>
           </nav>
         </div>
       </div>
