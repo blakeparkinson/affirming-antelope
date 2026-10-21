@@ -23,13 +23,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 import { Mascot, type MascotHandle } from '@/components/mascot';
 import { Celestial, SkyBackdrop, useLighting, Wash } from '@/components/path/Daylight';
-import { captionBox, layoutBands, layoutLandmarks, layoutTrail, NODE, trailPoint, trailRoute, type Pt, type TrailLayout } from '@/components/path/geometry';
+import { captionBox, captionGap, captionRoom, layoutBands, layoutLandmarks, layoutTrail, NODE, onSky, SKY_LABEL_PAD, trailPoint, trailRoute, type Pt, type TrailLayout } from '@/components/path/geometry';
 import { LANDMARK_ART, landmarkPlan, Landmarks } from '@/components/path/Landmarks';
 import { Landscape, motifFor, PALETTES } from '@/components/path/Landscape';
 import { Trail } from '@/components/path/Trail';
 import { UnitSheet } from '@/components/path/UnitSheet';
 import { WeekNode, type WeekNodeHandle } from '@/components/path/WeekNode';
-import { Button, Card, CaretDownIcon, CaretUpIcon, FlagPennantIcon, PressableSurface, Text, color, haptic, layout, space } from '@/design';
+import { Button, Card, CaretDownIcon, CaretUpIcon, FlagPennantIcon, PressableSurface, Text, color, haptic, layout, radius, space } from '@/design';
 import { openActivity } from '@/data/routes';
 import { Burst, Enter, FADE_MS, spring, useReduceMotion, type BurstHandle } from '@/motion';
 import { totalWeeks, useActivePathway, useProgress } from '@/state/selectors';
@@ -178,7 +178,8 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
         const p = trail.nodes[i];
         const coach = mascotSpot(trail, width, Math.min(currentWeek, total));
         const below = currentWeek === u.week && coach.sideRight === !(p.x > width / 2);
-        return captionBox(p, width, { title: u.title, subtitle: currentWeek === u.week ? u.subtitle : undefined }, below);
+        const current = currentWeek === u.week;
+        return captionBox(p, width, { title: u.title, subtitle: current ? u.subtitle : undefined }, below, current);
       }),
     [pathway.units, trail, width, currentWeek, total],
   );
@@ -673,10 +674,14 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
             const p = trail.nodes[i];
             const status = statusOf(u.week);
             const labelLeft = p.x > width / 2;
-            const room = labelLeft ? p.x - NODE / 2 - 26 : width - p.x - NODE / 2 - 26;
             const isCurrent = status === 'current';
+            const gap = captionGap(isCurrent);
+            const room = captionRoom(p, width, gap);
             const coachHere = coachCaptionWeek === u.week;
             const below = coachHere && spotNow.sideRight === !labelLeft;
+            const top = below ? p.y + NODE / 2 + 14 : p.y - 26;
+            // up by the sky, a caption gets a white backing: the night sky is navy under dark text
+            const sky = onSky(top);
             return (
               <Fragment key={u.id}>
                 {/* a label that moves (the coach arrives or leaves) or changes shape cross-fades */}
@@ -684,14 +689,14 @@ function PathTrack({ pathway }: { pathway: Pathway }) {
                   token={`${status}-${below}`}
                   style={[
                     styles.label,
-                    { top: p.y - 26, maxWidth: Math.max(110, room) },
+                    { top, maxWidth: room },
                     labelLeft
                       ? {
-                          right: width - (p.x - NODE / 2 - 14),
+                          right: width - (p.x - NODE / 2 - gap),
                           alignItems: 'flex-end',
                         }
-                      : { left: p.x + NODE / 2 + 14 },
-                    below ? { top: p.y + NODE / 2 + 14 } : null,
+                      : { left: p.x + NODE / 2 + gap },
+                    sky ? styles.skyLabel : null,
                   ]}
                 >
                   <Text
@@ -942,6 +947,12 @@ const styles = StyleSheet.create({
   },
   node: { position: 'absolute', width: NODE, height: NODE + 6 },
   label: { position: 'absolute' },
+  skyLabel: {
+    backgroundColor: color.white,
+    borderRadius: radius.badge,
+    paddingHorizontal: SKY_LABEL_PAD.x,
+    paddingVertical: SKY_LABEL_PAD.y,
+  },
   sub: { marginTop: 2 },
   long: { fontSize: 16, lineHeight: 20 },
   mascot: { position: 'absolute', left: 0, top: 0, width: MASCOT_W, height: MASCOT_H },

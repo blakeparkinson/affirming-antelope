@@ -299,9 +299,14 @@ export function captionBox(
   width: number,
   text: { title: string; subtitle?: string },
   below: boolean,
+  current = false,
 ): Rect {
   const labelLeft = p.x > width / 2;
-  const room = Math.max(110, labelLeft ? p.x - NODE / 2 - 26 : width - p.x - NODE / 2 - 26);
+  const gap = captionGap(current);
+  const top = below ? p.y + NODE / 2 + 14 : p.y - 26;
+  const pad = onSky(top) ? SKY_LABEL_PAD : { x: 0, y: 0 };
+  // the backing's padding comes out of the room, so it keeps the 12pt screen margin
+  const room = captionRoom(p, width, gap) - 2 * pad.x;
   const long = text.title.length > 16;
   const titleW = text.title.length * (long ? 8.6 : 10.4);
   const subW = (text.subtitle?.length ?? 0) * 7;
@@ -309,9 +314,36 @@ export function captionBox(
   const titleLines = Math.min(2, Math.ceil(titleW / room));
   const subLines = text.subtitle ? Math.ceil(subW / room) : 0;
   const h = 18 + titleLines * (long ? 21 : 25) + subLines * 18 + 6;
-  const top = below ? p.y + NODE / 2 + 14 : p.y - 26;
-  const x = labelLeft ? p.x - NODE / 2 - 14 - w : p.x + NODE / 2 + 14;
-  return { x, y: top, w, h };
+  const x = labelLeft ? p.x - NODE / 2 - gap - w - 2 * pad.x : p.x + NODE / 2 + gap;
+  return { x, y: top, w: w + 2 * pad.x, h: h + 2 * pad.y };
+}
+
+/**
+ * Space between a node and its caption. The current node's ring breathes out to 1.55× (23pt
+ * past the node's edge); by 20pt it has faded to almost nothing, so its caption starts there.
+ */
+export function captionGap(current: boolean): number {
+  return current ? 20 : 14;
+}
+
+/** How wide a caption may run, between the node's gap and a 12pt screen margin. */
+export function captionRoom(p: Pt, width: number, gap: number): number {
+  const labelLeft = p.x > width / 2;
+  return Math.max(110, labelLeft ? p.x - NODE / 2 - gap - 12 : width - p.x - NODE / 2 - gap - 12);
+}
+
+/** Padding inside a caption's backing when it sits on the sky (`onSky`). */
+export const SKY_LABEL_PAD = { x: 8, y: 4 };
+
+/**
+ * Whether a caption starting at `top` (content space) can sit on the sky. Below
+ * `FIRST_RIDGE + HILL_SWING + 2.25·PARALLAX_DEPTH` the first ridge always covers it: its
+ * crest line, the hill's swing, and the most a ridge lags (`ridgeLag`). Above that the
+ * caption may be on the sky, which is navy at night, where the dark caption text can't be
+ * read, so it gets a white backing.
+ */
+export function onSky(top: number): boolean {
+  return top < FIRST_RIDGE + HILL_SWING + 2.25 * PARALLAX_DEPTH;
 }
 
 /** Landscape bands: wavy ridgelines down the canvas. */
@@ -349,6 +381,8 @@ const GAP_MAX = 360;
 export const BAND_DEPTH = BAND_GAP * 2.4;
 /** First ridge crest, pt from the top of the canvas (just under the sun). */
 const FIRST_RIDGE = 210;
+/** How far a ridge's hills rise and dip around its crest line (the `hill` curve in `layoutBands`: 26 + 14). */
+const HILL_SWING = 40;
 /** The destination ridge crests this far above the finish flag, so the flag stands in its meadow. */
 const DEST_ABOVE = 64;
 /** How far (pt) a ridge lags behind the trail by the time it reaches the top of the viewport. */
