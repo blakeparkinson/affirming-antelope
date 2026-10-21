@@ -1,8 +1,9 @@
 import { useMemo } from 'react';
-import { getSkill, type PathActivity, type Pathway, type PathUnit, type Setting, type SkillId } from '@antelope/core';
+import { type PathActivity, type Pathway, type PathUnit, type Setting, type SkillId } from '@antelope/core';
 import { getPathway } from '@/data/pathways';
 import { freezesHeld } from '@antelope/core';
 import { frozenThisWeek, liveStreak, progressOf, thisWeek, useLearner, type PathwayProgress } from './store';
+import { progressRows, type ProgressRow } from './progressRows';
 import { useToday } from './useToday';
 
 /** The streak to show: 0 once a day has been missed (the stored run stays until the next practice). */
@@ -83,46 +84,12 @@ export function pathwaySkills(p: Pathway): SkillId[] {
   return out;
 }
 
-export interface ProgressRow {
-  key: string;
-  label: string;
-  skill: SkillId;
-  status: 'complete' | 'in-progress' | 'locked';
-  /** The first week of the active pathway that teaches the skill (null if none does). */
-  opensWeek: number | null;
-}
+export type { ProgressRow } from './progressRows';
 
-const PROCESS_ROWS: { key: string; skill: SkillId; label?: string }[] = [
-  { key: 'foundations', label: 'Foundations', skill: 'oars' },
-  { key: 'engaging', skill: 'engaging' },
-  { key: 'focusing', skill: 'focusing' },
-  { key: 'evoking', skill: 'evoking' },
-  { key: 'planning', skill: 'planning' },
-];
-
-/** The last week whose lead skill is this one (Evoking I and II → the week of II). */
-function processWeek(p: Pathway, skill: SkillId): number {
-  const lead = p.units.filter((u) => u.skills[0] === skill).map((u) => u.week);
-  const any = p.units.filter((u) => u.skills.includes(skill)).map((u) => u.week);
-  const weeks = lead.length ? lead : any;
-  return weeks.length ? Math.max(...weeks) : Number.POSITIVE_INFINITY;
-}
-
-/**
- * Home's "Your progress": the course's core processes. A process is done once the
- * last unit that teaches it is behind the learner; otherwise it shows the skill's
- * level (no percentages). Unit weeks come from the active pathway, so the 8-week
- * clinician course and the 12-week leaders course both line up.
- */
+/** Home's "Your progress" for the active pathway and week (progressRows.ts). */
 export function useProgressRows(): ProgressRow[] {
   const skills = useLearner((s) => s.skills);
   const week = useCurrentWeek();
   const pathway = useActivePathway();
-  return PROCESS_ROWS.map((r) => {
-    const unitWeek = r.key === 'foundations' ? 1 : processWeek(pathway, r.skill);
-    const p = skills[r.skill];
-    const status = unitWeek < week ? 'complete' : !p || p.status === 'locked' ? 'locked' : 'in-progress';
-    const first = pathway.units.find((u) => u.skills.includes(r.skill));
-    return { key: r.key, label: r.label ?? getSkill(r.skill).name, skill: r.skill, status, opensWeek: first?.week ?? null };
-  });
+  return progressRows(pathway, week, skills);
 }

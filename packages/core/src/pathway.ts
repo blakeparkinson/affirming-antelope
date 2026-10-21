@@ -17,6 +17,7 @@ export const MI_FOR_LEADERS: Pathway = {
     {
       week: 1,
       id: "u01-foundations",
+      process: "foundations",
       title: "Overview",
       subtitle: "What MI is, why it works, and what it can do for you as a leader.",
       skills: ["engaging"],
@@ -40,6 +41,7 @@ export const MI_FOR_LEADERS: Pathway = {
     {
       week: 3,
       id: "u03-engaging",
+      process: "engaging",
       title: "Engaging and OARS",
       subtitle: "Build trust with the four core skills.",
       skills: ["engaging", "oars"],
@@ -57,6 +59,7 @@ export const MI_FOR_LEADERS: Pathway = {
     {
       week: 4,
       id: "u04-focusing",
+      process: "focusing",
       title: "Focusing",
       subtitle: "Agree on what this conversation is about.",
       skills: ["focusing"],
@@ -71,6 +74,7 @@ export const MI_FOR_LEADERS: Pathway = {
     {
       week: 5,
       id: "u05-evoking-1",
+      process: "evoking",
       title: "Evoking I",
       subtitle: "Recognize and respond to change talk and sustain talk.",
       skills: ["change-talk", "sustain-talk"],
@@ -87,6 +91,7 @@ export const MI_FOR_LEADERS: Pathway = {
     {
       week: 6,
       id: "u06-evoking-2",
+      process: "evoking",
       title: "Evoking II",
       subtitle: "Draw out change talk with evocative questions and rulers.",
       skills: ["evoking", "change-talk"],
@@ -100,6 +105,7 @@ export const MI_FOR_LEADERS: Pathway = {
     {
       week: 7,
       id: "u07-planning",
+      process: "planning",
       title: "Planning",
       subtitle: "When they're ready, help them shape a plan they own.",
       skills: ["planning", "change-talk"],
