@@ -26,7 +26,7 @@ const variants: Record<Variant, Record<Size, string>> = {
 };
 
 export const buttonBase =
-  "inline-flex shrink-0 items-center justify-center rounded-2xl font-extrabold uppercase tracking-wide transition-[transform,filter,box-shadow,border-color] duration-75 ease-out";
+  "inline-flex max-w-full shrink-0 items-center justify-center rounded-2xl text-center font-extrabold uppercase tracking-wide transition-[transform,filter,box-shadow,border-color] duration-75 ease-out";
 
 const focus =
   "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background";

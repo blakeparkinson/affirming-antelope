@@ -138,7 +138,7 @@ export function HowItWorks() {
           </p>
         </Reveal>
 
-        <ol className="mt-10 grid gap-5 lg:grid-cols-12 lg:gap-6">
+        <ol className="mt-10 grid grid-cols-1 gap-5 lg:grid-cols-12 lg:gap-6">
           <li className="lg:col-span-5">
             <Reveal className="flex h-full flex-col rounded-[1.5rem] bg-white p-6 text-ink shadow-[0_6px_0_var(--primary-shadow)] md:p-7">
               <div className="flex items-center gap-3">
