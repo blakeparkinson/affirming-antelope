@@ -23,7 +23,7 @@ type Choice = NonNullable<Drill['choices']>[number];
  *   punches to 1.35x in 110ms and settles on `bouncy`; on the punch's peak
  *   frame a small Burst flies from the badge and haptic.success fires (once,
  *   from the first target to resolve).
- * - Miss: the target still turns ochre ("What the drill asked for"), its check
+ * - Miss: the target still turns ochre ("C · what the drill asked for"), its check
  *   settles in calmly (0.85 → 1 on `settle`, no burst), and one light
  *   haptic.tick marks it.
  * `onResolved(hit)` fires on that same frame (e.g. to hop the coach).
@@ -184,7 +184,8 @@ function Tile({
             <View style={styles.explain}>
               {target ? (
                 <Text variant="overline" color={color.goldInk} style={styles.tag}>
-                  {selected ? 'Your pick · what the drill asked for' : 'What the drill asked for'}
+                  {/* the letter, since its badge now shows a check and a "not quite" names it */}
+                  {selected ? 'Your pick · what the drill asked for' : `${LETTERS[i]} · what the drill asked for`}
                 </Text>
               ) : miss ? (
                 <Text variant="overline" color={color.missInk} style={styles.tag}>
