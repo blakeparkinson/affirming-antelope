@@ -62,6 +62,7 @@ export {
   SpeakerHighIcon,
   SpeakerSlashIcon,
   ArrowUUpLeftIcon,
+  MinusIcon,
   ChatTeardropTextIcon,
 } from 'phosphor-react-native';
 

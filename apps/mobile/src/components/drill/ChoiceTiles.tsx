@@ -5,6 +5,7 @@ import Animated, { Easing, useAnimatedStyle, useSharedValue, withDelay, withSequ
 import { scheduleOnRN } from 'react-native-worklets';
 import { PressableSurface, StepBadge, Text, border, color, haptic, radius, space } from '@/design';
 import { Burst, Enter, Expand, FADE_MS, spring, useReduceMotion, type BurstHandle } from '@/motion';
+import { LETTERS, letterList } from './letters';
 
 type Choice = NonNullable<Drill['choices']>[number];
 
@@ -13,14 +14,16 @@ type Choice = NonNullable<Drill['choices']>[number];
  * cobalt edge, letter badge fills), then reveal: the tile the drill asked for
  * turns ochre with a check, the others settle, and every tile opens its
  * explanation in place (heights grow smoothly, picks first, then the target,
- * then the rest). Nothing is marked "wrong".
+ * then the rest). A pick that isn't a target says so at a glance without
+ * scolding: a terracotta tile, a dash in its badge, and "Your pick · not quite"
+ * naming the letter the drill asked for (it may be below the fold). Never red, never an X.
  *
  * Two tones on CHECK:
  * - Hit (the picks are exactly what the drill asked): the target's check
  *   punches to 1.35x in 110ms and settles on `bouncy`; on the punch's peak
  *   frame a small Burst flies from the badge and haptic.success fires (once,
  *   from the first target to resolve).
- * - Miss: the target still turns ochre ("What the drill asked for"), its check
+ * - Miss: the target still turns ochre ("C · what the drill asked for"), its check
  *   settles in calmly (0.85 → 1 on `settle`, no burst), and one light
  *   haptic.tick marks it.
  * `onResolved(hit)` fires on that same frame (e.g. to hop the coach).
@@ -47,6 +50,7 @@ export function ChoiceTiles({
   const hit = selected.length === targets.length && selected.every((i) => targets.includes(i));
   // the target that resolves first carries the haptic
   const lead = targets.reduce((a, b) => (revealOrder(b, selected, choices) < revealOrder(a, selected, choices) ? b : a), targets[0] ?? -1);
+  const askedFor = letterList(targets);
   const resolved = useRef(onResolved);
   resolved.current = onResolved;
   const onLeadPeak = useCallback(() => {
@@ -66,6 +70,7 @@ export function ChoiceTiles({
             selected={selected.includes(i)}
             revealed={revealed}
             hit={hit}
+            askedFor={askedFor}
             order={revealOrder(i, selected, choices)}
             onPeak={i === lead ? onLeadPeak : undefined}
             onPress={() => onSelect(i)}
@@ -83,7 +88,6 @@ function revealOrder(i: number, selected: number[], choices: Choice[]) {
   return 2 + i;
 }
 
-const LETTERS = ['A', 'B', 'C', 'D', 'E'];
 
 function Tile({
   choice,
@@ -92,6 +96,7 @@ function Tile({
   selected,
   revealed,
   hit,
+  askedFor,
   order,
   onPeak,
   onPress,
@@ -102,6 +107,8 @@ function Tile({
   selected: boolean;
   revealed: boolean;
   hit: boolean;
+  /** The target letters, for a miss's "the drill asked for C". */
+  askedFor: string;
   order: number;
   onPeak?: () => void;
   onPress: () => void;
@@ -112,6 +119,8 @@ function Tile({
   const burst = useRef<BurstHandle>(null);
   const target = revealed && choice.isTarget;
   const quiet = revealed && !choice.isTarget && !selected;
+  // picked, but not what the drill asked for
+  const miss = revealed && selected && !choice.isTarget;
   const peakRef = useRef(onPeak);
   peakRef.current = onPeak;
 
@@ -141,9 +150,9 @@ function Tile({
   const badge = useAnimatedStyle(() => ({ transform: [{ scale: pop.value }] }));
   const fade = useAnimatedStyle(() => ({ opacity: dim.value }));
 
-  const face = target ? color.goldTint : selected ? color.soft : color.white;
-  const edge = target ? color.gold : selected ? color.primary : color.line;
-  const shadow = target ? color.goldShadow : selected ? color.primary : color.shadow;
+  const face = target ? color.goldTint : miss ? color.missTint : selected ? color.soft : color.white;
+  const edge = target ? color.gold : miss ? color.miss : selected ? color.primary : color.line;
+  const shadow = target ? color.goldShadow : miss ? color.missInk : selected ? color.primary : color.shadow;
 
   return (
     <Animated.View style={fade}>
@@ -158,12 +167,12 @@ function Tile({
         radius={radius.surface}
         accessibilityRole={multi ? 'checkbox' : 'radio'}
         accessibilityState={multi ? { checked: selected, disabled: revealed } : { selected, disabled: revealed }}
-        accessibilityLabel={`${LETTERS[i]}. ${choice.text}${revealed ? (choice.isTarget ? '. What the drill asked for.' : '') + ' ' + choice.explanation : ''}`}
+        accessibilityLabel={`${LETTERS[i]}. ${choice.text}${revealed ? (choice.isTarget ? '. What the drill asked for.' : miss ? `. Your pick, not quite${askedFor ? `: the drill asked for ${askedFor}` : ''}.` : '') + ' ' + choice.explanation : ''}`}
         contentStyle={styles.face}
       >
         <View style={styles.row}>
           <View style={styles.badgeBox}>
-            <StepBadge shape="pill" state={target ? 'target' : selected ? 'selected' : 'letter'} label={LETTERS[i]} style={badge} />
+            <StepBadge shape="pill" state={target ? 'target' : miss ? 'miss' : selected ? 'selected' : 'letter'} label={LETTERS[i]} style={badge} />
             {choice.isTarget ? <Burst ref={burst} count={12} power={0.6} scale={0.85} duration={600} spread={80} /> : null}
           </View>
           <Text variant="bodyStrong" style={styles.text}>
@@ -175,11 +184,12 @@ function Tile({
             <View style={styles.explain}>
               {target ? (
                 <Text variant="overline" color={color.goldInk} style={styles.tag}>
-                  {selected ? 'Your pick · what the drill asked for' : 'What the drill asked for'}
+                  {/* the letter, since its badge now shows a check and a "not quite" names it */}
+                  {`${LETTERS[i]} · ${selected ? 'your pick, ' : ''}what the drill asked for`}
                 </Text>
-              ) : selected ? (
-                <Text variant="overline" color={color.primaryShadow} style={styles.tag}>
-                  Your pick
+              ) : miss ? (
+                <Text variant="overline" color={color.missInk} style={styles.tag}>
+                  {askedFor ? `Your pick · not quite. The drill asked for ${askedFor}.` : 'Your pick · not quite'}
                 </Text>
               ) : null}
               <Text variant="bodySmall" color={color.ink}>
