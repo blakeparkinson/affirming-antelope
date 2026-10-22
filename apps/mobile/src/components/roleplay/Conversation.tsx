@@ -31,6 +31,7 @@ import { useLearner } from '@/state/store';
 import { FADE_MS, spring, useFades, useListLayout, useReduceMotion, useTickSwap } from '@/motion';
 import { BubbleSheen, MoveStamp, type Stamp } from './MoveStamp';
 import { PersonaPresence, WarmthThread, useWarmth } from './Presence';
+import { answeredExchanges, endSheetBody, failedTurnLine } from './turnFlow';
 import { useEmployeeReply, type ReplyRead } from './useEmployeeReply';
 import { TalkDock } from './voice/TalkDock';
 import { useVoiceTurn, type VoiceFallback } from './voice/useVoiceTurn';
@@ -90,7 +91,7 @@ export function Conversation({
   const p = scenario.persona;
   const avatar = scenarioAvatar(scenario);
   const first = callName(p.name);
-  const { pending, error, request, cut, clearError } = useEmployeeReply(scenario.id);
+  const { pending, error, request, cut, busy, clearError } = useEmployeeReply(scenario.id);
   const talk = mode === 'talk';
   const muted = useLearner((s) => s.settings.voiceMuted ?? false);
   const setSetting = useLearner((s) => s.setSetting);
@@ -143,7 +144,10 @@ export function Conversation({
   const popped = useRef(new Set(Object.keys(stamps)));
 
   const learnerCount = turns.filter((t) => t.speaker === 'learner').length;
-  const ready = learnerCount >= MIN_TURNS;
+  // only exchanges they answered (a line that failed to send hasn't been heard), counting a
+  // reply on screen now, since ending keeps it
+  const answered = answeredExchanges(pending && !pending.typing && pending.text ? [...turns, { id: pending.id, speaker: 'employee', text: pending.text }] : turns);
+  const ready = answered >= MIN_TURNS;
   const status = pending?.typing && voice.state !== 'speaking' ? 'typing…' : talk && voice.state === 'speaking' ? 'talking…' : learnerCount ? `${learnerCount} ${learnerCount === 1 ? 'reply' : 'replies'} from you` : p.role;
   // one list, so the pending reply and the turn it settles into are the same element (dots morph into words)
   const rows: Row[] = turns.map((t) => ({ id: t.id, speaker: t.speaker, text: t.text, live: false, typing: false }));
@@ -161,6 +165,7 @@ export function Conversation({
   const send = () => {
     const text = draft.trim();
     if (!text || pending) return;
+    // after a failed reply, a new line goes out with the unanswered one (both stay in the thread)
     sendTurn(text, false);
     setDraft('');
   };
@@ -318,7 +323,7 @@ export function Conversation({
               {error ? (
                 <Animated.View entering={fades.entering} exiting={fades.exiting} layout={layout} style={styles.retry}>
                   <Text variant="caption" color={color.muted} align="center">
-                    {error.kind === 'wait' ? `${error.title}. ${error.detail}` : `${error.title}. ${first} didn’t get that.`}
+                    {failedTurnLine(error, first)}
                   </Text>
                   <SaveProgressLink error={error} style={styles.center} />
                   <Button
@@ -328,8 +333,10 @@ export function Conversation({
                     icon={<ArrowCounterClockwiseIcon size={16} weight="bold" color={color.primary} />}
                     iconPosition="leading"
                     onPress={() => {
+                      // a second tap (or a tap while it fades out) would send the same line twice
+                      if (busy()) return;
                       clearError();
-                      ask(turns);
+                      ask(turnsRef.current);
                     }}
                     style={styles.center}
                   />
@@ -371,7 +378,7 @@ export function Conversation({
                 value={draft}
                 onChangeText={setDraft}
                 onSend={send}
-                busy={!!pending || !!error}
+                busy={!!pending}
                 placeholder={`Reply to ${first}…`}
                 accessibilityLabel={`Your reply to ${p.name}`}
               />
@@ -384,7 +391,7 @@ export function Conversation({
         open={confirm === 'end'}
         onClose={() => setConfirm(null)}
         title="End the conversation?"
-        body={`You’ve had ${learnerCount} ${learnerCount === 1 ? 'exchange' : 'exchanges'} with ${first}. Ending now is fine; the debrief just has less to go on. A few more replies usually tells you more.`}
+        body={endSheetBody(answered, first)}
         stay="Keep talking"
         leave="End and reflect"
         onLeave={() => {

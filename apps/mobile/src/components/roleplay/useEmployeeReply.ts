@@ -2,6 +2,7 @@ import { isLearnerMove, isStance, type LearnerMove, type Stance, type Turn } fro
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { friendlyError, withTimeout, type FriendlyError } from '@/components/practice-loop/errors';
 import { postStream } from '@/lib/api';
+import { createReplyGate } from './turnFlow';
 
 export interface PendingReply {
   id: string;
@@ -39,12 +40,14 @@ export function useEmployeeReply(scenarioId: string) {
   const [pending, setPending] = useState<PendingReply | null>(null);
   const [error, setError] = useState<FriendlyError | null>(null);
   const live = useRef<{ stop: () => void } | null>(null);
+  const [gate] = useState(createReplyGate);
 
   useEffect(() => () => live.current?.stop(), []);
 
   const request = useCallback(
     (turns: Turn[], replyId: string, onDone: (text: string, stance?: Stance) => void, sink?: ReplyStreamSink, onRead?: (read: ReplyRead) => void) => {
       live.current?.stop();
+      gate.take();
       setError(null);
       const lastLearner = [...turns].reverse().find((t) => t.speaker === 'learner')?.text ?? '';
       const thinkUntil = Date.now() + 650 + Math.random() * 550 + Math.min(700, lastLearner.length * 5);
@@ -98,6 +101,7 @@ export function useEmployeeReply(scenarioId: string) {
       function stop() {
         if (stopped) return;
         stopped = true;
+        gate.release();
         clearInterval(tick);
         req.clear();
         req.abort();
@@ -130,7 +134,7 @@ export function useEmployeeReply(scenarioId: string) {
           failure = e;
         });
     },
-    [scenarioId],
+    [scenarioId, gate],
   );
 
   /** Stop streaming now, keeping whatever has been revealed. */
@@ -141,5 +145,8 @@ export function useEmployeeReply(scenarioId: string) {
     return text;
   }, [pending]);
 
-  return { pending, error, request, cut, clearError: () => setError(null) };
+  /** True from a request until its reply lands, fails or is cut. Read at tap time, not render time. */
+  const busy = useCallback(() => gate.busy, [gate]);
+
+  return { pending, error, request, cut, busy, clearError: () => setError(null) };
 }

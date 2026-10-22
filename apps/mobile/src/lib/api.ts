@@ -1,10 +1,13 @@
 import Constants from 'expo-constants';
 import { fetch as expoFetch } from 'expo/fetch';
+import { isAuthApiError, isAuthSessionMissingError } from '@supabase/supabase-js';
 import { Platform } from 'react-native';
 import type { AiEndpoint } from '@antelope/core';
 import { track } from './analytics';
+import { ApiError } from './apiError';
+import { tokenAfter401 } from './authRetry';
 import { sessionWithin } from '@/sync/anonymous';
-import { supabase } from './supabase';
+import { currentSession, setCurrentSession, supabase } from './supabase';
 
 const DEV_API_PORT = 3000;
 
@@ -41,37 +44,45 @@ async function apiHeaders(): Promise<Record<string, string>> {
   return headers;
 }
 
-/** A 401 means the token went stale (or its guest is gone): refresh once and retry. */
-async function refreshedHeaders(): Promise<Record<string, string> | null> {
-  const { data } = await supabase.auth.refreshSession().catch(() => ({ data: { session: null } }));
-  if (!data.session) return null;
-  return { 'Content-Type': 'application/json', Authorization: `Bearer ${data.session.access_token}` };
+/**
+ * After a 401: refresh once; a guest whose session is gone (or who never got one) gets a
+ * fresh anonymous session instead (docs/anonymous-auth.md, "Error codes"). Null: don't retry.
+ */
+async function retryHeaders(): Promise<Record<string, string> | null> {
+  const token = await tokenAfter401({
+    current: currentSession,
+    refresh: async () => {
+      const { data, error } = await supabase.auth.refreshSession().catch((e: unknown) => ({ data: { session: null }, error: e }));
+      return { session: data.session, rejected: !data.session && refreshTurnedDown(error) };
+    },
+    freshGuest: async (dead) => {
+      const now = currentSession();
+      // another request's recovery, or a sign-in, got there first: keep it
+      if (now && now.user.id !== dead?.user.id) return now;
+      // the dead guest session goes first (the auth listener keeps its practice for the next guest)
+      if (now) await supabase.auth.signOut({ scope: 'local' }).catch(() => undefined);
+      setCurrentSession(null);
+      return sessionWithin(4000);
+    },
+  });
+  return token ? { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` } : null;
+}
+
+/**
+ * The auth server answered and refused: no session to refresh, or the refresh token is
+ * invalid, used or its user gone (4xx). Not a network failure, a 5xx or a rate limit (429),
+ * which say nothing about whether the guest still exists.
+ */
+function refreshTurnedDown(error: unknown): boolean {
+  if (isAuthSessionMissingError(error)) return true;
+  return isAuthApiError(error) && error.status >= 400 && error.status < 500 && error.status !== 429;
 }
 
 export function apiUrl(path: string): string {
   return `${apiBase()}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-/** API error bodies: `{ error, code?, reason?, retry_after?, ... }` (docs/anonymous-auth.md). */
-export class ApiError extends Error {
-  /** e.g. `quota_exceeded`, `ai_resting`, `auth_required`, `invalid_token`. */
-  code?: string;
-  /** For `quota_exceeded`: `daily` or `burst`. */
-  reason?: string;
-  /** Seconds until trying again makes sense. */
-  retryAfter?: number;
-  constructor(
-    public status: number,
-    message: string,
-    body?: { code?: unknown; reason?: unknown; retry_after?: unknown },
-  ) {
-    super(message);
-    this.name = 'ApiError';
-    if (typeof body?.code === 'string') this.code = body.code;
-    if (typeof body?.reason === 'string') this.reason = body.reason;
-    if (typeof body?.retry_after === 'number') this.retryAfter = body.retry_after;
-  }
-}
+export { ApiError } from './apiError';
 
 /** Which AI endpoint a path is, for `ai_request_failed`. Other paths aren't AI calls. */
 function aiEndpoint(path: string): AiEndpoint | null {
@@ -106,7 +117,7 @@ async function failure(res: { status: number; text(): Promise<string> }, path?: 
   return new ApiError(res.status, message, body);
 }
 
-/** POST with the bearer token; on a 401, refresh the session once and try again. */
+/** POST with the bearer token; on a 401, renew the session once (`retryHeaders`) and try again. */
 async function send(doFetch: typeof fetch, path: string, body: unknown, signal?: AbortSignal): Promise<Response> {
   return sendRaw(doFetch, path, JSON.stringify(body), true, signal);
 }
@@ -121,7 +132,7 @@ async function sendRaw(doFetch: typeof fetch, path: string, body: BodyInit, json
   try {
     res = await doFetch(apiUrl(path), init(await apiHeaders()));
     if (res.status === 401) {
-      const retry = await refreshedHeaders();
+      const retry = await retryHeaders();
       if (retry) res = await doFetch(apiUrl(path), init(retry));
     }
   } catch (e) {
