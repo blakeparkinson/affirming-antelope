@@ -15,6 +15,7 @@ export const MI_FOR_CLINICIANS: Pathway = {
     {
       week: 1,
       id: "cl-u1-foundations",
+      process: "foundations",
       title: "Overview",
       subtitle: "What MI is, why it works, and what it can do for you as a clinician.",
       skills: ["engaging"],
@@ -38,6 +39,7 @@ export const MI_FOR_CLINICIANS: Pathway = {
     {
       week: 3,
       id: "cl-u3-engaging",
+      process: "engaging",
       title: "Engaging and OARS",
       subtitle: "Build rapport in the first few minutes with the four core skills.",
       skills: ["engaging", "oars"],
@@ -53,6 +55,7 @@ export const MI_FOR_CLINICIANS: Pathway = {
     {
       week: 4,
       id: "cl-u4-focusing",
+      process: "focusing",
       title: "Focusing",
       subtitle: "Many problems, one visit. Agree on where to start.",
       skills: ["focusing"],
@@ -67,6 +70,7 @@ export const MI_FOR_CLINICIANS: Pathway = {
     {
       week: 5,
       id: "cl-u5-evoking",
+      process: "evoking",
       title: "Evoking I",
       subtitle: "Recognize and respond to change talk and sustain talk.",
       skills: ["change-talk", "sustain-talk", "discord"],
@@ -83,6 +87,7 @@ export const MI_FOR_CLINICIANS: Pathway = {
     {
       week: 6,
       id: "cl-u6-sustain-discord",
+      process: "evoking",
       title: "Evoking II",
       subtitle: "Draw out change talk with evocative questions and rulers.",
       skills: ["evoking", "change-talk"],
@@ -96,6 +101,7 @@ export const MI_FOR_CLINICIANS: Pathway = {
     {
       week: 7,
       id: "cl-u7-informing",
+      process: "planning",
       title: "Planning",
       subtitle: "When they're ready, a plan in their words, with information offered the MI way.",
       skills: ["planning"],

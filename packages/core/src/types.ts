@@ -50,6 +50,9 @@ export interface PathActivity {
   refIds?: string[];
 }
 
+/** The MI processes Home's "Your progress" follows, in course order. */
+export type MiProcess = "foundations" | "engaging" | "focusing" | "evoking" | "planning";
+
 export interface PathUnit {
   week: number;
   id: string;
@@ -57,6 +60,11 @@ export interface PathUnit {
   /** Short coach-voice line shown on the path node. */
   subtitle: string;
   skills: SkillId[];
+  /**
+   * The process this week teaches, if it's one of those (Evoking I and II are both
+   * "evoking"). Home's progress rows take their weeks from here, so they match the path.
+   */
+  process?: MiProcess;
   activities: PathActivity[];
 }
 
