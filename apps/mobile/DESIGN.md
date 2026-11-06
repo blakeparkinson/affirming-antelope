@@ -155,6 +155,8 @@ Brief → conversation ("walking into the meeting")
 
 ## Mascot: `src/components/mascot`
 
+**Color standard:** the rich, deep-brown antelope is the production character. Use the generated Rive coach or sprite rig; both already bake in that treatment. For a new still placement, use the web `brand-mascot-{wave,celebrate}-cartoon-deep.png` masters. Keep the caramel files as generation inputs only, and never deepen a generated rig twice. `color.gold` stays the achievement color; it does not define the mascot's fur. See `/BRAND.md` for the asset map shared with the studio and merchandise.
+
 ```tsx
 <Mascot pose="wave" | "celebrate" | "head" mood="idle" | "listening" | "thinking" | "cheer" size={120}
         greet paused={!isFocused} flip ref={handle} />
