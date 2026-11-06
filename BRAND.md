@@ -52,7 +52,7 @@ Use the existing deep artwork directly. Never deepen an already deep image or re
 | App icons / social previews | Existing generated fixed-name files; already use the deep treatment |
 | Mobile coach | Generated Rive coach and `assets/mascot/rig/`; both already use the deep treatment |
 | Prime Menagerie site | `npm run brand:sync -- antelope . ../affirming-antelope` from the studio repo |
-| Merchandise | Embed the deep PNG directly, preserving its transparency and proportions |
+| Merchandise | Use the deep PNG directly or as the identity and color reference for approved scenes; preserve the rich brown treatment |
 
 `apps/web/scripts/mascot-deepen.py` generates the deep stills, marks, icons and preview images from untouched originals. The WebGL hero intentionally consumes the original texture because its shader applies the same treatment at render time. The mobile rig and Rive pipelines also own their color conversion. Do not substitute a deep source into these conversion steps: that would darken the character twice.
 
