@@ -1,6 +1,8 @@
 import { AMANDA, BLAKE, personId, showCurrentEmployer, type Person } from "@/lib/people";
 import { APP_URL, PILOT_URL, SITE_DESCRIPTION, SITE_NAME, SITE_URL } from "@/lib/site";
 
+import { BRAND_MARK } from "@/lib/mascot-art";
+
 type Json = Record<string, unknown>;
 
 /** Renders schema.org JSON-LD, escaping `<` so content can't close the script tag. */
@@ -53,7 +55,7 @@ export function organizationLd(): Json {
     "@id": ORG_ID,
     name: SITE_NAME,
     url: SITE_URL,
-    logo: `${SITE_URL}/brand-logo.png`,
+    logo: `${SITE_URL}${BRAND_MARK.src}`,
     description: SITE_DESCRIPTION,
     founder: [personRef(AMANDA), personRef(BLAKE)],
     member: [personRef(AMANDA), personRef(BLAKE)],
@@ -154,7 +156,7 @@ export function articleLd(a: {
       "@type": "Organization",
       "@id": ORG_ID,
       name: SITE_NAME,
-      logo: { "@type": "ImageObject", url: `${SITE_URL}/brand-logo.png` },
+      logo: { "@type": "ImageObject", url: `${SITE_URL}${BRAND_MARK.src}` },
     },
   };
 }
